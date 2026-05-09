@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.examguard.controller.faculty.FacultyDashboardController"
+            fitToWidth="true"
+            hbarPolicy="NEVER"
+            stylesheets="/styles/faculty-home.css"
+            styleClass="faculty-dashboard-root">
+
+    <VBox spacing="22" styleClass="faculty-content-wrapper">
+
+        <HBox spacing="22" VBox.vgrow="ALWAYS">
+
+            <VBox spacing="18" styleClass="faculty-main-section" HBox.hgrow="ALWAYS">
+
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <VBox spacing="2">
+                        <Label text="Today's Exam Activity" styleClass="faculty-section-title"/>
+                        <Label text="Published, scheduled, and ongoing exams assigned to your classes."
+                               styleClass="faculty-muted-text"/>
+                    </VBox>
+
+                    <Region HBox.hgrow="ALWAYS"/>
+
+                    <Button text="↻"
+                            onAction="#reloadActiveExams"
+                            styleClass="faculty-reload-button"/>
+
+                    <Label text="View All" styleClass="faculty-view-all"/>
+                </HBox>
+
+                <ScrollPane fitToWidth="true"
+                            hbarPolicy="NEVER"
+                            vbarPolicy="AS_NEEDED"
+                            prefHeight="520"
+                            styleClass="faculty-inner-scroll">
+
+                    <VBox fx:id="activeExamList"
+                          spacing="0"
+                          styleClass="faculty-list"/>
+                </ScrollPane>
+            </VBox>
+
+            <VBox spacing="18" styleClass="faculty-side-section">
+
+                <VBox spacing="12" styleClass="faculty-clean-box">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <VBox spacing="2">
+                            <Label text="Review Queue" styleClass="faculty-section-title"/>
+                            <Label text="Flagged exam attempts that still need checking."
+                                   styleClass="faculty-muted-text"/>
+                        </VBox>
+
+                        <Region HBox.hgrow="ALWAYS"/>
+
+                        <Button text="↻"
+                                onAction="#reloadNeedsReview"
+                                styleClass="faculty-reload-button"/>
+                    </HBox>
+
+                    <ScrollPane fitToWidth="true"
+                                hbarPolicy="NEVER"
+                                vbarPolicy="AS_NEEDED"
+                                prefHeight="220"
+                                styleClass="faculty-inner-scroll">
+
+                        <VBox fx:id="needsReviewList"
+                              spacing="0"
+                              styleClass="faculty-list"/>
+                    </ScrollPane>
+                </VBox>
+
+                <VBox spacing="12" styleClass="faculty-clean-box">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <VBox spacing="2">
+                            <Label text="Handled Classes" styleClass="faculty-section-title"/>
+                            <Label text="Class offerings currently assigned to you."
+                                   styleClass="faculty-muted-text"/>
+                        </VBox>
+
+                        <Region HBox.hgrow="ALWAYS"/>
+
+                        <Button text="↻"
+                                onAction="#reloadHandledClasses"
+                                styleClass="faculty-reload-button"/>
+                    </HBox>
+
+                    <ScrollPane fitToWidth="true"
+                                hbarPolicy="NEVER"
+                                vbarPolicy="AS_NEEDED"
+                                prefHeight="240"
+                                styleClass="faculty-inner-scroll">
+
+                        <VBox fx:id="handledClassList"
+                              spacing="0"
+                              styleClass="faculty-list"/>
+                    </ScrollPane>
+                </VBox>
+
+            </VBox>
+        </HBox>
+
+    </VBox>
+</ScrollPane>

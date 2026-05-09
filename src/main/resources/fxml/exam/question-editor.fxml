@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17.0.12"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.examguard.controller.exam.QuestionEditorController"
+            prefWidth="700"
+            prefHeight="600"
+            stylesheets="/styles/exam-wizard.css"
+            styleClass="wizard-root">
+
+    <top>
+        <VBox spacing="8" styleClass="wizard-header">
+            <Label fx:id="titleLabel" text="Add Question" styleClass="wizard-title"/>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="14" styleClass="wizard-content">
+
+            <Label text="Question Type" styleClass="section-title"/>
+
+            <ComboBox fx:id="typeComboBox" prefWidth="250"/>
+
+            <Label text="Question Text" styleClass="section-title"/>
+
+            <TextArea fx:id="questionTextArea"
+                      prefRowCount="4"
+                      promptText="Enter question here..."/>
+
+            <Label text="Points" styleClass="section-title"/>
+
+            <TextField fx:id="pointsField"
+                       promptText="Example: 1"/>
+
+            <VBox fx:id="choicesPane" spacing="10">
+                <Label text="Choices" styleClass="section-title"/>
+
+                <TextField fx:id="choiceAField" promptText="Choice A"/>
+                <TextField fx:id="choiceBField" promptText="Choice B"/>
+                <TextField fx:id="choiceCField" promptText="Choice C"/>
+                <TextField fx:id="choiceDField" promptText="Choice D"/>
+
+                <Label text="Correct Answer" styleClass="section-title"/>
+
+                <ComboBox fx:id="correctChoiceComboBox" prefWidth="250"/>
+            </VBox>
+
+            <VBox fx:id="shortAnswerPane" spacing="10" visible="false" managed="false">
+                <Label text="Correct Answer" styleClass="section-title"/>
+                <TextField fx:id="correctAnswerField" promptText="Enter correct answer"/>
+            </VBox>
+
+            <VBox fx:id="essayPane" spacing="10" visible="false" managed="false">
+                <Label text="Essay Answer Guide" styleClass="section-title"/>
+                <TextArea fx:id="essayGuideArea"
+                          prefRowCount="3"
+                          promptText="Optional answer guide or rubric"/>
+            </VBox>
+
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="wizard-footer">
+            <Button text="Cancel" onAction="#handleCancel" styleClass="ghost-button"/>
+            <Button text="Save Question" onAction="#handleSave" styleClass="primary-button"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

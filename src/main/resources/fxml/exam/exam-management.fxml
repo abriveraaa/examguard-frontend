@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/17.0.12"
+           xmlns:fx="http://javafx.com/fxml/1"
+           stylesheets="/styles/exam-management.css"
+           fx:controller="com.example.examguard.controller.admin.ExamManagementController">
+
+    <StackPane fx:id="pageSwitcher">
+
+        <!-- LIST MODE -->
+        <BorderPane fx:id="listModeContainer"
+                    styleClass="exam-page">
+
+            <top>
+                <VBox spacing="16" styleClass="toolbar-wrapper">
+
+                    <HBox alignment="CENTER_LEFT" spacing="12">
+                        <padding>
+                            <Insets top="10" right="10" bottom="10" left="10"/>
+                        </padding>
+
+                        <Button onAction="#handleCreateExam"
+                                styleClass="primary-button"
+                                text="Create Exam" />
+
+                        <Button fx:id="reloadButton"
+                                onAction="#handleReload"
+                                styleClass="outline-button"
+                                text="Reload" />
+
+                        <Label fx:id="itemCountLabel"
+                               styleClass="item-count"
+                               text="0 Items"/>
+
+                        <Region HBox.hgrow="ALWAYS" />
+
+                        <TextField fx:id="searchField"
+                                   prefHeight="44.0"
+                                   promptText="Search exams"
+                                   styleClass="search-field"
+                                   HBox.hgrow="ALWAYS"
+                                   maxWidth="Infinity"/>
+                    </HBox>
+
+                </VBox>
+            </top>
+
+            <center>
+                <TableView fx:id="examTable"
+                           styleClass="exam-table"
+                           VBox.vgrow="ALWAYS"
+                           maxWidth="Infinity"
+                           prefWidth="Infinity">
+                    <columns>
+                        <TableColumn fx:id="dateCreatedColumn" text="Date Created" />
+                        <TableColumn fx:id="validityColumn" text="Validity" />
+                        <TableColumn fx:id="titleColumn" text="Title" />
+                        <TableColumn fx:id="statusColumn" text="Status" />
+                        <TableColumn fx:id="durationColumn" text="Duration" />
+                        <TableColumn fx:id="assignedColumn" text="Assigned To" />
+                        <TableColumn fx:id="takersColumn" text="Takers" />
+                        <TableColumn fx:id="createdByColumn" text="Created By" />
+                        <TableColumn fx:id="updatedByColumn" text="Updated By" />
+                        <TableColumn fx:id="actionsColumn" text="Actions" />
+                    </columns>
+                </TableView>
+            </center>
+
+        </BorderPane>
+
+        <!-- WORKSPACE MODE -->
+        <BorderPane fx:id="workspaceModeContainer"
+                    visible="false"
+                    managed="false"
+                    styleClass="exam-workspace-page">
+
+            <top>
+                <HBox alignment="CENTER_LEFT"
+                      spacing="14"
+                      styleClass="workspace-header">
+
+                    <Button text="← Back to Exams"
+                            onAction="#handleBackToExamList"
+                            styleClass="outline-button"/>
+
+                    <VBox spacing="2">
+                        <Label fx:id="workspaceTitleLabel"
+                               text="Exam Workspace"
+                               styleClass="workspace-title"/>
+
+                        <Label fx:id="workspaceSubtitleLabel"
+                               text="Review students, submissions, violations, and results."
+                               styleClass="workspace-subtitle"/>
+                    </VBox>
+
+                    <Region HBox.hgrow="ALWAYS"/>
+
+                    <Button fx:id="releaseResultsButton"
+                            text="Release Results"
+                            onAction="#handleReleaseResults"
+                            styleClass="primary-button"/>
+                </HBox>
+            </top>
+
+            <left>
+                <VBox spacing="8"
+                      styleClass="workspace-sidebar">
+
+                    <Button fx:id="overviewTabButton"
+                            text="Overview"
+                            onAction="#showWorkspaceOverview"
+                            styleClass="workspace-tab-button"/>
+
+                    <Button fx:id="studentsTabButton"
+                            text="Students &amp; Reviews"
+                            onAction="#showWorkspaceStudents"
+                            styleClass="workspace-tab-button"/>
+
+                    <Button fx:id="proctorTabButton"
+                            text="Proctor"
+                            onAction="#showWorkspaceProctor"
+                            styleClass="workspace-tab-button"/>
+
+                    <Button fx:id="activityLogTabButton"
+                            text="Activity Log"
+                            onAction="#showWorkspaceActivityLog"
+                            styleClass="workspace-tab-button"/>
+
+                    <Button fx:id="leaderboardTabButton"
+                            text="Leaderboard"
+                            onAction="#showWorkspaceLeaderboard"
+                            styleClass="workspace-tab-button"/>
+                </VBox>
+            </left>
+
+            <center>
+                <StackPane fx:id="workspaceContent"
+                           styleClass="workspace-content"/>
+            </center>
+
+        </BorderPane>
+
+    </StackPane>
+
+    <StackPane fx:id="loadingOverlay"
+               visible="false"
+               managed="false"
+               style="-fx-background-color: rgba(255,255,255,0.75);">
+
+        <VBox alignment="CENTER" spacing="12"
+              style="-fx-background-color: white;
+                     -fx-background-radius: 16;
+                     -fx-padding: 28;
+                     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 18, 0, 0, 6);">
+
+            <ProgressIndicator prefWidth="54" prefHeight="54" />
+
+            <Label text="Loading exams..."
+                   style="-fx-font-size: 14px;
+                          -fx-font-weight: bold;
+                          -fx-text-fill: #302C29;" />
+
+        </VBox>
+
+    </StackPane>
+
+</StackPane>

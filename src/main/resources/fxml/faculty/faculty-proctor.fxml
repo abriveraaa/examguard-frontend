@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.examguard.controller.faculty.FacultyProctorController"
+            stylesheets="/styles/faculty-proctor.css"
+            styleClass="proctor-root">
+
+    <top>
+        <VBox spacing="16" styleClass="proctor-top">
+            <padding>
+                <Insets top="24" right="28" bottom="18" left="28"/>
+            </padding>
+
+            <HBox alignment="CENTER_LEFT" spacing="14">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Live Proctor Workspace" styleClass="proctor-title"/>
+                    <Label text="Monitor active exams, student camera status, violations, and exam progress."
+                           styleClass="proctor-subtitle"/>
+                </VBox>
+
+                <Button text="Refresh" onAction="#handleRefresh" styleClass="ghost-button"/>
+                <Button text="Grid View" onAction="#handleGridView" styleClass="primary-button"/>
+            </HBox>
+
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <ComboBox fx:id="examSelector"
+                          promptText="Select active exam"
+                          prefWidth="320"
+                          styleClass="proctor-combo"/>
+
+                <TextField fx:id="searchField"
+                           promptText="Search student name or ID"
+                           prefWidth="280"
+                           styleClass="proctor-search"/>
+
+                <CheckBox fx:id="flaggedOnlyCheck"
+                          text="Flagged only"
+                          onAction="#handleFilterChanged"
+                          styleClass="proctor-check"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <Label text="LIVE" styleClass="live-badge"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <HBox spacing="18" styleClass="proctor-content">
+            <padding>
+                <Insets top="20" right="28" bottom="28" left="28"/>
+            </padding>
+
+            <VBox spacing="16" HBox.hgrow="ALWAYS">
+
+                <HBox spacing="14">
+                    <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                        <Label text="Total Takers" styleClass="stat-label"/>
+                        <Label fx:id="totalTakersLabel" text="0" styleClass="stat-value"/>
+                    </VBox>
+
+                    <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                        <Label text="Online" styleClass="stat-label"/>
+                        <Label fx:id="onlineLabel" text="0" styleClass="stat-value"/>
+                    </VBox>
+
+                    <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                        <Label text="Flagged" styleClass="stat-label"/>
+                        <Label fx:id="flaggedLabel" text="0" styleClass="stat-value-danger"/>
+                    </VBox>
+
+                    <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                        <Label text="Submitted" styleClass="stat-label"/>
+                        <Label fx:id="submittedLabel" text="0" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+
+                <ScrollPane fitToWidth="true"
+                            hbarPolicy="NEVER"
+                            vbarPolicy="AS_NEEDED"
+                            styleClass="proctor-scroll"
+                            VBox.vgrow="ALWAYS">
+
+                    <TilePane fx:id="studentGrid"
+                              hgap="16"
+                              vgap="16"
+                              prefColumns="3"
+                              styleClass="student-grid">
+                        <padding>
+                            <Insets top="4" right="4" bottom="12" left="4"/>
+                        </padding>
+                    </TilePane>
+
+                </ScrollPane>
+            </VBox>
+
+            <VBox spacing="16" prefWidth="340" styleClass="side-panel">
+
+                <VBox spacing="8">
+                    <Label text="Selected Student" styleClass="panel-title"/>
+                    <Label fx:id="selectedStudentName" text="No student selected" styleClass="student-name"/>
+                    <Label fx:id="selectedStudentInfo" text="Choose a student card to inspect details."
+                           styleClass="student-info"/>
+                </VBox>
+
+                <Separator/>
+
+                <VBox spacing="10">
+                    <Label text="Device Status" styleClass="panel-title"/>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Circle radius="5" styleClass="dot-offline"/>
+                        <Label fx:id="phoneCameraStatus" text="Phone camera: Waiting" styleClass="side-text"/>
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Circle radius="5" styleClass="dot-offline"/>
+                        <Label fx:id="connectionStatus" text="Connection: Offline" styleClass="side-text"/>
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Circle radius="5" styleClass="dot-offline"/>
+                        <Label fx:id="angleStatus" text="45° angle: Not verified" styleClass="side-text"/>
+                    </HBox>
+                </VBox>
+
+                <Separator/>
+
+                <VBox spacing="10" VBox.vgrow="ALWAYS">
+                    <Label text="Violation Timeline" styleClass="panel-title"/>
+
+                    <ListView fx:id="violationList"
+                              placeholder="No violations yet."
+                              VBox.vgrow="ALWAYS"
+                              styleClass="violation-list"/>
+                </VBox>
+
+                <Button text="Open Focus View"
+                        onAction="#handleFocusView"
+                        maxWidth="Infinity"
+                        styleClass="primary-button"/>
+            </VBox>
+        </HBox>
+    </center>
+
+</BorderPane>

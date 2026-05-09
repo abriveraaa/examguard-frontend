@@ -1,0 +1,220 @@
+.proctor-root {
+    -fx-background-color: #f6f7fb;
+    -fx-font-family: "Segoe UI", "Roboto", sans-serif;
+}
+
+.proctor-top {
+    -fx-background-color: linear-gradient(to right, #4A0000, #7A1010);
+}
+
+.proctor-title {
+    -fx-text-fill: white;
+    -fx-font-size: 24px;
+    -fx-font-weight: 800;
+}
+
+.proctor-subtitle {
+    -fx-text-fill: rgba(255,255,255,0.78);
+    -fx-font-size: 13px;
+}
+
+.proctor-content {
+    -fx-background-color: #f6f7fb;
+}
+
+.proctor-combo,
+.proctor-search {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(255,255,255,0.35);
+    -fx-border-radius: 10;
+    -fx-padding: 8 12;
+}
+
+.proctor-check {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+.primary-button {
+    -fx-background-color: #C9A227;
+    -fx-text-fill: #2a1600;
+    -fx-font-weight: 700;
+    -fx-background-radius: 10;
+    -fx-padding: 9 16;
+    -fx-cursor: hand;
+}
+
+.ghost-button {
+    -fx-background-color: rgba(255,255,255,0.16);
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 10;
+    -fx-padding: 9 16;
+    -fx-cursor: hand;
+}
+
+.live-badge {
+    -fx-background-color: #e53935;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+    -fx-font-size: 11px;
+    -fx-padding: 6 12;
+    -fx-background-radius: 999;
+}
+
+.stat-card {
+    -fx-background-color: white;
+    -fx-background-radius: 16;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 18, 0, 0, 6);
+}
+
+.stat-label {
+    -fx-text-fill: #667085;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.stat-value {
+    -fx-text-fill: #1f2937;
+    -fx-font-size: 26px;
+    -fx-font-weight: 900;
+}
+
+.stat-value-danger {
+    -fx-text-fill: #b42318;
+    -fx-font-size: 26px;
+    -fx-font-weight: 900;
+}
+
+.proctor-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.student-grid {
+    -fx-background-color: transparent;
+}
+
+.side-panel {
+    -fx-background-color: white;
+    -fx-background-radius: 18;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 20, 0, 0, 8);
+}
+
+.panel-title {
+    -fx-text-fill: #344054;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+.student-name {
+    -fx-text-fill: #111827;
+    -fx-font-size: 18px;
+    -fx-font-weight: 900;
+}
+
+.student-info,
+.side-text {
+    -fx-text-fill: #667085;
+    -fx-font-size: 13px;
+}
+
+.dot-offline {
+    -fx-fill: #98a2b3;
+}
+
+.dot-online {
+    -fx-fill: #12b76a;
+}
+
+.violation-list {
+    -fx-background-color: #f9fafb;
+    -fx-background-radius: 12;
+    -fx-border-color: #eaecf0;
+    -fx-border-radius: 12;
+}
+
+.student-card {
+    -fx-background-color: white;
+    -fx-background-radius: 18;
+    -fx-padding: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 18, 0, 0, 6);
+    -fx-cursor: hand;
+}
+
+.student-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(74,0,0,0.18), 22, 0, 0, 8);
+}
+
+.status-normal {
+    -fx-text-fill: #344054;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+}
+
+.status-danger {
+    -fx-text-fill: #b42318;
+    -fx-font-size: 12px;
+    -fx-font-weight: 900;
+}
+
+.violation-badge {
+    -fx-background-color: #eef4ff;
+    -fx-text-fill: #3538cd;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-padding: 4 8;
+    -fx-background-radius: 999;
+}
+
+.violation-badge-danger {
+    -fx-background-color: #fee4e2;
+    -fx-text-fill: #b42318;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+    -fx-padding: 4 8;
+    -fx-background-radius: 999;
+}
+
+.video-box-live {
+    -fx-background-color: linear-gradient(to bottom right, #101828, #344054);
+    -fx-background-radius: 14;
+    -fx-border-color: #12b76a;
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+}
+
+.video-box-waiting {
+    -fx-background-color: linear-gradient(to bottom right, #344054, #667085);
+    -fx-background-radius: 14;
+    -fx-border-color: #98a2b3;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+}
+
+.video-text {
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: 900;
+    -fx-letter-spacing: 1px;
+}
+
+.card-student-name {
+    -fx-text-fill: #111827;
+    -fx-font-size: 15px;
+    -fx-font-weight: 900;
+}
+
+.card-student-info {
+    -fx-text-fill: #667085;
+    -fx-font-size: 12px;
+}
+
+.progress-text {
+    -fx-text-fill: #667085;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}

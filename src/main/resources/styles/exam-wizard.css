@@ -1,0 +1,988 @@
+/* =========================================================
+   CREATE EXAM WIZARD â€” ORGANIZED CSS
+   Palette:
+   Maroon: #800000
+   Dark Maroon: #650000
+   Gold: #C9A227
+   Dark Text: #302C29
+   Page BG: #F6F7FB / #F7F3ED
+   ========================================================= */
+
+
+/* =========================================================
+   1. ROOT / PAGE STRUCTURE
+   ========================================================= */
+
+.wizard-root {
+    -fx-background-color: #F6F7FB;
+    -fx-padding: 2;
+}
+
+.create-exam-page {
+    -fx-padding: 2;
+}
+
+.wizard-content {
+    -fx-background-color: white;
+    -fx-padding: 5;
+}
+
+.step-content {
+    -fx-padding: 24;
+    -fx-background-color: #F7F3ED;
+}
+
+.step-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+
+.step-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+
+/* =========================================================
+   2. WIZARD HEADER / STEP INDICATORS
+   ========================================================= */
+
+.wizard-header {
+    -fx-background-color: #302C29;
+    -fx-padding: 24 30;
+}
+
+.wizard-title {
+    -fx-text-fill: white;
+    -fx-font-size: 28px;
+    -fx-font-weight: 800;
+}
+
+.step-chip {
+    -fx-background-color: rgba(255,255,255,0.16);
+    -fx-text-fill: #FFF8E1;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-padding: 8 14;
+    -fx-background-radius: 999;
+}
+
+.step-active,
+.step-inactive,
+.step-done {
+    -fx-font-weight: bold;
+    -fx-padding: 8 14;
+    -fx-background-radius: 999;
+}
+
+.step-active {
+    -fx-background-color: #C9A227;
+    -fx-text-fill: #302C29;
+}
+
+.step-inactive {
+    -fx-background-color: rgba(255,255,255,0.15);
+    -fx-text-fill: #EEEEEE;
+}
+
+.step-done {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+}
+
+.step-divider {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.step-kicker {
+    -fx-text-fill: #800000;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.step-title {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+}
+
+.step-subtitle,
+.panel-subtitle,
+.card-subtitle {
+    -fx-text-fill: #7A746E;
+    -fx-font-size: 13px;
+}
+
+
+/* =========================================================
+   3. INTRO / CARDS / PANELS
+   ========================================================= */
+
+.page-intro-card {
+    -fx-background-color: linear-gradient(to right, #800000, #650000);
+    -fx-padding: 18 22;
+    -fx-background-radius: 18;
+    -fx-effect: dropshadow(gaussian, rgba(32,37,48,0.12), 18, 0.2, 0, 5);
+}
+
+.page-intro-title {
+    -fx-text-fill: white;
+    -fx-font-size: 22px;
+    -fx-font-weight: 900;
+}
+
+.page-intro-subtitle {
+    -fx-text-fill: rgba(255,255,255,0.82);
+    -fx-font-size: 13px;
+}
+
+/* =========================================================
+   STEP 3 — VIOLATION SETTINGS
+   ========================================================= */
+
+.violation-card {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-padding: 22;
+
+    -fx-effect: dropshadow(
+            gaussian,
+            rgba(0,0,0,0.08),
+            18,
+            0,
+            0,
+            4
+    );
+}
+
+.violation-header-row {
+    -fx-padding: 0 6 8 6;
+
+    -fx-border-color: transparent transparent #ECE6DB transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.violation-header {
+    -fx-text-fill: #7A746E;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+}
+
+.violation-row {
+    -fx-alignment: center-left;
+
+    -fx-padding: 12 10;
+    -fx-background-radius: 14;
+
+    -fx-border-radius: 14;
+    -fx-border-color: transparent;
+    -fx-border-width: 1;
+}
+
+.violation-row:hover {
+    -fx-background-color: #FFF8E1;
+    -fx-border-color: rgba(201,162,39,0.25);
+}
+
+.violation-row:selected {
+    -fx-background-color: #FFF3CD;
+}
+
+.violation-row .check-box {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.violation-row .combo-box {
+    -fx-pref-height: 38;
+
+    -fx-background-color: #FAFAFA;
+    -fx-background-radius: 10;
+
+    -fx-border-color: #DDD6CE;
+    -fx-border-radius: 10;
+
+    -fx-padding: 0 8;
+}
+
+.violation-row .combo-box:focused {
+    -fx-border-color: #C9A227;
+
+    -fx-effect: dropshadow(
+            gaussian,
+            rgba(201,162,39,0.18),
+            10,
+            0,
+            0,
+            0
+    );
+}
+
+.violation-spinner {
+    -fx-pref-height: 38;
+
+    -fx-background-color: #FAFAFA;
+    -fx-background-radius: 10;
+
+    -fx-border-color: #DDD6CE;
+    -fx-border-radius: 10;
+}
+
+.violation-spinner:focused {
+    -fx-border-color: #C9A227;
+}
+
+.violation-spinner .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #302C29;
+    -fx-font-size: 13px;
+    -fx-alignment: center;
+}
+
+.violation-spinner .increment-arrow-button,
+.violation-spinner .decrement-arrow-button {
+    -fx-background-color: transparent;
+}
+
+.violation-info-card {
+    -fx-background-color: #FFFDF8;
+
+    -fx-border-color: #E7DCC8;
+    -fx-border-radius: 14;
+
+    -fx-background-radius: 14;
+
+    -fx-padding: 16;
+}
+
+.violation-info-title {
+    -fx-text-fill: #800000;
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+}
+
+.violation-info-text {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 12px;
+    -fx-line-spacing: 3;
+}
+
+.violation-threshold-box {
+    -fx-background-color: #FAFAFA;
+
+    -fx-border-color: #E5E7EB;
+    -fx-border-radius: 14;
+
+    -fx-background-radius: 14;
+
+    -fx-padding: 14;
+}
+
+.violation-threshold-label {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.violation-note {
+    -fx-text-fill: #7A746E;
+    -fx-font-size: 11px;
+}
+
+.modern-card,
+.question-list-panel,
+.question-editor-panel,
+.review-card,
+.violation-card {
+    -fx-background-color: white;
+    -fx-background-radius: 18;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 18, 0, 0, 4);
+}
+
+.modern-card {
+    -fx-border-radius: 18;
+    -fx-border-color: #E9ECF2;
+}
+
+.accent-card {
+    -fx-border-color: rgba(201,162,39,0.55);
+}
+
+.violation-card {
+    -fx-padding: 20;
+    -fx-spacing: 16;
+}
+
+.section-title,
+.panel-title,
+.card-title {
+    -fx-text-fill: #302C29;
+    -fx-font-weight: 800;
+}
+
+.section-title {
+    -fx-font-size: 18px;
+}
+
+.panel-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 900;
+}
+
+
+/* =========================================================
+   4. TEXT / LABELS / HELPERS
+   ========================================================= */
+
+.field-label {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.helper-text,
+.note-text {
+    -fx-text-fill: #7A8190;
+}
+
+.helper-text {
+    -fx-font-size: 12px;
+}
+
+.note-text {
+    -fx-font-size: 11px;
+}
+
+.message-label {
+    -fx-text-fill: #800000;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.validation-label {
+    -fx-text-fill: #B3261E;
+    -fx-font-size: 12px;
+}
+
+.link-label {
+    -fx-text-fill: #2563EB;
+    -fx-underline: true;
+    -fx-cursor: hand;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.link-label:hover {
+    -fx-text-fill: #1E40AF;
+}
+
+
+/* =========================================================
+   5. CHIPS / BADGES / STATUS
+   ========================================================= */
+
+.required-chip,
+.selected-chip,
+.timezone-chip,
+.status-badge {
+    -fx-padding: 6 10;
+    -fx-background-radius: 999;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+}
+
+.required-chip {
+    -fx-background-color: #FFF8E1;
+    -fx-text-fill: #7A5B00;
+}
+
+.selected-chip {
+    -fx-background-color: #F8F1F1;
+    -fx-text-fill: #800000;
+}
+
+.timezone-chip {
+    -fx-background-color: #F2F4F8;
+    -fx-text-fill: #596070;
+}
+
+.status-badge {
+    -fx-background-radius: 12;
+    -fx-padding: 4 10;
+    -fx-border-color: transparent;   /* remove border */
+    -fx-underline: false;            /* prevent underline */
+}
+
+.review-ready-badge {
+    -fx-background-color: #DCFCE7;
+    -fx-text-fill: #15803D;
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+
+    -fx-padding: 4 10;
+    -fx-background-radius: 999;
+
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+    -fx-background-insets: 0;
+
+    -fx-underline: false;
+}
+
+.warning-badge {
+    -fx-background-color: #FFF3CD;
+    -fx-text-fill: #7A5200;
+}
+
+.success-badge {
+    -fx-background-color: rgba(34,197,94,0.15);
+    -fx-text-fill: #16A34A;
+    -fx-font-weight: bold;
+    -fx-background-radius: 999;
+    -fx-padding: 3 10;
+}
+
+.success-text {
+    -fx-text-fill: #16a34a;
+    -fx-font-weight: bold;
+}
+
+.error-text {
+    -fx-text-fill: #dc2626;
+    -fx-font-weight: bold;
+}
+
+.info-text {
+    -fx-text-fill: #6b7280;
+}
+
+
+/* =========================================================
+   6. INPUTS / COMBOBOX / DATEPICKER / SPINNER
+   ========================================================= */
+
+.modern-input,
+.modern-textarea,
+.modern-combo,
+.modern-spinner,
+.date-picker,
+.combo-box,
+.spinner {
+    -fx-background-color: #FAFAFA;
+    -fx-border-color: #DDD6CE;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-font-size: 13px;
+    -fx-text-fill: #252A34;
+    -fx-prompt-text-fill: #9AA1AF;
+}
+
+.modern-input {
+    -fx-pref-height: 38;
+    -fx-padding: 0 12;
+}
+
+.modern-combo {
+    -fx-pref-height: 38;
+    -fx-padding: 6 10;
+}
+
+.modern-textarea {
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-font-size: 14px;
+    -fx-padding: 8 10;
+}
+
+.modern-textarea .content {
+    -fx-background-color: #FAFAFA;
+    -fx-background-radius: 12;
+}
+
+.modern-input:focused,
+.modern-textarea:focused,
+.modern-combo:focused,
+.modern-spinner:focused,
+.date-picker:focused,
+.combo-box:focused,
+.spinner:focused {
+    -fx-background-color: white;
+    -fx-border-color: #C9A227;
+    -fx-effect: dropshadow(gaussian, rgba(201,162,39,0.18), 10, 0.18, 0, 0);
+}
+
+.modern-textarea:focused .content {
+    -fx-background-color: white;
+}
+
+.compact-textarea {
+    -fx-pref-height: 76;
+    -fx-min-height: 76;
+    -fx-max-height: 76;
+}
+
+.date-picker,
+.combo-box,
+.modern-spinner,
+.spinner {
+    -fx-pref-height: 42;
+}
+
+.date-picker .text-field,
+.modern-spinner .text-field,
+.spinner .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #302C29;
+    -fx-font-size: 13px;
+}
+
+.date-picker .arrow-button,
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.spinner:disabled {
+    -fx-opacity: 0.4;
+}
+
+
+/* =========================================================
+   7. CHECKBOXES / RADIO BUTTONS
+   ========================================================= */
+
+.pill-radio {
+    -fx-background-color: #F9FAFC;
+    -fx-border-color: #E1E5EE;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-padding: 8 12;
+    -fx-text-fill: #343A46;
+    -fx-font-weight: 700;
+}
+
+.pill-radio:selected {
+    -fx-background-color: #FFF8E1;
+    -fx-border-color: #C9A227;
+}
+
+.clean-radio,
+.modern-check,
+.image-toggle-check,
+.violation-checkbox {
+    -fx-text-fill: #343A46;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.image-toggle-check {
+    -fx-text-fill: #302C29;
+    -fx-font-weight: bold;
+}
+
+.modern-check .box {
+    -fx-background-color: #F9FAFC;
+    -fx-border-color: #C9CED8;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.modern-check:selected .box {
+    -fx-background-color: #800000;
+    -fx-border-color: #800000;
+}
+
+.modern-check:selected .mark {
+    -fx-background-color: white;
+}
+
+
+/* =========================================================
+   8. LISTS / QUESTION LIST
+   ========================================================= */
+
+.modern-list,
+.modern-list-view {
+    -fx-background-color: #F9FAFC;
+    -fx-border-color: #DDE1EA;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 6;
+}
+
+.modern-list .list-cell,
+.modern-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #302C29;
+    -fx-padding: 10 12;
+    -fx-background-radius: 10;
+    -fx-font-size: 12px;
+}
+
+.modern-list .list-cell:hover,
+.modern-list-view .list-cell:hover {
+    -fx-background-color: #FFF8E1;
+}
+
+.modern-list .list-cell:selected,
+.modern-list-view .list-cell:selected {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+}
+
+#questionListView .list-cell {
+    -fx-background-radius: 10;
+}
+
+#questionListView .list-cell:hover {
+    -fx-background-color: #FFF8E1;
+}
+
+#questionListView .list-cell:selected {
+    -fx-background-color: #FFF8E1;
+    -fx-text-fill: #000000;
+}
+
+.question-list-title {
+    -fx-text-fill: #000000;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.question-list-preview {
+    -fx-text-fill: #000000;
+    -fx-font-size: 12px;
+}
+
+.question-complete-text {
+    -fx-text-fill: #1B5E20;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.question-incomplete-text {
+    -fx-text-fill: #B3261E;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+
+/* =========================================================
+   9. QUESTION EDITOR / ANSWERS / CHOICES
+   ========================================================= */
+
+.answer-container {
+    -fx-background-color: #FFFDF8;
+    -fx-border-color: #E7DCC8;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 16;
+}
+
+.choice-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E7DCC8;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 10;
+    -fx-spacing: 6;
+}
+
+.choice-card:hover {
+    -fx-border-color: #C9A227;
+}
+
+
+/* =========================================================
+   10. BUTTONS
+   ========================================================= */
+
+.button {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 0;
+}
+
+.outline-button {
+    -fx-background-color: white;
+    -fx-text-fill: #800000;
+
+    -fx-border-color: #800000;
+    -fx-border-width: 1.2;
+
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;   /* ← THIS WAS MISSING */
+}
+
+.upload-button,
+.primary-button,
+.primary-small-button,
+.outline-small-button,
+.ghost-button,
+.danger-small-button {
+    -fx-cursor: hand;
+}
+
+.wizard-footer .button {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-padding: 9 18;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-min-width: 86;
+}
+
+.primary-button,
+.primary-small-button,
+.upload-button {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-border-color: #800000;
+}
+
+.primary-button {
+    -fx-padding: 10 18;
+}
+
+.primary-small-button {
+    -fx-padding: 8 14;
+}
+
+.upload-button {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-padding: 8 14;
+}
+
+.primary-button:hover,
+.primary-small-button:hover,
+.upload-button:hover {
+    -fx-background-color: #650000;
+    -fx-border-color: #650000;
+}
+
+.primary-button:pressed,
+.primary-small-button:pressed,
+.upload-button:pressed {
+    -fx-background-color: #4A0000;
+    -fx-border-color: #4A0000;
+}
+
+.outline-button {
+    -fx-background-color: white;
+    -fx-text-fill: #800000;
+    -fx-border-color: #800000;
+    -fx-border-width: 1.2;
+}
+
+.outline-button:hover {
+    -fx-background-color: #FFF8E1;
+}
+
+.outline-small-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #C9A227;
+    -fx-border-radius: 10;
+    -fx-text-fill: #302C29;
+    -fx-padding: 8 12;
+}
+
+.ghost-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #5F6675;
+    -fx-border-color: transparent;
+    -fx-padding: 8 12;
+    -fx-border-radius: 10;
+}
+
+.ghost-button:hover {
+    -fx-background-color: #F1F3F7;
+    -fx-text-fill: #302C29;
+}
+
+.danger-small-button {
+    -fx-background-color: #FDECEC;
+    -fx-text-fill: #B3261E;
+    -fx-background-radius: 10;
+    -fx-padding: 8 12;
+}
+
+.wizard-footer .button:disabled {
+    -fx-opacity: 0.45;
+}
+
+.button:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* =========================================================
+   11. FOOTER
+   ========================================================= */
+
+.wizard-footer {
+    -fx-background-color: white;
+    -fx-padding: 12 18;
+    -fx-border-color: #E9ECF2 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+
+/* =========================================================
+   12. ERROR STATES
+   ========================================================= */
+
+.input-error {
+    -fx-border-color: #DC2626 !important;
+    -fx-background-color: #FFF5F5 !important;
+}
+
+.input-error:focused {
+    -fx-border-color: #B91C1C !important;
+}
+
+.field-error-text {
+    -fx-text-fill: #DC2626;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+}
+
+
+/* =========================================================
+   13. STEP 3 â€” VIOLATIONS
+   ========================================================= */
+
+.violation-title {
+    -fx-text-fill: #800000;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.violation-subtitle {
+    -fx-text-fill: #7A746E;
+    -fx-font-size: 12px;
+}
+
+.violation-header-row {
+    -fx-padding: 0 8 4 8;
+}
+
+.violation-header {
+    -fx-text-fill: #7A746E;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.violation-label {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+.violation-spinner {
+    -fx-pref-width: 110;
+}
+
+.violation-divider {
+    -fx-background-color: #EEE7DB;
+    -fx-pref-height: 1;
+}
+
+.violation-row {
+    -fx-padding: 10 8;
+    -fx-background-radius: 10;
+}
+
+.violation-row:hover {
+    -fx-background-color: #FFF8E1;
+}
+
+
+/* =========================================================
+   14. STEP 4 â€” REVIEW & PUBLISH
+   ========================================================= */
+
+.review-label {
+    -fx-text-fill: #7A746E;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.review-value {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 14px;
+}
+
+.review-question-card {
+    -fx-background-color: #FFFDF8;
+    -fx-border-color: #E7DCC8;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14;
+}
+
+.review-question-header {
+    -fx-text-fill: #800000;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.review-question-text {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 14px;
+}
+
+.review-image-label {
+    -fx-text-fill: #7A5200;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.review-choice-row {
+    -fx-alignment: center-left;
+}
+
+.review-choice {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 13px;
+}
+
+.review-choice-correct {
+    -fx-text-fill: #1B5E20;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.choice-correct-marker {
+    -fx-background-color: #E8F5E9;
+    -fx-text-fill: #1B5E20;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-background-radius: 999;
+}
+
+.choice-empty-marker {
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+}
+
+.review-answer-label {
+    -fx-text-fill: #1B5E20;;
+    -fx-font-weight: 800;
+    -fx-font-size: 13px;
+    -fx-background-color: #F7F3ED;
+    -fx-background-radius: 10;
+    -fx-padding: 10;
+}

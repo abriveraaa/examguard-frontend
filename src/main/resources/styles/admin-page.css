@@ -1,0 +1,353 @@
+
+/* =========================
+   PAGE BACKGROUND
+========================= */
+.page-root {
+    -fx-background-color: #f9fafb;
+}
+
+
+/* =========================
+   DASHBOARD STAT CARDS
+========================= */
+
+.stat-card {
+    -fx-background-color: white;
+    -fx-background-radius: 14;
+
+    -fx-padding: 16;
+
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 12, 0.2, 0, 2);
+
+    -fx-border-color: #eef0f2;
+    -fx-border-radius: 14;
+}
+
+.stat-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 16, 0.25, 0, 3);
+    -fx-cursor: hand;
+}
+
+/* ================= SECTION TITLE ================= */
+.section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #800000;
+}
+
+/* ================= DASHBOARD BACKGROUND ================= */
+.page-root {
+    -fx-background-color: #f9fafb; /* soft neutral */
+}
+
+/* ================= HEADER ================= */
+.page-header {
+    -fx-padding: 16 20 10 20;
+}
+
+.page-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111827; /* dark neutral instead of red */
+}
+
+.page-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6b7280;
+}
+
+/* ================= CONTENT ================= */
+
+.page-content {
+    -fx-padding: 20;
+}
+
+.page-content > HBox {
+    -fx-spacing: 12;
+}
+
+/* =========================
+   CARD SYSTEM (GENERAL USE)
+========================= */
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+
+    -fx-border-radius: 12;
+    -fx-border-color: #eef0f2;
+
+    -fx-padding: 12;
+
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0.2, 0, 2);
+}
+
+/* =========================
+   TABLE VIEW CONTAINER
+========================= */
+.table-view {
+    -fx-background-color: white;
+
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+
+    -fx-border-color: #eef0f2;
+    -fx-border-width: 1;
+
+    -fx-padding: 0;
+
+    /* remove JavaFX noise */
+    -fx-table-cell-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* =========================
+   TABLE HEADER (MAROON)
+========================= */
+.table-view .column-header-background {
+    -fx-background-color: #800000;
+
+    -fx-background-radius: 12 12 0 0;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+
+    -fx-padding: 10 12;
+}
+
+/* =========================
+   TABLE ROW BASE
+========================= */
+.table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+
+    -fx-padding: 6;
+}
+
+/* subtle zebra */
+.table-row-cell:odd {
+    -fx-background-color: #fcfcfc;
+}
+
+/* =========================
+   HOVER STATE (SOFT)
+========================= */
+.table-row-cell:hover {
+    -fx-background-color: #f6f7f9;
+    -fx-cursor: hand;
+}
+
+/* =========================
+   SELECTED STATE (SOFT MAROON)
+========================= */
+.table-row-cell:selected {
+    -fx-background-color: #f3e8e8;
+}
+
+.table-row-cell:selected .text {
+    -fx-fill: #800000;
+}
+
+/* =========================
+   SEARCH FIELD
+========================= */
+.search-field {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+
+    -fx-border-color: #e5e7eb;
+
+    -fx-padding: 8 10;
+}
+
+/* =========================
+   BUTTON SYSTEM
+========================= */
+
+/* PRIMARY (PUP MAROON) */
+.btn-primary {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #650000;
+}
+
+/* SECONDARY */
+.btn-secondary {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #1c1e21;
+    -fx-cursor: hand;
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+}
+
+/* OUTLINE */
+.btn-outline {
+    -fx-background-color: transparent;
+
+    -fx-border-color: #800000;
+    -fx-text-fill: #800000;
+
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+}
+
+/* DANGER */
+.btn-danger {
+    -fx-background-color: #b91c1c;
+    -fx-text-fill: white;
+
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+}
+
+.btn-danger:hover {
+    -fx-background-color: #991b1b;
+}
+
+/* =========================
+   PAGE HEADER
+========================= */
+.page-header {
+    -fx-padding: 16 20 10 20;
+}
+
+.page-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #800000;
+}
+
+.page-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6b7280;
+}
+
+/* =========================
+   PAGE CONTENT
+========================= */
+.page-content {
+    -fx-padding: 10 20 20 20;
+}
+
+/* =========================
+   FOOTER BAR
+========================= */
+.page-footer {
+    -fx-padding: 12 20;
+
+    -fx-background-color: white;
+
+    -fx-border-color: #eef0f2;
+    -fx-border-width: 1 0 0 0;
+}
+
+
+/* ================= PROFILE CARD ================= */
+.profile-card {
+    -fx-padding: 20;
+    -fx-alignment: CENTER;
+
+    -fx-background-color: white;
+}
+
+/* PROFILE IMAGE */
+.profile-photo {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0.2, 0, 2);
+}
+
+/* ROLE TEXT */
+.profile-role {
+    -fx-text-fill: #800000;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* ================= SECTION CARD ================= */
+.section-card {
+    -fx-padding: 16;
+}
+
+/* SECTION TITLE */
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #800000;
+}
+
+/* ================= ACTION BAR ================= */
+.page-footer {
+    -fx-padding: 12 20;
+
+    -fx-background-color: white;
+
+    -fx-border-color: #eef0f2;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* BASE DIVIDER */
+.divider {
+    -fx-background-color: transparent;
+}
+
+/* HORIZONTAL LINE */
+.divider .divider-horizontal {
+    -fx-pref-height: 2px;          /* thickness */
+    -fx-max-height: 2px;
+    -fx-background-color: rgba(255,255,255,0.3);
+
+    /* margin equivalent */
+    -fx-padding: 6 0 6 0;          /* top right bottom left */
+}
+
+/* VERTICAL LINE */
+.divider-vertical {
+    -fx-pref-width: 2px;
+    -fx-max-width: 2px;
+    -fx-background-color: rgba(255,255,255,0.3);
+
+    -fx-padding: 0 6 0 6;
+}
+
+.floating-student-avatar {
+    -fx-background-color: white;
+
+    /* 🔲 square with rounded corners */
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+
+    -fx-border-color: #F4D27A;
+    -fx-border-width: 3;
+
+    -fx-min-width: 120;
+    -fx-min-height: 120;
+    -fx-pref-width: 120;
+    -fx-pref-height: 120;
+    -fx-max-width: 120;
+    -fx-max-height: 120;
+
+    -fx-alignment: center;
+
+    /* ✨ modern shadow */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 16, 0.2, 0, 6);
+}
+
+.floating-student-avatar-text {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #800000;
+}

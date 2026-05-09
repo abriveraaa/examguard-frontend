@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="14"
+      xmlns="http://javafx.com/javafx/17.0.12"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.examguard.controller.layout.ReactivationJustificationDialogController"
+      style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 14;">
+
+    <Label text="Reactivation Justification"
+           style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #302C29;" />
+
+    <Label fx:id="descriptionLabel"
+           text="Please provide justification."
+           wrapText="true"
+           style="-fx-text-fill: #7b7470;" />
+
+    <TextArea fx:id="justificationArea"
+              prefRowCount="6"
+              wrapText="true"
+              promptText="Enter justification here..." />
+
+    <Label fx:id="errorLabel"
+           style="-fx-text-fill: #b91c1c;" />
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Cancel" onAction="#handleCancel"
+                style="-fx-background-color: #302C29; -fx-text-fill: white; -fx-background-radius: 10;" />
+        <Button text="Confirm" onAction="#handleConfirm"
+                style="-fx-background-color: #800000; -fx-text-fill: white; -fx-background-radius: 10;" />
+    </HBox>
+</VBox>

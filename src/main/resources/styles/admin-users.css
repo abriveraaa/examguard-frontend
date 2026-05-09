@@ -1,0 +1,83 @@
+/* ================= ROOT TAB PANE ================= */
+.tab-pane {
+    -fx-background-color: transparent;
+}
+
+/* Remove default background */
+.tab-pane .tab-header-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.tab-pane .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+/* Space between tabs */
+.tab-pane .headers-region {
+    -fx-spacing: 24;
+}
+
+/* Remove focus glow */
+.tab-pane .focus-indicator {
+    -fx-border-color: transparent;
+}
+
+/* ================= TAB BASE ================= */
+.tab {
+    -fx-background-color: transparent;
+    -fx-padding: 10 20;
+    -fx-cursor: hand;
+
+    /* DEFAULT UNDERLINE (GRAY FULL WIDTH) */
+    -fx-border-color: transparent transparent #d1d5db transparent;
+    -fx-border-width: 0 0 2 0;
+}
+
+/* Remove default selected background */
+.tab:selected {
+    -fx-background-color: transparent;
+
+    /* ACTIVE UNDERLINE (PUP MAROON) */
+    -fx-border-color: transparent transparent #800000 transparent;
+    -fx-border-width: 0 0 3 0;
+}
+
+/* ================= TEXT ================= */
+
+/* Inactive */
+.tab-pane .tab .tab-label {
+    -fx-text-fill: #7b7470;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+/* Hover */
+.tab-pane .tab:hover .tab-label {
+    -fx-text-fill: #4b4541;
+}
+
+/* Active */
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #800000;
+    -fx-font-weight: bold;
+}
+
+/* ================= REMOVE DEFAULT EFFECTS ================= */
+
+/* Remove weird background layers */
+.tab-pane .tab-content-area {
+    -fx-background-color: transparent;
+}
+
+/* Optional: smoother visual feel */
+.tab-pane .tab {
+    -fx-background-insets: 0;
+}
+
+/* ================= OPTIONAL POLISH ================= */
+
+/* Slight bottom gap so underline breathes */
+.tab-pane .tab-header-area {
+    -fx-padding: 0 0 5 0;
+}

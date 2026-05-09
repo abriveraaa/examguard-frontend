@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<StackPane fx:id="examRoot"
+           prefWidth="Infinity"
+           prefHeight="Infinity"
+           xmlns="http://javafx.com/javafx/17.0.12"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.examguard.controller.student.ExamTakingController"
+           stylesheets="/styles/exam-taking.css"
+           styleClass="exam-root">
+
+    <!-- EXAM LOBBY -->
+    <BorderPane fx:id="lobbyView"
+                styleClass="exam-lobby">
+
+        <top>
+            <HBox alignment="CENTER_LEFT" spacing="16" styleClass="exam-topbar">
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="ExamGuard Lobby" styleClass="exam-title"/>
+                    <Label text="Complete all system and environment checks before starting your exam."
+                           styleClass="exam-subtitle"/>
+                </VBox>
+
+                <Label text="Not Started" styleClass="timer-label"/>
+            </HBox>
+        </top>
+
+        <center>
+            <VBox alignment="CENTER" spacing="22" styleClass="lobby-center">
+
+                <VBox alignment="CENTER" spacing="8">
+                    <Label fx:id="lobbyExamTitleLabel"
+                           text="Exam Title"
+                           styleClass="lobby-title"/>
+
+                    <Label fx:id="lobbyExamSubtitleLabel"
+                           text="Prepare your device, camera, and testing area."
+                           styleClass="lobby-subtitle"/>
+                </VBox>
+
+                <HBox alignment="CENTER" spacing="18" styleClass="lobby-checks-row">
+
+                    <VBox spacing="12" styleClass="lobby-check-card">
+                        <Label text="Camera Test" styleClass="lobby-check-title"/>
+                        <Label text="Make sure your face is clearly visible before starting."
+                               wrapText="true"
+                               styleClass="lobby-check-description"/>
+                        <CheckBox fx:id="cameraCheckBox"
+                                  text="My camera is working"
+                                  styleClass="lobby-check-box"/>
+                    </VBox>
+
+                    <VBox spacing="12" styleClass="lobby-check-card">
+                        <Label text="Internet Speed" styleClass="lobby-check-title"/>
+                        <Label text="Confirm that your connection is stable enough for monitoring."
+                               wrapText="true"
+                               styleClass="lobby-check-description"/>
+                        <CheckBox fx:id="speedCheckBox"
+                                  text="My connection is stable"
+                                  styleClass="lobby-check-box"/>
+                    </VBox>
+
+                    <VBox spacing="12" styleClass="lobby-check-card">
+                        <Label text="Clean Desk Setup" styleClass="lobby-check-title"/>
+                        <Label text="Remove notes, phones, extra devices, and other materials."
+                               wrapText="true"
+                               styleClass="lobby-check-description"/>
+                        <CheckBox fx:id="deskCheckBox"
+                                  text="My desk is clear"
+                                  styleClass="lobby-check-box"/>
+                    </VBox>
+
+                </HBox>
+
+                <VBox spacing="10" styleClass="lobby-rules-card">
+                    <Label text="Before You Begin" styleClass="lobby-section-title"/>
+
+                    <Label text="• Stay in full screen mode during the exam." styleClass="lobby-rule-text"/>
+                    <Label text="• Do not switch tabs, open other applications, or use other devices." styleClass="lobby-rule-text"/>
+                    <Label text="• Keep your face visible and stay in a quiet testing area." styleClass="lobby-rule-text"/>
+                    <Label text="• Your exam may be submitted automatically when time runs out." styleClass="lobby-rule-text"/>
+
+                    <CheckBox fx:id="agreementCheckBox"
+                              text="I understand and agree to follow the exam rules."
+                              styleClass="lobby-agreement-check"/>
+                </VBox>
+
+                <HBox alignment="CENTER_RIGHT" spacing="12" styleClass="lobby-actions">
+                    <Button fx:id="cancelLobbyButton"
+                            text="Cancel"
+                            onAction="#handleCancelLobby"
+                            styleClass="outline-button"/>
+
+                    <Button fx:id="beginExamButton"
+                            text="Begin Exam"
+                            onAction="#handleBeginExamFromLobby"
+                            disable="true"
+                            styleClass="primary-button"/>
+                </HBox>
+
+            </VBox>
+        </center>
+
+    </BorderPane>
+
+    <!-- ACTUAL EXAM CONTENT -->
+    <BorderPane fx:id="examContent"
+                visible="false"
+                managed="false">
+
+        <top>
+            <HBox alignment="CENTER_LEFT" spacing="16" styleClass="exam-topbar">
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="examTitleLabel" styleClass="exam-title"/>
+                    <Label fx:id="examSubtitleLabel" styleClass="exam-subtitle"/>
+                </VBox>
+
+                <Label fx:id="timerLabel" styleClass="timer-label"/>
+
+                <Button fx:id="submitButton"
+                        text="Submit Exam"
+                        onAction="#handleSubmitExam"
+                        styleClass="submit-button"/>
+            </HBox>
+        </top>
+
+        <left>
+            <VBox spacing="14" styleClass="question-sidebar">
+                <Label text="Questions" styleClass="sidebar-title"/>
+
+                <FlowPane fx:id="questionNumberPane"
+                          hgap="8"
+                          vgap="8"
+                          prefWrapLength="210"/>
+
+                <Separator/>
+
+                <Region VBox.vgrow="ALWAYS"/>
+
+                <VBox spacing="4" styleClass="progress-card">
+                    <Label fx:id="answeredCountLabel" styleClass="progress-text"/>
+                    <Label fx:id="markedCountLabel" styleClass="progress-subtext"/>
+                </VBox>
+            </VBox>
+        </left>
+
+        <center>
+            <VBox spacing="18" styleClass="exam-content">
+                <HBox alignment="CENTER_LEFT">
+                    <VBox spacing="3" HBox.hgrow="ALWAYS">
+                        <Label fx:id="questionNumberLabel" styleClass="question-number-label"/>
+                        <Label fx:id="questionTypeLabel" styleClass="question-type-label"/>
+                    </VBox>
+
+                    <Button fx:id="markReviewButton"
+                            text="Mark for Review"
+                            onAction="#handleMarkForReview"
+                            styleClass="outline-button"/>
+                </HBox>
+
+                <VBox spacing="18"
+                      styleClass="question-card"
+                      fillWidth="true"
+                      maxWidth="Infinity"
+                      VBox.vgrow="ALWAYS">
+
+                    <Label fx:id="questionTextLabel"
+                           wrapText="true"
+                           styleClass="question-text"/>
+
+                    <StackPane fx:id="questionImageWrapper"
+                               visible="false"
+                               managed="false"
+                               alignment="CENTER"
+                               styleClass="question-image-wrapper">
+
+                        <ImageView fx:id="questionImageView"
+                                   fitWidth="640"
+                                   fitHeight="320"
+                                   preserveRatio="true"
+                                   smooth="true"
+                                   styleClass="question-image"/>
+                    </StackPane>
+
+                    <VBox fx:id="answerContainer"
+                          maxWidth="Infinity"
+                          fillWidth="true"
+                          spacing="12"
+                          VBox.vgrow="ALWAYS"/>
+                </VBox>
+
+                <HBox alignment="CENTER_RIGHT" spacing="10" styleClass="exam-footer">
+                    <Button fx:id="previousButton"
+                            text="Previous"
+                            onAction="#handlePrevious"
+                            styleClass="outline-button"/>
+
+                    <Button fx:id="nextButton"
+                            text="Next"
+                            onAction="#handleNext"
+                            styleClass="primary-button"/>
+                </HBox>
+            </VBox>
+        </center>
+
+    </BorderPane>
+
+    <!-- VIOLATION OVERLAY -->
+    <StackPane fx:id="violationOverlay"
+               visible="false"
+               managed="false"
+               mouseTransparent="true"
+               alignment="CENTER"
+               styleClass="violation-overlay">
+
+        <VBox alignment="CENTER" spacing="8">
+            <Label fx:id="violationTitleLabel"
+                   text="Violation Detected"
+                   styleClass="violation-title"/>
+
+            <Label fx:id="violationMessageLabel"
+                   text="Multiple faces detected"
+                   wrapText="true"
+                   styleClass="violation-message"/>
+        </VBox>
+
+    </StackPane>
+
+</StackPane>

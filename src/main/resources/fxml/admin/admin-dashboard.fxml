@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox maxWidth="Infinity"
+      maxHeight="Infinity"
+      spacing="16.0"
+      xmlns="http://javafx.com/javafx/17.0.12"
+      xmlns:fx="http://javafx.com/fxml/1">
+
+    <!-- ================= STATS ================= -->
+    <HBox maxWidth="Infinity" spacing="12.0">
+
+        <children>
+
+            <VBox alignment="CENTER_LEFT"
+                  maxWidth="Infinity"
+                  spacing="6.0"
+                  style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 10;"
+                  HBox.hgrow="ALWAYS">
+                <Label text="Active Exams" />
+                <Label text="12"
+                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #800000;" />
+            </VBox>
+
+            <VBox alignment="CENTER_LEFT"
+                  maxWidth="Infinity"
+                  spacing="6.0"
+                  style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 10;"
+                  HBox.hgrow="ALWAYS">
+                <Label text="Ongoing Students" />
+                <Label text="1,284"
+                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #800000;" />
+            </VBox>
+
+            <VBox alignment="CENTER_LEFT"
+                  maxWidth="Infinity"
+                  spacing="6.0"
+                  style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 10;"
+                  HBox.hgrow="ALWAYS">
+                <Label text="Violations Today" />
+                <Label text="9"
+                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #800000;" />
+            </VBox>
+
+            <VBox alignment="CENTER_LEFT"
+                  maxWidth="Infinity"
+                  spacing="6.0"
+                  style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 10;"
+                  HBox.hgrow="ALWAYS">
+                <Label text="Flagged Sessions" />
+                <Label text="3"
+                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #800000;" />
+            </VBox>
+
+        </children>
+    </HBox>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <SplitPane dividerPositions="0.72"
+               maxWidth="Infinity"
+               maxHeight="Infinity"
+               VBox.vgrow="ALWAYS">
+
+        <items>
+
+            <VBox maxWidth="Infinity"
+                  maxHeight="Infinity"
+                  spacing="10.0"
+                  style="-fx-background-color: white; -fx-padding: 16; -fx-background-radius: 12;">
+
+                <Label text="Live Exam Monitoring"
+                       style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+
+                <TableView maxWidth="Infinity"
+                           maxHeight="Infinity"
+                           VBox.vgrow="ALWAYS" />
+            </VBox>
+
+            <VBox maxWidth="360.0"
+                  minWidth="280.0"
+                  prefWidth="320.0"
+                  maxHeight="Infinity"
+                  spacing="12.0">
+
+                <VBox spacing="8.0"
+                      style="-fx-background-color: white; -fx-padding: 16; -fx-background-radius: 12;"
+                      VBox.vgrow="ALWAYS">
+
+                    <Label text="Security Alerts"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+
+                    <ListView maxWidth="Infinity"
+                              maxHeight="Infinity"
+                              VBox.vgrow="ALWAYS" />
+                </VBox>
+
+                <VBox maxHeight="145.0"
+                      prefHeight="145.0"
+                      spacing="6.0"
+                      style="-fx-background-color: white; -fx-padding: 16; -fx-background-radius: 12;">
+
+                    <Label text="System Status"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+
+                    <Label text="AI Detection: Active" />
+                    <Label text="Camera Tracking: Online" />
+                    <Label text="Database: Connected" />
+                    <Label text="Server: Stable" />
+                </VBox>
+            </VBox>
+
+        </items>
+    </SplitPane>
+
+</VBox>

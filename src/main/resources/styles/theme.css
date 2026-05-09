@@ -1,0 +1,42 @@
+.root {
+
+    /* ================= BRAND ================= */
+    -pup-maroon: #800000;
+    -pup-maroon-dark: #650000;
+    -pup-gold: #C9A227;
+
+    /* ================= GLOBAL UI ================= */
+    -bg: #f9fafb;
+    -card: #ffffff;
+    -text: #1c1e21;
+    -muted: #6b7280;
+    -border: #e5e7eb;
+
+    /* ================= ACCENTS ================= */
+    -info: #2563eb;
+    -success: #16a34a;
+    -warning: #f59e0b;
+    -danger: #dc2626;
+}
+
+/* 🔲 Main DatePicker container */
+.date-picker {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+/* 🧾 Inner text field */
+.date-picker .text-field {
+    -fx-background-radius: 10 0 0 10;
+    -fx-border-radius: 10 0 0 10;
+}
+
+/* 📅 Calendar button (right side) */
+.date-picker .arrow-button {
+    -fx-background-radius: 0 10 10 0;
+}
+
+/* 🧩 Arrow button background */
+.date-picker .arrow-button .arrow {
+    -fx-background-color: #650000; /* optional icon color */
+}
