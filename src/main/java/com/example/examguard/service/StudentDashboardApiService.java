@@ -1,6 +1,6 @@
 package com.example.examguard.service;
 
-import com.example.examguard.model.student.response.StudentDashboardResponse;
+import com.example.examguard.model.student.StudentDashboardResponse;
 import com.example.examguard.utility.Session;
 import com.google.gson.Gson;
 

@@ -1,7 +1,7 @@
 package com.example.examguard.model.faculty.response;
 
-import com.example.examguard.model.faculty.FacultyAttemptAnswerReviewDTO;
-import com.example.examguard.model.faculty.FacultyAttemptViolationDTO;
+import com.example.examguard.model.exam.dto.ExamAttemptAnswerReviewDTO;
+import com.example.examguard.model.exam.dto.ExamAttemptViolationDTO;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -17,8 +17,8 @@ public class FacultyAttemptReviewResponse {
     private Boolean needsChecking;
     private OffsetDateTime startedAt;
     private OffsetDateTime submittedAt;
-    private List<FacultyAttemptAnswerReviewDTO> answers;
-    private List<FacultyAttemptViolationDTO> generalViolations;
+    private List<ExamAttemptAnswerReviewDTO> answers;
+    private List<ExamAttemptViolationDTO> generalViolations;
 
     public Long getAttemptId() { return attemptId; }
     public Long getExamId() { return examId; }
@@ -29,6 +29,6 @@ public class FacultyAttemptReviewResponse {
     public Boolean getNeedsChecking() { return needsChecking; }
     public OffsetDateTime getStartedAt() { return startedAt; }
     public OffsetDateTime getSubmittedAt() { return submittedAt; }
-    public List<FacultyAttemptAnswerReviewDTO> getAnswers() { return answers; }
-    public List<FacultyAttemptViolationDTO> getGeneralViolations() { return generalViolations; }
+    public List<ExamAttemptAnswerReviewDTO> getAnswers() { return answers; }
+    public List<ExamAttemptViolationDTO> getGeneralViolations() { return generalViolations; }
 }

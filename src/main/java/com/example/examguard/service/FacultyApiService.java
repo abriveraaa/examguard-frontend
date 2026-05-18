@@ -1,6 +1,11 @@
 package com.example.examguard.service;
 
-import com.example.examguard.model.faculty.*;
+import com.example.examguard.model.exam.dto.ExamActivityLogDTO;
+import com.example.examguard.model.exam.dto.ExamLeaderboardDTO;
+import com.example.examguard.model.exam.dto.ExamStudentViolationDTO;
+import com.example.examguard.model.exam.request.EssayReviewRequest;
+import com.example.examguard.model.exam.result.ExamResult;
+import com.example.examguard.model.faculty.dto.*;
 import com.example.examguard.model.faculty.request.FacultyUpdateAnswerScoreRequest;
 import com.example.examguard.model.faculty.response.*;
 import com.example.examguard.utility.OffsetDateTimeAdapter;
@@ -10,7 +15,6 @@ import com.google.gson.GsonBuilder;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -29,11 +33,9 @@ public class FacultyApiService {
             )
             .create();
 
+
     public FacultyDashboardResponse getDashboard() throws Exception {
-        return get(
-                "/faculty/dashboard",
-                FacultyDashboardResponse.class
-        );
+        return get("/faculty/dashboard", FacultyDashboardResponse.class);
     }
 
     public FacultyProfileDTO getDashboardProfile() throws Exception {
@@ -49,25 +51,6 @@ public class FacultyApiService {
                 "/faculty/dashboard/active-exams",
                 FacultyExamSummaryDTO[].class
         );
-    }
-
-    public FacultyAttemptReviewResponse getStudentAttemptReview(
-            Long examId,
-            String studentId
-    ) throws Exception {
-        return get(
-                "/faculty/exams/" + examId + "/students/" + studentId + "/review",
-                FacultyAttemptReviewResponse.class
-        );
-    }
-
-    public List<FacultyActivityLogDTO> getExamActivityLogs(Long examId) throws Exception {
-        FacultyActivityLogDTO[] result = get(
-                "/faculty/exams/" + examId + "/activity-logs",
-                FacultyActivityLogDTO[].class
-        );
-
-        return Arrays.asList(result);
     }
 
     public List<FacultyViolationReviewDTO> getDashboardNeedsReview() throws Exception {
@@ -107,82 +90,6 @@ public class FacultyApiService {
         );
 
         return Arrays.asList(result);
-    }
-
-
-
-    public FacultyExamDetailResponse getExamDetail(Long examId) throws Exception {
-        return get(
-                "/faculty/exams/" + examId,
-                FacultyExamDetailResponse.class
-        );
-    }
-
-    public SimpleMessageResponse updateAnswerScore(
-            Long answerId,
-            double pointsAwarded
-    ) throws Exception {
-
-        FacultyUpdateAnswerScoreRequest request =
-                new FacultyUpdateAnswerScoreRequest(
-                        java.math.BigDecimal.valueOf(pointsAwarded)
-                );
-
-        return post(
-                "/faculty/answers/" + answerId + "/score",
-                request,
-                SimpleMessageResponse.class
-        );
-    }
-
-    public List<FacultyExamStudentDTO> getExamStudents(Long examId) throws Exception {
-        FacultyExamStudentDTO[] result = get(
-                "/faculty/exams/" + examId + "/students",
-                FacultyExamStudentDTO[].class
-        );
-
-        return Arrays.asList(result);
-    }
-
-    public List<FacultySubmissionSummaryDTO> getExamSubmissions(Long examId) throws Exception {
-        FacultySubmissionSummaryDTO[] result = get(
-                "/faculty/exams/" + examId + "/submissions",
-                FacultySubmissionSummaryDTO[].class
-        );
-
-        return Arrays.asList(result);
-    }
-
-    public List<FacultyStudentViolationDTO> getExamViolations(Long examId) throws Exception {
-        FacultyStudentViolationDTO[] result = get(
-                "/faculty/exams/" + examId + "/violations",
-                FacultyStudentViolationDTO[].class
-        );
-
-        return Arrays.asList(result);
-    }
-
-    public List<FacultyLeaderboardDTO> getExamLeaderboard(Long examId) throws Exception {
-        FacultyLeaderboardDTO[] result = get(
-                "/faculty/exams/" + examId + "/leaderboard",
-                FacultyLeaderboardDTO[].class
-        );
-
-        return Arrays.asList(result);
-    }
-
-    public SimpleMessageResponse markAttemptReviewed(Long attemptId) throws Exception {
-        return post(
-                "/faculty/attempts/" + attemptId + "/mark-reviewed",
-                SimpleMessageResponse.class
-        );
-    }
-
-    public SimpleMessageResponse releaseResults(Long examId) throws Exception {
-        return post(
-                "/faculty/exams/" + examId + "/release-results",
-                SimpleMessageResponse.class
-        );
     }
 
     private <T> T get(String endpoint, Class<T> responseType) throws Exception {
@@ -277,7 +184,6 @@ public class FacultyApiService {
 
         connection.setRequestMethod(method);
         connection.setRequestProperty("Content-Type", "application/json");
-
         connection.setRequestProperty("X-User-Id", Session.getSchoolId());
         connection.setRequestProperty("X-Role", Session.getRole());
 

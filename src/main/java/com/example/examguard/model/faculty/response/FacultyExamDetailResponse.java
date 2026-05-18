@@ -1,6 +1,6 @@
 package com.example.examguard.model.faculty.response;
 
-import com.example.examguard.model.faculty.FacultyClassDTO;
+import com.example.examguard.model.faculty.dto.FacultyClassDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 

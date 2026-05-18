@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.examguard.controller.student.StudentResultsWorkspaceController"
+            stylesheets="@../../styles/student-exam.css"
+            styleClass="student-results-root">
+
+    <top>
+        <VBox spacing="12" styleClass="student-results-header">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+
+                <Button fx:id="backButton"
+                        text="← Back"
+                        onAction="#handleBack"
+                        styleClass="results-back-button"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <Button fx:id="printReportButton"
+                        text="🖨Print Report"
+                        styleClass="results-print-button"/>
+            </HBox>
+
+            <HBox spacing="18" alignment="CENTER_LEFT">
+                <VBox spacing="5" HBox.hgrow="ALWAYS">
+                    <Label fx:id="examTitleLabel" styleClass="results-title"/>
+                    <Label fx:id="courseLabel" styleClass="results-course"/>
+                    <Label fx:id="metaLabel" styleClass="results-meta"/>
+                </VBox>
+
+                <VBox spacing="4" alignment="CENTER_RIGHT" styleClass="results-score-card">
+                    <Label text="Final Score" styleClass="results-score-caption"/>
+                    <Label fx:id="scoreLabel" styleClass="results-score-main"/>
+                    <Label fx:id="percentageLabel" styleClass="results-score-percent"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="results-scroll">
+            <VBox fx:id="questionContainer"
+                  spacing="16"
+                  styleClass="results-question-container"/>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

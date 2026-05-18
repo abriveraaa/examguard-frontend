@@ -1,6 +1,7 @@
 package com.example.examguard.controller.layout;
 
 import com.example.examguard.controller.admin.ExamManagementController;
+import com.example.examguard.controller.student.StudentExamsController;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -28,7 +29,7 @@ public class DashboardShellController {
     @FXML private Label greetingTitleLabel;
     @FXML private Label greetingSubtitleLabel;
     @FXML private StackPane heroPane;
-    @FXML private ImageView bgImage;
+    @FXML private ImageView bannerImage;
     @FXML private StackPane contentHolder;
     @FXML private HBox heroCardsContainer;
 
@@ -45,10 +46,8 @@ public class DashboardShellController {
         clip.heightProperty().bind(heroPane.heightProperty());
         heroPane.setClip(clip);
 
-        bgImage.fitWidthProperty().bind(heroPane.widthProperty());
+        bannerImage.fitWidthProperty().bind(heroPane.widthProperty());
 
-//        floatingStudentAvatar.setVisible(false);
-//        floatingStudentAvatar.setManaged(false);
     }
 
     public void setAvatarLetter(String letter) {
@@ -60,9 +59,16 @@ public class DashboardShellController {
         greetingSubtitleLabel.setText(subtitle);
     }
 
-    public void loadContent(String fxmlPath) {
+    public Object loadContent(String fxmlPath) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            var resource = getClass().getResource(fxmlPath);
+
+            if (resource == null) {
+                System.out.println("FXML not found: " + fxmlPath);
+                return null;
+            }
+
+            FXMLLoader loader = new FXMLLoader(resource);
             Node content = loader.load();
 
             boolean isFullWidthPage =
@@ -83,6 +89,12 @@ public class DashboardShellController {
             } else {
                 contentHolder.setPadding(new Insets(16, 16, 16, 16));
                 contentHolder.setStyle("-fx-padding: 16 16 16 16; -fx-background-color: rgb(251, 249, 248);");
+
+                StackPane.setAlignment(content, Pos.TOP_LEFT);
+
+                if (content instanceof Region region) {
+                    region.prefWidthProperty().bind(contentHolder.widthProperty());
+                }
             }
 
             contentHolder.getChildren().setAll(content);
@@ -95,9 +107,12 @@ public class DashboardShellController {
                 shellAwareController.setShellController(this);
             }
 
-        } catch (IOException e) {
+            return controller;
+
+        } catch (Exception e) {
             System.out.println("Failed to load: " + fxmlPath);
             e.printStackTrace();
+            return null;
         }
     }
 
@@ -105,7 +120,8 @@ public class DashboardShellController {
         boolean hideHero =
                 fxmlPath.contains("create-exam") ||
                         fxmlPath.contains("edit-exam") ||
-                        fxmlPath.contains("question-editor");
+                        fxmlPath.contains("question-editor") ||
+                        fxmlPath.contains("admin-monitoring");
 
         heroPane.setVisible(!hideHero);
         heroPane.setManaged(!hideHero);
@@ -234,24 +250,14 @@ public class DashboardShellController {
         switch (activePage) {
             case "Home":
                 setGreeting("Welcome, " + name, "Monitor exams, violations, and manage users and system.");
-                setHeroCards(
-                        new HeroCardData("Active Exams", "24"),
-                        new HeroCardData("Users", "1,240"),
-                        new HeroCardData("Alerts", "8")
-                );
                 loadContent("/fxml/admin/admin-dashboard.fxml");
+                hideHeroCards();
                 break;
 
             case "Users":
                 setGreeting("User Management", "Manage faculty, student, and admin access.");
-                setHeroCards(
-                        new HeroCardData("Admins", "0"),
-                        new HeroCardData("Faculty", "0"),
-                        new HeroCardData("Students", "0"),
-                        new HeroCardData("Blocked", "0"),
-                        new HeroCardData("Active", "0")
-                );
                 loadContent("/fxml/admin/admin-users.fxml");
+                hideHeroCards();
                 break;
 
             case "Exams":
@@ -264,24 +270,10 @@ public class DashboardShellController {
                 loadContent("/fxml/exam/exam-management.fxml");
                 break;
 
-            case "Violations":
-                setGreeting("Violation Monitoring", "Review suspicious activity and flagged sessions.");
-                setHeroCards(
-                        new HeroCardData("Open Alerts", "8"),
-                        new HeroCardData("Pending", "14"),
-                        new HeroCardData("Resolved", "67")
-                );
-                loadContent("/fxml/admin/admin-violations.fxml");
-                break;
-
-            case "Reports":
-                setGreeting("Reports", "Analyze exam results, security trends, and performance.");
-                setHeroCards(
-                        new HeroCardData("Generated", "28"),
-                        new HeroCardData("Monthly", "12"),
-                        new HeroCardData("Archived", "143")
-                );
-                loadContent("/fxml/admin/admin-reports.fxml");
+            case "Monitoring":
+                setGreeting("Monitoring", "View system activity, violations, sessions, and concurrent usage.");
+                hideHeroCards();
+                loadContent("/fxml/admin/admin-monitoring.fxml");
                 break;
 
             case "Settings":
@@ -364,21 +356,18 @@ public class DashboardShellController {
             case "Home":
                 setGreeting("Welcome, " + name, null);
                 loadContent("/fxml/student/student-dashboard.fxml");
+                hideHeroCards();
                 break;
-
             case "Exams":
                 setGreeting("My Exams", "See your available and ongoing examinations.");
-                loadContent("/fxml/student/student-exam.fxml");
-                break;
-
-            case "Results":
-                setGreeting("Results", "Review completed exams and performance summaries.");
+                openStudentExamsPage();
                 setHeroCards(
-                        new HeroCardData("Passed", "10"),
-                        new HeroCardData("Failed", "2"),
-                        new HeroCardData("Average", "89%")
+                        new HeroCardData("Ongoing", "..."),
+                        new HeroCardData("Upcoming", "..."),
+                        new HeroCardData("Pending Review", "..."),
+                        new HeroCardData("Results Released", "..."),
+                        new HeroCardData("Did Not Take", "...")
                 );
-                loadContent("/fxml/student/student-results.fxml");
                 break;
 
             default:
@@ -395,8 +384,7 @@ public class DashboardShellController {
                 pages.put("Home", "");
                 pages.put("Users", "");
                 pages.put("Exams", "");
-                pages.put("Violations", "");
-                pages.put("Reports", "");
+                pages.put("Monitoring", "");
                 pages.put("Settings", "");
                 break;
 
@@ -411,11 +399,24 @@ public class DashboardShellController {
             case "STUDENT":
                 pages.put("Home", "");
                 pages.put("Exams", "");
-                pages.put("Results", "");
                 break;
         }
 
         return pages;
+    }
+
+    public void setWorkspaceContent(Parent content) {
+
+        contentHolder.setPadding(Insets.EMPTY);
+
+        contentHolder.getChildren().setAll(content);
+
+        StackPane.setAlignment(content, Pos.TOP_LEFT);
+
+        if (content instanceof Region region) {
+            region.prefWidthProperty().bind(contentHolder.widthProperty());
+            region.prefHeightProperty().bind(contentHolder.heightProperty());
+        }
     }
 
     @FXML
@@ -553,6 +554,45 @@ public class DashboardShellController {
         }
     }
 
+    public void openStudentExamsPage() {
+
+        Object controller = loadContent("/fxml/student/student-exam.fxml");
+
+        if (controller instanceof StudentExamsController studentExamsController) {
+            studentExamsController.applyInitialFilter("ALL");
+        }
+    }
+
+    public void openStudentExamsPageWithFilter(String filter) {
+
+        activePage = "Exams";
+
+        buildNavigation();
+
+        setGreeting(
+                "My Exams",
+                "See your available and ongoing examinations."
+        );
+
+        setHeroCards(
+                new HeroCardData("Ongoing", "..."),
+                new HeroCardData("Upcoming", "..."),
+                new HeroCardData("Pending Review", "..."),
+                new HeroCardData("Results Released", "..."),
+                new HeroCardData("Did Not Take", "...")
+        );
+
+        Object controller = loadContent("/fxml/student/student-exam.fxml");
+
+        if (controller instanceof StudentExamsController studentExamsController) {
+            studentExamsController.applyInitialFilter(filter);
+        }
+    }
+
+    // ========
+    // HELPER
+    // ========
+
     public static class HeroCardData {
         private final String title;
         private final String value;
@@ -590,8 +630,6 @@ public class DashboardShellController {
         heroPane.setVisible(true);
         heroPane.setManaged(true);
     }
-
-
 
     public void updateHeroCards(HeroCardData... cards) {
         setHeroCards(cards);

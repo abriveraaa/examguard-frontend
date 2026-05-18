@@ -1,6 +1,7 @@
 package com.example.examguard.model.exam.take;
 
 import com.example.examguard.model.enums.QuestionType;
+import com.example.examguard.model.exam.request.EssayRubricRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,8 @@ public class ExamTakeQuestion {
     private String questionImageUrl;
     private List<ExamTakeChoice> choices = new ArrayList<>();
     private int points;
-
+    private String questionInstruction;
+    private List<EssayRubricRequest> rubrics;
     private String studentAnswer;
     private boolean markedForReview;
 
@@ -22,13 +24,17 @@ public class ExamTakeQuestion {
     }
 
     public ExamTakeQuestion(Long questionId, int questionNumber, QuestionType questionType,
-                            String questionText, List<ExamTakeChoice> choices, int points) {
+                            String questionText, List<ExamTakeChoice> choices, int points,
+                            String questionInstruction,
+                            List<EssayRubricRequest> rubrics) {
         this.questionId = questionId;
         this.questionNumber = questionNumber;
         this.questionType = questionType;
         this.questionText = questionText;
         this.choices = choices;
         this.points = points;
+        this.questionInstruction = questionInstruction;
+        this.rubrics = rubrics;
     }
 
     public boolean isAnswered() {
@@ -98,6 +104,18 @@ public class ExamTakeQuestion {
     public void setPoints(int points) {
         this.points = points;
     }
+
+    public String getQuestionInstruction() {
+        return questionInstruction;
+    }
+
+    public void setQuestionInstruction(String questionInstruction) {
+        this.questionInstruction = questionInstruction;
+    }
+
+    public List<EssayRubricRequest> getRubrics() { return rubrics; }
+
+    public void setRubrics(List<EssayRubricRequest> rubrics) { this.rubrics = rubrics; }
 
     public void setStudentAnswer(String studentAnswer) {
         this.studentAnswer = studentAnswer;

@@ -2,7 +2,12 @@ package com.example.examguard.controller.exam;
 
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
-import com.example.examguard.model.exam.*;
+import com.example.examguard.model.core.ClassOffering;
+import com.example.examguard.model.exam.request.*;
+import com.example.examguard.model.exam.response.ExamResponse;
+import com.example.examguard.model.exam.response.ImageUploadResponse;
+import com.example.examguard.model.exam.response.UploadExamTemplateResponse;
+import com.example.examguard.model.exam.result.ExamResult;
 import com.example.examguard.service.ExamApiService;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -183,7 +188,9 @@ public class CreateExamController implements ShellAwareController {
     private ComboBox<String> correctChoiceComboBox;
     private ComboBox<String> trueFalseComboBox;
     private TextField identificationAnswerField;
-    private TextArea essayGuideArea;
+    private TextArea questionInstructionArea;
+    private VBox rubricRowsBox;
+    private Label rubricTotalLabel;
 
     private WizardMode wizardMode = WizardMode.CREATE;
     private Long editingExamId;
@@ -405,6 +412,8 @@ public class CreateExamController implements ShellAwareController {
             row.setQuestionImagePath(preview.getQuestionImageUrl());
             row.setPoints(preview.getPoints() == null ? 1 : preview.getPoints().intValue());
             row.setCorrectAnswer(preview.getCorrectAnswer());
+            row.setQuestionInstruction(preview.getQuestionInstruction());
+            row.setRubrics(convertRubrics(preview.getRubrics()));
             row.setUsesImages(!isBlank(preview.getQuestionImageUrl()));
             row.setImageStatus(hasImage(row.getQuestionImagePath()) ? "Has image" : "No image");
             row.setViolationStatus("Default");
@@ -455,6 +464,30 @@ public class CreateExamController implements ShellAwareController {
         }
 
         updateQuestionCount();
+    }
+
+    private List<EssayRubricRequest> convertRubrics(
+            List<ExamResponse.EssayRubricResponse> responses
+    ) {
+        List<EssayRubricRequest> result = new ArrayList<>();
+
+        if (responses == null || responses.isEmpty()) {
+            return result;
+        }
+
+        for (ExamResponse.EssayRubricResponse response : responses) {
+            EssayRubricRequest request = new EssayRubricRequest();
+
+            request.setRubricId(response.getRubricId());
+            request.setCriterionName(response.getCriterionName());
+            request.setWeightPercentage(response.getWeightPercentage());
+            request.setDescription(response.getDescription());
+            request.setDisplayOrder(response.getDisplayOrder());
+
+            result.add(request);
+        }
+
+        return result;
     }
 
     private void setWizardReadOnly(boolean readOnly) {
@@ -841,9 +874,27 @@ public class CreateExamController implements ShellAwareController {
             }
 
             for (QuestionDraftRow question : questionRows) {
+
                 if (!isQuestionComplete(question)) {
                     questionListView.getSelectionModel().select(question);
-                    validationLabel.setText("Please complete Question " + question.getQuestionNo() + " before continuing.");
+
+                    if ("ESSAY".equals(question.getQuestionType())
+                            && !isEssayRubricValidOrBlank(question)) {
+
+                        validationLabel.setText(
+                                "Essay rubric for Question "
+                                        + question.getQuestionNo()
+                                        + " must total exactly 100%."
+                        );
+
+                    } else {
+                        validationLabel.setText(
+                                "Please complete Question "
+                                        + question.getQuestionNo()
+                                        + " before continuing."
+                        );
+                    }
+
                     return;
                 }
             }
@@ -1198,6 +1249,8 @@ public class CreateExamController implements ShellAwareController {
             row.setQuestionText(request.getQuestionText());
             row.setQuestionType(request.getQuestionType());
             row.setPoints(request.getPoints() <= 0 ? 1 : request.getPoints());
+            row.setQuestionInstruction(request.getQuestionInstruction());
+            row.setRubrics(request.getRubrics());
             row.setViolationStatus("Default");
 
             if ("MULTIPLE_CHOICE".equalsIgnoreCase(request.getQuestionType())) {
@@ -1293,13 +1346,69 @@ public class CreateExamController implements ShellAwareController {
             return;
         }
 
-        if (!saveEditorToSelectedQuestion(true)) {
+        if (!saveEditorToSelectedQuestion(false)) {
+            return;
+        }
+
+        String rubricError = getEssayRubricError(selectedQuestion);
+
+        if (rubricError != null) {
+            validationLabel.setText(rubricError);
+            updateQuestionStatus();
+            questionListView.refresh();
+            return;
+        }
+
+        if (!isQuestionComplete(selectedQuestion)) {
+            validationLabel.setText("Please complete the required question details.");
+            updateQuestionStatus();
+            questionListView.refresh();
             return;
         }
 
         questionListView.refresh();
         updateQuestionStatus();
         validationLabel.setText("Question saved.");
+    }
+
+    private String getEssayRubricError(QuestionDraftRow question) {
+        if (question == null || !"ESSAY".equals(question.getQuestionType())) {
+            return null;
+        }
+
+        if (question.getRubrics() == null || question.getRubrics().isEmpty()) {
+            return null;
+        }
+
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        java.util.Set<String> names = new java.util.HashSet<>();
+
+        for (EssayRubricRequest rubric : question.getRubrics()) {
+            String name = rubric.getCriterionName();
+
+            if (isBlank(name)) {
+                return "Essay rubric criterion name cannot be blank.";
+            }
+
+            String normalizedName = name.trim().toLowerCase().replaceAll("\\s+", " ");
+
+            if (!names.add(normalizedName)) {
+                return "Essay rubric has duplicate criterion: " + name;
+            }
+
+            if (rubric.getWeightPercentage() == null ||
+                    rubric.getWeightPercentage().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                return "Essay rubric weights must be greater than 0.";
+            }
+
+            total = total.add(rubric.getWeightPercentage());
+        }
+
+        if (total.compareTo(new java.math.BigDecimal("100")) != 0) {
+            return "Essay rubric total must be exactly 100%. Current total: " + total + "%.";
+        }
+
+        return null;
     }
 
     @FXML
@@ -1324,7 +1433,6 @@ public class CreateExamController implements ShellAwareController {
         if (correctChoiceComboBox != null) correctChoiceComboBox.getSelectionModel().clearSelection();
         if (trueFalseComboBox != null) trueFalseComboBox.getSelectionModel().clearSelection();
         if (identificationAnswerField != null) identificationAnswerField.clear();
-        if (essayGuideArea != null) essayGuideArea.clear();
 
         selectedQuestion.setCorrectAnswer("");
         selectedQuestion.setCorrectChoiceIndex(-1);
@@ -1367,6 +1475,9 @@ public class CreateExamController implements ShellAwareController {
 
         copy.setCorrectAnswer(source.getCorrectAnswer());
         copy.setCorrectChoiceIndex(source.getCorrectChoiceIndex());
+
+        copy.setQuestionInstruction(source.getQuestionInstruction());
+        copy.setRubrics(new ArrayList<>(source.getRubrics()));
 
         questionRows.add(copy);
         renumberQuestions();
@@ -1469,6 +1580,16 @@ public class CreateExamController implements ShellAwareController {
                 createImagePickerBox("Question Image Optional", questionImagePathField)
         );
 
+        questionInstructionArea = new TextArea();
+        questionInstructionArea.setPromptText("Optional instruction, e.g. Answer in complete sentence.");
+        questionInstructionArea.setWrapText(true);
+        questionInstructionArea.setPrefRowCount(2);
+        questionInstructionArea.getStyleClass().add("modern-textarea");
+
+        dynamicAnswerContainer.getChildren().add(
+                createFieldBox("Question Instruction", questionInstructionArea)
+        );
+
         boolean showImages = useImagesCheckBox.isSelected();
         questionImageContainer.setVisible(showImages);
         questionImageContainer.setManaged(showImages);
@@ -1495,18 +1616,139 @@ public class CreateExamController implements ShellAwareController {
             );
 
         } else if ("ESSAY".equals(type)) {
-            essayGuideArea = new TextArea();
-            essayGuideArea.setPromptText("Optional rubric/guide");
-            essayGuideArea.setWrapText(true);
-            essayGuideArea.setPrefRowCount(4);
-            essayGuideArea.getStyleClass().add("modern-textarea");
-
-            dynamicAnswerContainer.getChildren().add(
-                    createFieldBox("Guide Answer", essayGuideArea)
-            );
+            dynamicAnswerContainer.getChildren().add(createRubricBuilder());
         }
 
         toggleChoiceImages(showImages);
+    }
+
+    private VBox createRubricBuilder() {
+        VBox box = new VBox(8);
+        box.getStyleClass().add("rubric-builder");
+
+        Label title = new Label("Essay Rubric");
+        title.getStyleClass().add("field-label");
+
+        rubricRowsBox = new VBox(6);
+
+        Button addButton = new Button("+ Add Criterion");
+        addButton.getStyleClass().add("outline-small-button");
+
+        rubricTotalLabel = new Label("Total: 0%");
+        rubricTotalLabel.getStyleClass().add("question-incomplete-text");
+
+        addButton.setOnAction(e -> addRubricRow("", ""));
+
+        box.getChildren().addAll(title, rubricRowsBox, addButton, rubricTotalLabel);
+
+        return box;
+    }
+
+    private void addRubricRow(String criterion, String weight) {
+        if (rubricRowsBox == null) return;
+
+        HBox row = new HBox(8);
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        TextField criterionField = new TextField(criterion);
+        criterionField.setPromptText("Criterion, e.g. Grammar");
+        criterionField.getStyleClass().add("modern-input");
+        HBox.setHgrow(criterionField, Priority.ALWAYS);
+
+        TextField weightField = new TextField(weight);
+        weightField.setPromptText("%");
+        weightField.setPrefWidth(80);
+        weightField.getStyleClass().add("modern-input");
+
+        Button removeButton = new Button("Remove");
+        removeButton.getStyleClass().add("danger-small-button");
+
+        criterionField.textProperty().addListener((obs, oldVal, newVal) -> updateRubricTotal());
+        weightField.textProperty().addListener((obs, oldVal, newVal) -> updateRubricTotal());
+
+        removeButton.setOnAction(e -> {
+            rubricRowsBox.getChildren().remove(row);
+            updateRubricTotal();
+        });
+
+        row.getChildren().addAll(criterionField, weightField, removeButton);
+        rubricRowsBox.getChildren().add(row);
+
+        updateRubricTotal();
+    }
+
+    private void updateRubricTotal() {
+        if (rubricRowsBox == null || rubricTotalLabel == null) return;
+
+        int total = 0;
+
+        for (Node node : rubricRowsBox.getChildren()) {
+            if (!(node instanceof HBox row)) continue;
+            if (row.getChildren().size() < 2) continue;
+
+            TextField weightField = (TextField) row.getChildren().get(1);
+
+            try {
+                total += Integer.parseInt(weightField.getText().trim());
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (total > 100) {
+            rubricTotalLabel.setText("Total: " + total + "% • Exceeds 100%");
+        } else if (total < 100) {
+            rubricTotalLabel.setText("Total: " + total + "% • Incomplete");
+        } else {
+            rubricTotalLabel.setText("Total: 100% • Valid");
+        }
+
+        rubricTotalLabel.getStyleClass().removeAll(
+                "question-complete-text",
+                "question-incomplete-text"
+        );
+
+        rubricTotalLabel.getStyleClass().add(
+                total == 100 ? "question-complete-text" : "question-incomplete-text"
+        );
+    }
+
+    private List<EssayRubricRequest> collectRubricsFromEditor() {
+        List<EssayRubricRequest> rubrics = new ArrayList<>();
+
+        if (rubricRowsBox == null) {
+            return rubrics;
+        }
+
+        int order = 1;
+
+        for (Node node : rubricRowsBox.getChildren()) {
+            if (!(node instanceof HBox row)) continue;
+            if (row.getChildren().size() < 2) continue;
+
+            TextField criterionField = (TextField) row.getChildren().get(0);
+            TextField weightField = (TextField) row.getChildren().get(1);
+
+            String criterion = safeText(criterionField);
+            String weightText = safeText(weightField);
+
+            if (isBlank(criterion) && isBlank(weightText)) {
+                continue;
+            }
+
+            EssayRubricRequest rubric = new EssayRubricRequest();
+            rubric.setCriterionName(criterion);
+            try {
+                rubric.setWeightPercentage(new java.math.BigDecimal(weightText));
+            } catch (Exception e) {
+                rubric.setWeightPercentage(java.math.BigDecimal.ZERO);
+            }
+            rubric.setDescription("");
+            rubric.setDisplayOrder(order++);
+
+            rubrics.add(rubric);
+        }
+
+        return rubrics;
     }
 
     private void renderMultipleChoiceFields() {
@@ -1578,7 +1820,10 @@ public class CreateExamController implements ShellAwareController {
         correctChoiceComboBox = null;
         trueFalseComboBox = null;
         identificationAnswerField = null;
-        essayGuideArea = null;
+
+        questionInstructionArea = null;
+        rubricRowsBox = null;
+        rubricTotalLabel = null;
     }
 
     private TextField createAnswerInput(String prompt) {
@@ -1797,6 +2042,9 @@ public class CreateExamController implements ShellAwareController {
         questionTextArea.setText(question.getQuestionText());
 
         renderAnswerFields(question.getQuestionType());
+        if (questionInstructionArea != null) {
+            questionInstructionArea.setText(question.getQuestionInstruction());
+        }
 
         if (useImagesCheckBox != null) {
             useImagesCheckBox.setSelected(question.isUsesImages());
@@ -1832,7 +2080,16 @@ public class CreateExamController implements ShellAwareController {
             identificationAnswerField.setText(question.getCorrectAnswer());
 
         } else if ("ESSAY".equals(question.getQuestionType())) {
-            essayGuideArea.setText(question.getCorrectAnswer());
+            if (question.getRubrics() != null && rubricRowsBox != null) {
+                for (EssayRubricRequest rubric : question.getRubrics()) {
+                    addRubricRow(
+                            rubric.getCriterionName(),
+                            rubric.getWeightPercentage() == null
+                                    ? ""
+                                    : rubric.getWeightPercentage().toPlainString()
+                    );
+                }
+            }
         }
 
         updateQuestionStatus();
@@ -1880,6 +2137,7 @@ public class CreateExamController implements ShellAwareController {
         selectedQuestion.setQuestionType(type);
         selectedQuestion.setQuestionText(questionTextArea.getText() == null ? "" : questionTextArea.getText().trim());
         selectedQuestion.setQuestionImagePath(questionImagePathField == null ? "" : safeText(questionImagePathField));
+        selectedQuestion.setQuestionInstruction( questionInstructionArea == null ? "" : safeText(questionInstructionArea));
         selectedQuestion.setPoints(points);
 
         selectedQuestion.setImageStatus(hasImage(selectedQuestion.getQuestionImagePath()) ? "Has image" : "No image");
@@ -1921,9 +2179,8 @@ public class CreateExamController implements ShellAwareController {
 
         } else if ("ESSAY".equals(type)) {
 
-            if (essayGuideArea != null) {
-                selectedQuestion.setCorrectAnswer(essayGuideArea.getText() == null ? "" : essayGuideArea.getText().trim());
-            }
+            selectedQuestion.setCorrectAnswer("");
+            selectedQuestion.setRubrics(collectRubricsFromEditor());
         }
 
         if (showValidation && !isQuestionComplete(selectedQuestion)) {
@@ -1978,10 +2235,14 @@ public class CreateExamController implements ShellAwareController {
         }
 
         if ("ESSAY".equals(type)) {
-            return true;
+            return isEssayRubricValidOrBlank(question);
         }
 
         return false;
+    }
+
+    private boolean isEssayRubricValidOrBlank(QuestionDraftRow question) {
+        return getEssayRubricError(question) == null;
     }
 
     private boolean hasChoiceContent(String text, String imagePath) {
@@ -2267,11 +2528,43 @@ public class CreateExamController implements ShellAwareController {
                 card.getChildren().add(imageLabel);
             }
 
+            if (!isBlank(question.getQuestionInstruction())) {
+                card.getChildren().add(createReviewAnswerLabel(
+                        "Instruction: " + question.getQuestionInstruction()
+                ));
+            }
+
+            if ("ESSAY".equals(question.getQuestionType())
+                    && question.getRubrics() != null
+                    && !question.getRubrics().isEmpty()) {
+
+                card.getChildren().add(createReviewAnswerLabel("Rubric:"));
+
+                for (EssayRubricRequest rubric : question.getRubrics()) {
+                    HBox rubricRow = new HBox();
+                    rubricRow.getStyleClass().add("review-rubric-row");
+
+                    Label rubricLabel = new Label(
+                            rubric.getCriterionName()
+                                    + " • "
+                                    + rubric.getWeightPercentage() + "%"
+                    );
+
+                    rubricLabel.getStyleClass().add("review-rubric-text");
+
+                    rubricRow.getChildren().add(rubricLabel);
+
+                    card.getChildren().add(rubricRow);
+                }
+            }
+
             if ("MULTIPLE_CHOICE".equals(question.getQuestionType())) {
                 card.getChildren().add(createReviewChoiceRow(question, 0, question.getChoiceA(), question.getChoiceAImagePath()));
                 card.getChildren().add(createReviewChoiceRow(question, 1, question.getChoiceB(), question.getChoiceBImagePath()));
                 card.getChildren().add(createReviewChoiceRow(question, 2, question.getChoiceC(), question.getChoiceCImagePath()));
                 card.getChildren().add(createReviewChoiceRow(question, 3, question.getChoiceD(), question.getChoiceDImagePath()));
+            } else if ("ESSAY".equals(question.getQuestionType())) {
+                card.getChildren().add(createReviewAnswerLabel("Essay question requires manual checking."));
             } else {
                 card.getChildren().add(createReviewAnswerLabel("Answer: " + question.getCorrectAnswer()));
             }
@@ -2490,20 +2783,19 @@ public class CreateExamController implements ShellAwareController {
         private String imageStatus = "No image";
         private String violationStatus = "Default";
         private int points = 1;
-
         private String choiceA = "";
         private String choiceB = "";
         private String choiceC = "";
         private String choiceD = "";
-
         private String choiceAImagePath = "";
         private String choiceBImagePath = "";
         private String choiceCImagePath = "";
         private String choiceDImagePath = "";
-
         private String correctAnswer = "";
         private int correctChoiceIndex = -1;
         private boolean usesImages;
+        private String questionInstruction;
+        private List<EssayRubricRequest> rubrics = new ArrayList<>();
 
         public QuestionDraftRow() {
         }
@@ -2660,6 +2952,22 @@ public class CreateExamController implements ShellAwareController {
         public void setCorrectChoiceIndex(int correctChoiceIndex) {
             this.correctChoiceIndex = correctChoiceIndex;
         }
+
+        public String getQuestionInstruction() {
+            return questionInstruction;
+        }
+
+        public void setQuestionInstruction(String questionInstruction) {
+            this.questionInstruction = questionInstruction;
+        }
+
+        public List<EssayRubricRequest> getRubrics() {
+            return rubrics;
+        }
+
+        public void setRubrics(List<EssayRubricRequest> rubrics) {
+            this.rubrics = rubrics;
+        }
     }
 
     private void toggleChoiceImages(boolean show) {
@@ -2791,6 +3099,8 @@ public class CreateExamController implements ShellAwareController {
             req.setQuestionText(q.getQuestionText());
             req.setQuestionImageUrl(q.getQuestionImagePath());
             req.setQuestionType(q.getQuestionType());
+            req.setQuestionInstruction(q.getQuestionInstruction());
+            req.setRubrics(q.getRubrics());
             req.setPoints(q.getPoints());
 
             if ("MULTIPLE_CHOICE".equalsIgnoreCase(q.getQuestionType())) {

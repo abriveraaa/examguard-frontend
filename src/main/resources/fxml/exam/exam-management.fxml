@@ -134,6 +134,10 @@
                             text="Leaderboard"
                             onAction="#showWorkspaceLeaderboard"
                             styleClass="workspace-tab-button"/>
+                    <Button fx:id="reportsTabButton"
+                            text="Reports"
+                            onAction="#showWorkspaceReports"
+                            styleClass="workspace-tab-button" />
                 </VBox>
             </left>
 

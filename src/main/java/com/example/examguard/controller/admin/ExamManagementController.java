@@ -3,17 +3,32 @@ package com.example.examguard.controller.admin;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
 import com.example.examguard.controller.exam.CreateExamController;
-import com.example.examguard.model.faculty.*;
+import com.example.examguard.model.exam.dto.ExamActivityLogDTO;
+import com.example.examguard.model.exam.dto.ExamAttemptAnswerReviewDTO;
+import com.example.examguard.model.exam.dto.ExamAttemptViolationDTO;
+import com.example.examguard.model.exam.dto.ExamLeaderboardDTO;
+import com.example.examguard.model.exam.request.EssayReviewRequest;
+import com.example.examguard.model.exam.request.EssayRubricRequest;
+import com.example.examguard.model.exam.request.EssayRubricScoreRequest;
+import com.example.examguard.model.exam.response.EssayRubricScoreResponse;
+import com.example.examguard.model.faculty.dto.FacultyClassDTO;
+import com.example.examguard.model.faculty.dto.FacultyExamStudentDTO;
 import com.example.examguard.model.faculty.response.FacultyAttemptReviewResponse;
 import com.example.examguard.model.faculty.response.FacultyExamDetailResponse;
 import com.example.examguard.model.faculty.response.SimpleMessageResponse;
 import com.example.examguard.service.FacultyApiService;
+
+import java.io.File;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import com.example.examguard.model.exam.ExamResponse;
-import com.example.examguard.model.exam.ExamResult;
-import com.example.examguard.model.exam.ExamRow;
+import com.example.examguard.model.exam.response.ExamResponse;
+import com.example.examguard.model.exam.result.ExamResult;
+import com.example.examguard.model.exam.result.ExamRow;
 import com.example.examguard.service.ExamApiService;
+import com.example.examguard.utility.LoadingSpinner;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -33,12 +48,12 @@ import javafx.stage.Stage;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.beans.property.SimpleStringProperty;
-import java.util.Objects;
+
+import java.util.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
+
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
@@ -61,6 +76,7 @@ public class ExamManagementController implements ShellAwareController {
     @FXML private Label workspaceTitleLabel;
     @FXML private Label workspaceSubtitleLabel;
     @FXML private Button releaseResultsButton;
+    @FXML private Button reportsTabButton;
     @FXML private Label itemCountLabel;
     @FXML private TextField searchField;
     @FXML private Button reloadButton;
@@ -77,9 +93,11 @@ public class ExamManagementController implements ShellAwareController {
     private final PauseTransition searchDebounce = new PauseTransition(Duration.millis(250));
     private final ObservableList<ExamRow> examRows = FXCollections.observableArrayList();
     private FacultyExamStudentDTO currentReviewStudent;
+    private FacultyAttemptReviewResponse currentAttemptReview;
     private FilteredList<ExamRow> filteredRows;
     private DashboardShellController shellController;
     private Task<List<ExamRow>> currentLoadTask;
+    private FacultyExamDetailResponse currentWorkspaceDetail;
 
     private boolean loading = false;
     private Long selectedWorkspaceExamId;
@@ -119,7 +137,7 @@ public class ExamManagementController implements ShellAwareController {
         Task<FacultyExamDetailResponse> task = new Task<>() {
             @Override
             protected FacultyExamDetailResponse call() throws Exception {
-                return facultyApiService.getExamDetail(selectedWorkspaceExamId);
+                return examApiService.getExamDetail(selectedWorkspaceExamId);
             }
         };
 
@@ -143,6 +161,8 @@ public class ExamManagementController implements ShellAwareController {
     }
 
     private void renderWorkspaceOverview(FacultyExamDetailResponse detail) {
+        this.currentWorkspaceDetail = detail;
+
         if (detail == null) {
             workspaceContent.getChildren().setAll(
                     createLoadingBox("No exam data found.")
@@ -397,7 +417,7 @@ public class ExamManagementController implements ShellAwareController {
                 examRows.add(row);
             }
 
-            openExamWorkspace(row.getExamId(), row.getTitle());
+            openExamWorkspace(row.getExamId(), row.getTitle(), row.getStatus());
         });
 
         task.setOnFailed(event -> {
@@ -426,7 +446,7 @@ public class ExamManagementController implements ShellAwareController {
         Task<List<FacultyExamStudentDTO>> task = new Task<>() {
             @Override
             protected List<FacultyExamStudentDTO> call() throws Exception {
-                return facultyApiService.getExamStudents(selectedWorkspaceExamId);
+                return examApiService.getExamStudents(selectedWorkspaceExamId);
             }
         };
 
@@ -446,6 +466,21 @@ public class ExamManagementController implements ShellAwareController {
         Thread thread = new Thread(task, "load-exam-students-thread");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void makeTableFillWorkspace(
+            VBox root,
+            VBox card,
+            TableView<?> table
+    ) {
+        root.setFillWidth(true);
+        root.setMaxHeight(Double.MAX_VALUE);
+
+        card.setMaxHeight(Double.MAX_VALUE);
+        table.setMaxHeight(Double.MAX_VALUE);
+
+        VBox.setVgrow(card, Priority.ALWAYS);
+        VBox.setVgrow(table, Priority.ALWAYS);
     }
 
     private void renderWorkspaceStudents(List<FacultyExamStudentDTO> students) {
@@ -752,18 +787,24 @@ public class ExamManagementController implements ShellAwareController {
         tableCard.getStyleClass().add("workspace-card");
         VBox.setVgrow(table, Priority.ALWAYS);
 
+
         root.getChildren().addAll(
                 pageHeader,
                 analyticsRow,
                 tableCard
         );
 
-        ScrollPane scrollPane = new ScrollPane(root);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.getStyleClass().add("workspace-scroll");
+        root.setMaxHeight(Double.MAX_VALUE);
+        tableCard.setMaxHeight(Double.MAX_VALUE);
+        table.setMaxHeight(Double.MAX_VALUE);
 
-        workspaceContent.getChildren().setAll(scrollPane);
+        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox.setVgrow(tableCard, Priority.ALWAYS);
+
+        StackPane.setAlignment(root, Pos.TOP_LEFT);
+        workspaceContent.getChildren().setAll(root);
+
+        makeTableFillWorkspace(root, tableCard, table);
     }
 
     private void openStudentReview(FacultyExamStudentDTO student) {
@@ -779,7 +820,7 @@ public class ExamManagementController implements ShellAwareController {
         Task<FacultyAttemptReviewResponse> task = new Task<>() {
             @Override
             protected FacultyAttemptReviewResponse call() throws Exception {
-                return facultyApiService.getStudentAttemptReview(
+                return examApiService.getStudentAttemptReview(
                         selectedWorkspaceExamId,
                         student.getStudentId()
                 );
@@ -805,6 +846,8 @@ public class ExamManagementController implements ShellAwareController {
     }
 
     private void renderStudentReview(FacultyAttemptReviewResponse review) {
+        this.currentAttemptReview = review;
+
         if (review == null) {
             workspaceContent.getChildren().setAll(
                     createLoadingBox("No review data found.")
@@ -839,7 +882,7 @@ public class ExamManagementController implements ShellAwareController {
             Task<Void> task = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    facultyApiService.markAttemptReviewed(review.getAttemptId());
+                    examApiService.markAttemptReviewed(review.getAttemptId());
                     return null;
                 }
             };
@@ -879,15 +922,48 @@ public class ExamManagementController implements ShellAwareController {
 
         VBox answerList = new VBox(14);
 
-        if (review.getAnswers() == null || review.getAnswers().isEmpty()) {
-            answerList.getChildren().add(
-                    createLoadingBox("No answers found for this attempt.")
-            );
-        } else {
-            for (FacultyAttemptAnswerReviewDTO answer : review.getAnswers()) {
+        ComboBox<String> answerFilter = new ComboBox<>();
+        answerFilter.getItems().addAll(
+                "All Questions",
+                "Needs Review",
+                "Reviewed",
+                "Correct",
+                "Incorrect",
+                "With Violations",
+                "Essay Only"
+        );
+        answerFilter.setValue("All Questions");
+        answerFilter.getStyleClass().add("workspace-filter-box");
+
+        Runnable renderFilteredAnswers = () -> {
+            answerList.getChildren().clear();
+
+            List<ExamAttemptAnswerReviewDTO> answers =
+                    review.getAnswers() == null ? List.of() : review.getAnswers();
+
+            String selected = answerFilter.getValue();
+
+            List<ExamAttemptAnswerReviewDTO> filtered = answers.stream()
+                    .filter(answer -> matchesAnswerReviewFilter(answer, selected))
+                    .toList();
+
+            if (filtered.isEmpty()) {
+                answerList.getChildren().add(
+                        createLoadingBox("No answers found for this filter.")
+                );
+                return;
+            }
+
+            for (ExamAttemptAnswerReviewDTO answer : filtered) {
                 answerList.getChildren().add(createAnswerReviewCard(answer));
             }
-        }
+        };
+
+        answerFilter.valueProperty().addListener((obs, oldVal, newVal) ->
+                renderFilteredAnswers.run()
+        );
+
+        renderFilteredAnswers.run();
 
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
@@ -895,10 +971,18 @@ public class ExamManagementController implements ShellAwareController {
         HBox headerActions = new HBox(10, backButton, headerSpacer, markReviewedButton);
         headerActions.setAlignment(Pos.CENTER_LEFT);
 
+        Region titleSpacer = new Region();
+        HBox.setHgrow(titleSpacer, Priority.ALWAYS);
+
+        VBox titleBox = new VBox(3, title, subtitle);
+
+        HBox studentHeaderRow = new HBox(12, titleBox, titleSpacer, answerFilter);
+        studentHeaderRow.setAlignment(Pos.CENTER_LEFT);
+
         VBox root = new VBox(
                 16,
                 headerActions,
-                new VBox(3, title, subtitle),
+                studentHeaderRow,
                 answerList
         );
 
@@ -912,8 +996,43 @@ public class ExamManagementController implements ShellAwareController {
         workspaceContent.getChildren().setAll(scrollPane);
     }
 
-    private VBox    createAnswerReviewCard(FacultyAttemptAnswerReviewDTO answer) {
-        Label questionHeader = new Label(
+    private boolean matchesAnswerReviewFilter(
+            ExamAttemptAnswerReviewDTO answer,
+            String selected
+    ) {
+        if (answer == null || selected == null) {
+            return true;
+        }
+
+        boolean reviewed = Boolean.TRUE.equals(answer.getManuallyReviewed())
+                || "REVIEWED".equalsIgnoreCase(safe(answer.getReviewStatus()));
+
+        boolean hasViolations = answer.getViolations() != null
+                && !answer.getViolations().isEmpty();
+
+        boolean needsReview = !reviewed &&
+                (
+                        Boolean.TRUE.equals(answer.getNeedsChecking())
+                                || Boolean.TRUE.equals(answer.getNeedsManualCheck())
+                                || "PENDING".equalsIgnoreCase(safe(answer.getReviewStatus()))
+                                || "FLAGGED".equalsIgnoreCase(safe(answer.getReviewStatus()))
+                                || hasViolations
+                );
+
+        return switch (selected) {
+            case "Needs Review" -> needsReview;
+            case "Reviewed" -> reviewed;
+            case "Correct" -> Boolean.TRUE.equals(answer.getCorrect());
+            case "Incorrect" -> Boolean.FALSE.equals(answer.getCorrect());
+            case "With Violations" -> hasViolations;
+            case "Essay Only" -> "ESSAY".equalsIgnoreCase(safe(answer.getQuestionType()));
+            default -> true;
+        };
+    }
+
+    private VBox    createAnswerReviewCard(ExamAttemptAnswerReviewDTO answer) {
+        Label questionHeader = new Label();
+        questionHeader.setText(
                 "Question " + defaultInt(answer.getQuestionNumber()) +
                         " • " + formatStatus(safe(answer.getQuestionType())) +
                         " • " + formatPoints(answer.getEarnedPoints()) +
@@ -967,12 +1086,29 @@ public class ExamManagementController implements ShellAwareController {
             correctAnswerBlock.getChildren().add(img);
         }
 
+        boolean essayQuestion =
+                "ESSAY".equalsIgnoreCase(
+                        safe(answer.getQuestionType())
+                );
+
+        String studentAnswerStyle;
+
+        if (essayQuestion) {
+
+            studentAnswerStyle = "review-answer-neutral";
+
+        } else {
+
+            studentAnswerStyle =
+                    Boolean.TRUE.equals(answer.getCorrect())
+                            ? "review-answer-correct"
+                            : "review-answer-wrong";
+        }
+
         VBox studentAnswerBlock = createAnswerBlock(
                 "Student Answer",
                 safe(answer.getStudentAnswer()),
-                Boolean.TRUE.equals(answer.getCorrect())
-                        ? "review-answer-correct"
-                        : "review-answer-wrong"
+                studentAnswerStyle
         );
 
         if (answer.getStudentAnswerImageUrl() != null && !answer.getStudentAnswerImageUrl().isBlank()) {
@@ -985,12 +1121,40 @@ public class ExamManagementController implements ShellAwareController {
             studentAnswerBlock.getChildren().add(img);
         }
 
-        HBox contentRow = new HBox(
-                16,
-                questionBox,
-                correctAnswerBlock,
-                studentAnswerBlock
-        );
+        HBox contentRow;
+
+        if (essayQuestion) {
+
+            contentRow = new HBox(
+                    16,
+                    questionBox,
+                    studentAnswerBlock
+            );
+
+            questionBox.setPrefWidth(420);
+            studentAnswerBlock.setPrefWidth(620);
+
+            HBox.setHgrow(questionBox, Priority.ALWAYS);
+            HBox.setHgrow(studentAnswerBlock, Priority.ALWAYS);
+
+        } else {
+
+            contentRow = new HBox(
+                    16,
+                    questionBox,
+                    correctAnswerBlock,
+                    studentAnswerBlock
+            );
+
+            questionBox.setPrefWidth(420);
+            correctAnswerBlock.setPrefWidth(300);
+            studentAnswerBlock.setPrefWidth(300);
+
+            HBox.setHgrow(questionBox, Priority.ALWAYS);
+            HBox.setHgrow(correctAnswerBlock, Priority.ALWAYS);
+            HBox.setHgrow(studentAnswerBlock, Priority.ALWAYS);
+        }
+
         contentRow.setAlignment(Pos.TOP_LEFT);
         contentRow.setMaxWidth(Double.MAX_VALUE);
 
@@ -1002,13 +1166,24 @@ public class ExamManagementController implements ShellAwareController {
         correctAnswerBlock.setPrefWidth(300);
         studentAnswerBlock.setPrefWidth(300);
 
-        VBox violationBox = createViolationBox(answer.getViolations());
+        VBox violationBox = createViolationSummaryBox(answer);
+        VBox essayRubricReviewBox = createEssayRubricReviewBox(answer);
 
         HBox actionBar = new HBox(10);
         actionBar.setAlignment(Pos.CENTER_RIGHT);
+        actionBar.setFocusTraversable(true);
 
-        if (Boolean.TRUE.equals(answer.getNeedsManualCheck())
-                || Boolean.TRUE.equals(answer.getManuallyReviewed())) {
+        boolean identificationQuestion =
+                "IDENTIFICATION".equalsIgnoreCase(
+                        safe(answer.getQuestionType())
+                );
+
+        boolean canSaveScore =
+                identificationQuestion &&
+                        !Boolean.TRUE.equals(answer.getCorrect());
+
+        if (canSaveScore) {
+
             Label pointsLabel = new Label("Points Earned");
             pointsLabel.getStyleClass().add("review-answer-label");
 
@@ -1019,8 +1194,8 @@ public class ExamManagementController implements ShellAwareController {
             Label outOfLabel = new Label("/ " + formatPoints(answer.getPoints()) + " pts");
             outOfLabel.getStyleClass().add("review-score-total");
 
-            Button saveScoreButton = new Button("✔ Save Score");
-            saveScoreButton.getStyleClass().add("review-accept-button");
+            Button saveScoreButton = new Button("✔ Update Score");
+            saveScoreButton.getStyleClass().add("review-save-score-button");
 
             saveScoreButton.setOnAction(event -> {
 
@@ -1056,8 +1231,9 @@ public class ExamManagementController implements ShellAwareController {
                     return;
                 }
 
+                actionBar.requestFocus();
                 saveScoreButton.setDisable(true);
-                saveScoreButton.setText("Saving...");
+                saveScoreButton.setText("Updating...");
 
                 double finalEnteredScore = enteredScore;
 
@@ -1065,7 +1241,7 @@ public class ExamManagementController implements ShellAwareController {
                     @Override
                     protected Void call() throws Exception {
 
-                        facultyApiService.updateAnswerScore(
+                        examApiService.updateAnswerScore(
                                 answer.getAnswerId(),
                                 finalEnteredScore
                         );
@@ -1076,9 +1252,43 @@ public class ExamManagementController implements ShellAwareController {
 
                 saveTask.setOnSucceeded(e -> {
 
-                    saveScoreButton.setText("✔ Saved");
+                    answer.setEarnedPoints( BigDecimal.valueOf(finalEnteredScore) );
+                    questionHeader.setText(
+                            "Question " + defaultInt(answer.getQuestionNumber()) +
+                                    " • " + formatStatus(safe(answer.getQuestionType())) +
+                                    " • " + formatPoints(answer.getEarnedPoints()) +
+                                    " / " + formatPoints(answer.getPoints()) + " pts"
+                    );
+                    answer.setManuallyReviewed(true);
+                    answer.setNeedsChecking(false);
+                    answer.setReviewStatus("REVIEWED");
 
-                    openStudentReview(currentReviewStudent);
+                    saveScoreButton.setText("✔ Updated");
+                    saveScoreButton.setDisable(false);
+
+                    reviewBadge.setText("✔ Reviewed");
+
+                    reviewBadge.getStyleClass().clear();
+                    reviewBadge.getStyleClass().add("review-status-correct");
+
+                    resultBadge.setText(
+                            finalEnteredScore > 0
+                                    ? "✔ Correct"
+                                    : "✖ Incorrect"
+                    );
+
+                    resultBadge.getStyleClass().clear();
+
+                    resultBadge.getStyleClass().add(
+                            finalEnteredScore > 0
+                                    ? "review-status-correct"
+                                    : "review-status-wrong"
+                    );
+
+                    Platform.runLater(() -> {
+                        scoreField.requestFocus();
+                        scoreField.positionCaret(scoreField.getText().length());
+                    });
                 });
 
                 saveTask.setOnFailed(e -> {
@@ -1090,7 +1300,8 @@ public class ExamManagementController implements ShellAwareController {
                     }
 
                     saveScoreButton.setDisable(false);
-                    saveScoreButton.setText("✔ Save Score");
+                    saveScoreButton.setText("✔ Update Score");
+                    saveScoreButton.setFocusTraversable(false);
 
                     showError("Unable to save score.");
                 });
@@ -1107,6 +1318,7 @@ public class ExamManagementController implements ShellAwareController {
                     outOfLabel,
                     saveScoreButton
             );
+            scoreBox.getStyleClass().add("review-score-box");
             scoreBox.setAlignment(Pos.CENTER_RIGHT);
 
             actionBar.getChildren().add(scoreBox);
@@ -1118,6 +1330,10 @@ public class ExamManagementController implements ShellAwareController {
                 contentRow,
                 violationBox
         );
+
+        if (essayRubricReviewBox != null) {
+            card.getChildren().add(essayRubricReviewBox);
+        }
 
         if (!actionBar.getChildren().isEmpty()) {
             card.getChildren().add(actionBar);
@@ -1144,8 +1360,19 @@ public class ExamManagementController implements ShellAwareController {
         return box;
     }
 
-    private Label createAnswerResultBadge(FacultyAttemptAnswerReviewDTO answer) {
+    private Label createAnswerResultBadge(ExamAttemptAnswerReviewDTO answer) {
         Label badge = new Label();
+
+        boolean essayQuestion =
+                "ESSAY".equalsIgnoreCase(
+                        safe(answer.getQuestionType())
+                );
+
+        if (essayQuestion) {
+            badge.setText("Manual Review");
+            badge.getStyleClass().add("review-status-neutral");
+            return badge;
+        }
 
         double earned = answer.getEarnedPoints() == null
                 ? 0
@@ -1171,22 +1398,35 @@ public class ExamManagementController implements ShellAwareController {
         return badge;
     }
 
-    private Label createReviewStatusBadge(FacultyAttemptAnswerReviewDTO answer) {
-
+    private Label createReviewStatusBadge(ExamAttemptAnswerReviewDTO answer) {
         Label badge = new Label();
 
-        if (Boolean.TRUE.equals(answer.getNeedsManualCheck())) {
+        boolean reviewed = Boolean.TRUE.equals(answer.getManuallyReviewed())
+                || "REVIEWED".equalsIgnoreCase(safe(answer.getReviewStatus()));
 
-            badge.setText("⚠ Needs Review");
-            badge.getStyleClass().add("review-status-warning");
+        boolean hasViolations = answer.getViolations() != null
+                && !answer.getViolations().isEmpty();
 
-        } else if (Boolean.TRUE.equals(answer.getManuallyReviewed())) {
+        String status = safe(answer.getReviewStatus());
 
+        if (reviewed) {
             badge.setText("✔ Reviewed");
             badge.getStyleClass().add("review-status-correct");
 
-        } else {
+        } else if ("PENDING".equalsIgnoreCase(status)
+                || Boolean.TRUE.equals(answer.getNeedsManualCheck())) {
+            badge.setText("⚠ Pending Review");
+            badge.getStyleClass().add("review-status-warning");
 
+        } else if ("FLAGGED".equalsIgnoreCase(status) || hasViolations) {
+            badge.setText("⚠ Flagged");
+            badge.getStyleClass().add("review-status-warning");
+
+        } else if ("AUTO_CHECKED".equalsIgnoreCase(status)) {
+            badge.setText("Auto Checked");
+            badge.getStyleClass().add("review-status-neutral");
+
+        } else {
             badge.setText("N/A");
             badge.getStyleClass().add("review-status-neutral");
         }
@@ -1194,8 +1434,10 @@ public class ExamManagementController implements ShellAwareController {
         return badge;
     }
 
-    private VBox createViolationBox(List<FacultyAttemptViolationDTO> violations) {
-        VBox box = new VBox(6);
+    private VBox createViolationSummaryBox(ExamAttemptAnswerReviewDTO answer) {
+        VBox box = new VBox(8);
+
+        List<ExamAttemptViolationDTO> violations = answer.getViolations();
 
         if (violations == null || violations.isEmpty()) {
             Label clear = new Label("No question-level violations.");
@@ -1204,27 +1446,323 @@ public class ExamManagementController implements ShellAwareController {
             return box;
         }
 
-        Label title = new Label("Violations");
+        Label title = new Label("⚠ " + violations.size() + " Violation(s) Detected");
         title.getStyleClass().add("review-violation-title");
-        box.getChildren().add(title);
 
-        for (FacultyAttemptViolationDTO violation : violations) {
-            Label row = new Label(
+        String reviewStatus = violations.stream()
+                .map(ExamAttemptViolationDTO::getReviewStatus)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("PENDING_REVIEW");
+
+        Button reviewButton = new Button();
+
+        boolean reviewed =
+                "IGNORED".equalsIgnoreCase(reviewStatus) ||
+                        "PENALIZED".equalsIgnoreCase(reviewStatus) ||
+                        "REVIEWED".equalsIgnoreCase(reviewStatus);
+
+        if (reviewed) {
+            String label = switch (reviewStatus.toUpperCase()) {
+                case "IGNORED" -> "Ignored";
+                case "PENALIZED" -> "Penalized";
+                default -> "Reviewed";
+            };
+
+            reviewButton.setText(label);
+            reviewButton.setDisable(true);
+            reviewButton.getStyleClass().add("workspace-status-button");
+
+        } else {
+            reviewButton.setText("Review Evidence");
+            reviewButton.setDisable(false);
+            reviewButton.getStyleClass().add("workspace-review-button");
+            reviewButton.setOnAction(e -> openViolationReviewModal(answer));
+        }
+
+        HBox row = new HBox(10, title, reviewButton);
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        box.getChildren().add(row);
+        box.getStyleClass().add("review-violation-summary");
+
+        return box;
+    }
+
+    private void openViolationReviewModal(ExamAttemptAnswerReviewDTO answer) {
+        List<ExamAttemptViolationDTO> violations = answer.getViolations();
+
+        if (violations == null || violations.isEmpty()) {
+            showError("No violations found for this question.");
+            return;
+        }
+
+        final int[] index = {0};
+
+        Stage stage = new Stage();
+        stage.initModality(Modality.WINDOW_MODAL);
+        stage.setTitle("Violation Evidence");
+
+        Label title = new Label(
+                "Question " + defaultInt(answer.getQuestionNumber()) +
+                        " • " + formatStatus(safe(answer.getQuestionType()))
+        );
+        title.getStyleClass().add("workspace-page-title");
+
+        StackPane previewPane = new StackPane();
+        previewPane.getStyleClass().add("violation-preview-pane");
+        VBox.setVgrow(previewPane, Priority.ALWAYS);
+
+        previewPane.setMinHeight(320);
+        previewPane.setMaxHeight(Double.MAX_VALUE);
+
+        Label metadataLabel = new Label();
+        metadataLabel.getStyleClass().add("review-violation-row");
+
+        Label counterLabel = new Label();
+        counterLabel.getStyleClass().add("review-score-total");
+
+        Button previousButton = new Button("← Previous");
+        previousButton.getStyleClass().add("outline-button");
+
+        Button nextButton = new Button("Next →");
+        nextButton.getStyleClass().add("outline-button");
+
+        Runnable renderViolation = () -> {
+            ExamAttemptViolationDTO violation = violations.get(index[0]);
+
+            previewPane.getChildren().clear();
+
+            Label placeholder = new Label("Screenshot / camera evidence preview");
+            placeholder.getStyleClass().add("workspace-empty-text");
+            previewPane.getChildren().add(placeholder);
+
+            metadataLabel.setText(
                     safe(violation.getSeverity()) +
                             " • " +
                             safe(violation.getViolationType()) +
                             " • " +
-                            safe(violation.getViolationMessage()) +
-                            " • " +
                             formatDateTime(violation.getOccurredAt())
             );
-            row.setWrapText(true);
-            row.getStyleClass().add("review-violation-row");
 
-            box.getChildren().add(row);
+            counterLabel.setText((index[0] + 1) + " / " + violations.size());
+
+            previousButton.setDisable(index[0] == 0);
+            nextButton.setDisable(index[0] == violations.size() - 1);
+        };
+
+        previousButton.setOnAction(e -> {
+            if (index[0] > 0) {
+                index[0]--;
+                renderViolation.run();
+            }
+        });
+
+        nextButton.setOnAction(e -> {
+            if (index[0] < violations.size() - 1) {
+                index[0]++;
+                renderViolation.run();
+            }
+        });
+
+        HBox navigation = new HBox(12, previousButton, counterLabel, nextButton);
+        navigation.setAlignment(Pos.CENTER);
+
+        TextArea feedbackArea = new TextArea();
+        feedbackArea.setPromptText("Enter feedback about this violation...");
+        feedbackArea.setPrefRowCount(4);
+        feedbackArea.getStyleClass().add("essay-feedback-area");
+
+        Label currentScoreLabel = new Label(
+                "Current Question Score: " +
+                        formatPoints(answer.getEarnedPoints()) +
+                        " / " +
+                        formatPoints(answer.getPoints()) +
+                        " pts"
+        );
+        currentScoreLabel.getStyleClass().add("review-score-total");
+
+        TextField deductionField = new TextField("0");
+        deductionField.setPrefWidth(90);
+        deductionField.getStyleClass().add("review-score-field");
+
+        Button ignoreButton = new Button("Ignore Violations");
+        ignoreButton.getStyleClass().add("outline-button");
+
+        Button applyButton = new Button("Apply Deduction");
+        applyButton.getStyleClass().add("danger-button");
+
+        ignoreButton.setOnAction(e -> {
+
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("Ignore Violations");
+            confirm.setHeaderText("Ignore all reviewed violations?");
+            confirm.setContentText(
+                    "This will keep the student's current score unchanged."
+            );
+
+            Optional<ButtonType> result = confirm.showAndWait();
+
+            if (result.isEmpty() || result.get() != ButtonType.OK) {
+                return;
+            }
+
+            try {
+                String decision = "IGNORED";
+
+                examApiService.applyViolationDecision(
+                        answer.getAnswerId(),
+                        answer.getQuestionId(),
+                        currentAttemptReview.getAttemptId(),
+                        decision,
+                        BigDecimal.ZERO,
+                        feedbackArea.getText()
+                );
+
+                for (ExamAttemptViolationDTO violation : answer.getViolations()) {
+                    violation.setReviewStatus(decision);
+                    violation.setReviewedAt(OffsetDateTime.now());
+                }
+
+                answer.setManuallyReviewed(true);
+                answer.setNeedsChecking(false);
+                answer.setReviewStatus("REVIEWED");
+
+                stage.close();
+
+                if (currentAttemptReview != null) {
+                    renderStudentReview(currentAttemptReview);
+                }
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showError("Unable to ignore violations.");
+            }
+        });
+
+        applyButton.setOnAction(e -> {
+            try {
+                double deduction = Double.parseDouble(deductionField.getText().trim());
+
+                double currentScore = answer.getEarnedPoints() == null
+                        ? 0
+                        : answer.getEarnedPoints().doubleValue();
+
+                if (deduction < 0) {
+                    showError("Deduction cannot be negative.");
+                    return;
+                }
+
+                if (deduction > currentScore) {
+                    showError("Deduction cannot be greater than current score.");
+                    return;
+                }
+
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+
+                confirm.setTitle("Apply Deduction");
+                confirm.setHeaderText("Apply score deduction?");
+                confirm.setContentText(
+                        "Current Score: " + formatPoints(answer.getEarnedPoints()) +
+                                "\nDeduction: " + deduction +
+                                "\nFinal Score: " + formatPoints(
+                                BigDecimal.valueOf(currentScore - deduction)
+                        )
+                );
+
+                Optional<ButtonType> result = confirm.showAndWait();
+
+                if (result.isEmpty() || result.get() != ButtonType.OK) {
+                    return;
+                }
+
+                double finalScore = currentScore - deduction;
+
+                String decision = "PENALIZED";
+
+                examApiService.applyViolationDecision(
+                        answer.getAnswerId(),
+                        answer.getQuestionId(),
+                        currentAttemptReview.getAttemptId(),
+                        decision,
+                        BigDecimal.valueOf(deduction),
+                        feedbackArea.getText()
+                );
+
+                answer.setEarnedPoints(BigDecimal.valueOf(finalScore));
+                answer.setManuallyReviewed(true);
+                answer.setNeedsChecking(false);
+                answer.setReviewStatus("REVIEWED");
+
+                for (ExamAttemptViolationDTO violation : answer.getViolations()) {
+                    violation.setReviewStatus(decision);
+                    violation.setReviewedAt(OffsetDateTime.now());
+                }
+
+                stage.close();
+
+                if (currentAttemptReview != null) {
+                    renderStudentReview(currentAttemptReview);
+                }
+
+            } catch (NumberFormatException ex) {
+                showError("Please enter a valid deduction.");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showError("Unable to apply deduction.");
+            }
+        });
+
+        HBox decisionButtons = new HBox(10, ignoreButton, applyButton);
+        decisionButtons.setAlignment(Pos.CENTER_RIGHT);
+
+        Label decisionTitle = new Label("Final Decision");
+        decisionTitle.getStyleClass().add("workspace-section-title");
+
+        VBox decisionBox = new VBox(
+                10,
+                decisionTitle,
+                feedbackArea,
+                currentScoreLabel,
+                new HBox(8, new Label("Deduction:"), deductionField),
+                decisionButtons
+        );
+        decisionBox.getStyleClass().add("violation-decision-box");
+
+        VBox root = new VBox(
+                14,
+                title,
+                previewPane,
+                metadataLabel,
+                navigation,
+                decisionBox
+        );
+        root.setMinHeight(850);
+        root.setPrefHeight(Region.USE_COMPUTED_SIZE);
+        root.setMaxHeight(Double.MAX_VALUE);
+
+        root.setFillWidth(true);
+
+        VBox.setVgrow(previewPane, Priority.ALWAYS);
+        root.setPadding(new Insets(22));
+        root.getStyleClass().add("exam-workspace-page");
+
+        renderViolation.run();
+
+        Scene scene = new Scene(root, 1050, 850);
+        scene.getStylesheets().add(
+                getClass().getResource("/styles/exam-management.css").toExternalForm()
+        );
+
+        stage.setScene(scene);
+
+        if (workspaceContent.getScene() != null) {
+            stage.initOwner(
+                    workspaceContent.getScene().getWindow()
+            );
         }
 
-        return box;
+        stage.show();
     }
 
     @FXML
@@ -1442,10 +1980,10 @@ public class ExamManagementController implements ShellAwareController {
                 createLoadingBox("Loading activity logs...")
         );
 
-        Task<List<FacultyActivityLogDTO>> task = new Task<>() {
+        Task<List<ExamActivityLogDTO>> task = new Task<>() {
             @Override
-            protected List<FacultyActivityLogDTO> call() throws Exception {
-                return facultyApiService.getExamActivityLogs(selectedWorkspaceExamId);
+            protected List<ExamActivityLogDTO> call() throws Exception {
+                return examApiService.getExamActivityLogs(selectedWorkspaceExamId);
             }
         };
 
@@ -1467,7 +2005,7 @@ public class ExamManagementController implements ShellAwareController {
         thread.start();
     }
 
-    private void renderWorkspaceActivityLogs(List<FacultyActivityLogDTO> logs) {
+    private void renderWorkspaceActivityLogs(List<ExamActivityLogDTO> logs) {
         if (logs == null) {
             logs = List.of();
         }
@@ -1483,10 +2021,10 @@ public class ExamManagementController implements ShellAwareController {
 
         VBox pageHeader = new VBox(3, pageTitle, pageSubtitle);
 
-        ObservableList<FacultyActivityLogDTO> rows =
+        ObservableList<ExamActivityLogDTO> rows =
                 FXCollections.observableArrayList(logs);
 
-        FilteredList<FacultyActivityLogDTO> filteredRows =
+        FilteredList<ExamActivityLogDTO> filteredRows =
                 new FilteredList<>(rows, item -> true);
 
         TextField searchField = new TextField();
@@ -1508,7 +2046,7 @@ public class ExamManagementController implements ShellAwareController {
         questionFilter.getItems().add("All Questions");
 
         logs.stream()
-                .map(FacultyActivityLogDTO::getQuestionNumber)
+                .map(ExamActivityLogDTO::getQuestionNumber)
                 .filter(Objects::nonNull)
                 .distinct()
                 .sorted()
@@ -1573,22 +2111,22 @@ public class ExamManagementController implements ShellAwareController {
         HBox toolbar = new HBox(10, searchField, typeFilter, severityFilter, questionFilter);
         toolbar.setAlignment(Pos.CENTER_LEFT);
 
-        TableView<FacultyActivityLogDTO> table = new TableView<>();
+        TableView<ExamActivityLogDTO> table = new TableView<>();
         table.getStyleClass().add("workspace-table");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(filteredRows);
 
-        TableColumn<FacultyActivityLogDTO, String> timeColumn = new TableColumn<>("Time");
+        TableColumn<ExamActivityLogDTO, String> timeColumn = new TableColumn<>("Time");
         timeColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(formatDateTime(data.getValue().getOccurredAt()))
         );
 
-        TableColumn<FacultyActivityLogDTO, String> typeColumn = new TableColumn<>("Type");
+        TableColumn<ExamActivityLogDTO, String> typeColumn = new TableColumn<>("Type");
         typeColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(safe(data.getValue().getLogType()))
         );
 
-        TableColumn<FacultyActivityLogDTO, String> studentIdColumn =
+        TableColumn<ExamActivityLogDTO, String> studentIdColumn =
                 new TableColumn<>("Student ID");
 
         studentIdColumn.setCellValueFactory(data ->
@@ -1597,7 +2135,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyActivityLogDTO, String> studentNameColumn =
+        TableColumn<ExamActivityLogDTO, String> studentNameColumn =
                 new TableColumn<>("Student Name");
 
         studentNameColumn.setCellValueFactory(data ->
@@ -1606,7 +2144,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyActivityLogDTO, String> questionColumn = new TableColumn<>("Question");
+        TableColumn<ExamActivityLogDTO, String> questionColumn = new TableColumn<>("Question");
         questionColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(
                         data.getValue().getQuestionNumber() == null
@@ -1615,22 +2153,22 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyActivityLogDTO, String> actionColumn = new TableColumn<>("Action");
+        TableColumn<ExamActivityLogDTO, String> actionColumn = new TableColumn<>("Action");
         actionColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(formatStatus(safe(data.getValue().getAction())))
         );
 
-        TableColumn<FacultyActivityLogDTO, String> severityColumn = new TableColumn<>("Severity");
+        TableColumn<ExamActivityLogDTO, String> severityColumn = new TableColumn<>("Severity");
         severityColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(safe(data.getValue().getSeverity()))
         );
 
-        TableColumn<FacultyActivityLogDTO, String> messageColumn = new TableColumn<>("Message");
+        TableColumn<ExamActivityLogDTO, String> messageColumn = new TableColumn<>("Message");
         messageColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(safe(data.getValue().getMessage()))
         );
 
-        TableColumn<FacultyActivityLogDTO, String> durationColumn = new TableColumn<>("Duration");
+        TableColumn<ExamActivityLogDTO, String> durationColumn = new TableColumn<>("Duration");
         durationColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(
                         data.getValue().getDurationMs() == null
@@ -1663,14 +2201,25 @@ public class ExamManagementController implements ShellAwareController {
 
         VBox card = new VBox(14, pageHeader, toolbar, table);
         card.getStyleClass().add("workspace-card");
+
         VBox.setVgrow(table, Priority.ALWAYS);
 
+
+        VBox.setVgrow(card, Priority.ALWAYS);
+
+        table.setMaxHeight(Double.MAX_VALUE);
+
+        card.setMaxHeight(Double.MAX_VALUE);
+
         root.getChildren().add(card);
+
+        VBox.setVgrow(root, Priority.ALWAYS);
+        makeTableFillWorkspace(root, card, table);
 
         workspaceContent.getChildren().setAll(root);
     }
 
-    private HBox createActivityLogRow(FacultyActivityLogDTO log) {
+    private HBox createActivityLogRow(ExamActivityLogDTO log) {
         Label time = new Label(formatDateTime(log.getOccurredAt()));
         time.getStyleClass().add("activity-log-time");
 
@@ -1735,12 +2284,12 @@ public class ExamManagementController implements ShellAwareController {
                 createLoadingBox("Loading leaderboard...")
         );
 
-        Task<List<FacultyLeaderboardDTO>> task = new Task<>() {
+        Task<List<ExamLeaderboardDTO>> task = new Task<>() {
 
             @Override
-            protected List<FacultyLeaderboardDTO> call() throws Exception {
+            protected List<ExamLeaderboardDTO> call() throws Exception {
 
-                return facultyApiService.getExamLeaderboard(
+                return examApiService.getExamLeaderboard(
                         selectedWorkspaceExamId
                 );
             }
@@ -1748,7 +2297,7 @@ public class ExamManagementController implements ShellAwareController {
 
         task.setOnSucceeded(event -> {
 
-            List<FacultyLeaderboardDTO> leaderboard =
+            List<ExamLeaderboardDTO> leaderboard =
                     task.getValue();
 
             renderWorkspaceLeaderboard(leaderboard);
@@ -1773,12 +2322,13 @@ public class ExamManagementController implements ShellAwareController {
         thread.start();
     }
 
-    private void renderWorkspaceLeaderboard(List<FacultyLeaderboardDTO> leaderboard) {
+    private void renderWorkspaceLeaderboard(List<ExamLeaderboardDTO> leaderboard) {
         if (leaderboard == null) {
             leaderboard = List.of();
         }
 
         VBox root = new VBox(16);
+        root.setFillWidth(true);
         root.getStyleClass().add("workspace-overview-root");
 
         Label pageTitle = new Label("Leaderboard");
@@ -1791,12 +2341,12 @@ public class ExamManagementController implements ShellAwareController {
 
         VBox pageHeader = new VBox(3, pageTitle, pageSubtitle);
 
-        TableView<FacultyLeaderboardDTO> table = new TableView<>();
+        TableView<ExamLeaderboardDTO> table = new TableView<>();
         table.getStyleClass().add("workspace-table");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(FXCollections.observableArrayList(leaderboard));
 
-        TableColumn<FacultyLeaderboardDTO, String> rankColumn =
+        TableColumn<ExamLeaderboardDTO, String> rankColumn =
                 new TableColumn<>("Rank");
 
         rankColumn.setCellValueFactory(data ->
@@ -1807,7 +2357,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyLeaderboardDTO, String> studentColumn =
+        TableColumn<ExamLeaderboardDTO, String> studentColumn =
                 new TableColumn<>("Student");
 
         studentColumn.setCellValueFactory(data ->
@@ -1816,7 +2366,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyLeaderboardDTO, String> studentIdColumn =
+        TableColumn<ExamLeaderboardDTO, String> studentIdColumn =
                 new TableColumn<>("Student ID");
 
         studentIdColumn.setCellValueFactory(data ->
@@ -1825,7 +2375,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyLeaderboardDTO, String> sectionColumn =
+        TableColumn<ExamLeaderboardDTO, String> sectionColumn =
                 new TableColumn<>("Section");
 
         sectionColumn.setCellValueFactory(data ->
@@ -1834,7 +2384,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyLeaderboardDTO, String> scoreColumn =
+        TableColumn<ExamLeaderboardDTO, String> scoreColumn =
                 new TableColumn<>("Score Obtained");
 
         scoreColumn.setCellValueFactory(data ->
@@ -1846,7 +2396,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyLeaderboardDTO, String> percentColumn =
+        TableColumn<ExamLeaderboardDTO, String> percentColumn =
                 new TableColumn<>("Percentage");
 
         percentColumn.setCellValueFactory(data ->
@@ -1855,7 +2405,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyLeaderboardDTO, String> violationColumn =
+        TableColumn<ExamLeaderboardDTO, String> violationColumn =
                 new TableColumn<>("Violations");
 
         violationColumn.setCellValueFactory(data ->
@@ -1868,7 +2418,7 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
-        TableColumn<FacultyLeaderboardDTO, String> reviewColumn =
+        TableColumn<ExamLeaderboardDTO, String> reviewColumn =
                 new TableColumn<>("Review Status");
 
         reviewColumn.setCellValueFactory(data ->
@@ -1896,7 +2446,250 @@ public class ExamManagementController implements ShellAwareController {
         VBox.setVgrow(table, Priority.ALWAYS);
         root.getChildren().add(card);
 
+        makeTableFillWorkspace(root, card, table);
+
         workspaceContent.getChildren().setAll(root);
+    }
+
+    @FXML
+    private void showWorkspaceReports() {
+        setActiveWorkspaceTab(reportsTabButton);
+
+        if (selectedWorkspaceExamId == null) {
+            return;
+        }
+
+        VBox root = new VBox(16);
+        root.getStyleClass().add("workspace-overview-root");
+
+        Label pageTitle = new Label("Reports");
+        pageTitle.getStyleClass().add("workspace-page-title");
+
+        Label pageSubtitle = new Label("Generate printable PDF reports for this exam.");
+        pageSubtitle.getStyleClass().add("workspace-page-subtitle");
+
+        VBox pageHeader = new VBox(3, pageTitle, pageSubtitle);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(16);
+        grid.setVgap(16);
+        grid.setMaxWidth(Double.MAX_VALUE);
+
+        grid.add(createReportCard(
+                "Exam Portfolio Report",
+                "Complete printable portfolio containing exam overview, assigned classes, submissions, student answer sheets, violations, leaderboard, and review summaries.",
+                "Generate Portfolio",
+                true,
+                mode -> {
+                    try {
+                        return examApiService.downloadExamPortfolioReport(
+                                selectedWorkspaceExamId,
+                                mode
+                        );
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+        ), 0, 0);
+
+        ColumnConstraints c1 = new ColumnConstraints();
+        c1.setPercentWidth(50);
+        ColumnConstraints c2 = new ColumnConstraints();
+        c2.setPercentWidth(50);
+        grid.getColumnConstraints().addAll(c1, c2);
+
+        root.getChildren().addAll(pageHeader, grid);
+
+        ScrollPane scrollPane = new ScrollPane(root);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.getStyleClass().add("workspace-scroll");
+
+        workspaceContent.getChildren().setAll(scrollPane);
+    }
+
+    private File generatePortfolioReport() throws Exception {
+
+        if (selectedWorkspaceExamId == null) {
+            throw new RuntimeException("No exam selected.");
+        }
+
+        int assignedClassCount =
+                currentWorkspaceDetail == null ||
+                        currentWorkspaceDetail.getAssignedClasses() == null
+                        ? 0
+                        : currentWorkspaceDetail.getAssignedClasses().size();
+
+        if (assignedClassCount <= 1) {
+            return examApiService.downloadExamPortfolioReport(
+                    selectedWorkspaceExamId,
+                    "MERGE"
+            );
+        }
+
+        final String[] selectedMode = {"MERGE"};
+
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Generate Portfolio Report");
+            alert.setHeaderText("This exam has multiple assigned classes.");
+            alert.setContentText("How do you want to generate the portfolio report?");
+
+            ButtonType mergeButton = new ButtonType("Merge into one PDF");
+            ButtonType separateButton = new ButtonType("Separate by class");
+            ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            alert.getButtonTypes().setAll(
+                    mergeButton,
+                    separateButton,
+                    cancelButton
+            );
+
+            Optional<ButtonType> result = alert.showAndWait();
+
+            if (result.isEmpty() || result.get() == cancelButton) {
+                selectedMode[0] = null;
+                return;
+            }
+
+            selectedMode[0] =
+                    result.get() == separateButton
+                            ? "SEPARATE"
+                            : "MERGE";
+        });
+
+        // Simpler alternative: avoid prompt here and use MERGE for now.
+        if (selectedMode[0] == null) {
+            throw new RuntimeException("Report generation cancelled.");
+        }
+
+        return examApiService.downloadExamPortfolioReport(
+                selectedWorkspaceExamId,
+                selectedMode[0]
+        );
+    }
+
+    private void downloadPortfolioReport(String mode) {
+
+        try {
+
+            File file =
+                    examApiService.downloadExamPortfolioReport(
+                            selectedWorkspaceExamId,
+                            mode
+                    );
+
+            showSuccess(
+                    "Report saved to:\n" +
+                            file.getAbsolutePath()
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Unable to generate portfolio report.");
+        }
+    }
+
+    private VBox createReportCard(
+            String title,
+            String description,
+            String buttonText,
+            boolean askPortfolioMode,
+            java.util.function.Function<String, File> action
+    ) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("workspace-section-title");
+
+        Label descriptionLabel = new Label(description);
+        descriptionLabel.setWrapText(true);
+        descriptionLabel.getStyleClass().add("overview-detail-row");
+
+        Button button = new Button(buttonText);
+        button.getStyleClass().add("workspace-review-button");
+
+        button.setOnAction(e -> {
+
+            String mode = null;
+
+            if (askPortfolioMode) {
+
+                mode = askPortfolioMode();
+
+                if (mode == null) {
+                    return;
+                }
+            }
+
+            final String finalMode = mode;
+
+            LoadingSpinner.setLoading(
+                    button,
+                    true,
+                    "Generating...",
+                    buttonText
+            );
+
+            Task<File> task = new Task<>() {
+                @Override
+                protected File call() throws Exception {
+                    return action.apply(finalMode);
+                }
+            };
+
+            task.setOnSucceeded(event -> {
+
+                LoadingSpinner.setLoading(
+                        button,
+                        false,
+                        "Generating...",
+                        buttonText
+                );
+
+                File file = task.getValue();
+
+                showSuccess(
+                        "Report saved to:\n" +
+                                file.getAbsolutePath()
+                );
+            });
+
+            task.setOnFailed(event -> {
+
+                LoadingSpinner.setLoading(
+                        button,
+                        false,
+                        "Generating...",
+                        buttonText
+                );
+
+                Throwable ex = task.getException();
+
+                if (ex != null) {
+                    ex.printStackTrace();
+                }
+
+                showError("Unable to generate report.");
+            });
+
+            Thread thread = new Thread(task, "generate-report-thread");
+            thread.setDaemon(true);
+            thread.start();
+        });
+
+        VBox card = new VBox(14, titleLabel, descriptionLabel, button);
+        card.getStyleClass().add("workspace-card");
+        card.setMaxWidth(Double.MAX_VALUE);
+
+        return card;
+    }
+
+    private void generateReport(String reportType) {
+        if (selectedWorkspaceExamId == null) {
+            showError("No exam selected.");
+            return;
+        }
+
+        showSuccess("Report generation for " + reportType + " will be connected to the PDF endpoint.");
     }
 
 
@@ -1909,7 +2702,7 @@ public class ExamManagementController implements ShellAwareController {
 
         try {
             List<FacultyExamStudentDTO> students =
-                    facultyApiService.getExamStudents(selectedWorkspaceExamId);
+                    examApiService.getExamStudents(selectedWorkspaceExamId);
 
             long submitted = students.stream()
                     .filter(s ->
@@ -1959,7 +2752,7 @@ public class ExamManagementController implements ShellAwareController {
         Task<SimpleMessageResponse> task = new Task<>() {
             @Override
             protected SimpleMessageResponse call() throws Exception {
-                return facultyApiService.releaseResults(selectedWorkspaceExamId);
+                return examApiService.releaseResults(selectedWorkspaceExamId);
             }
         };
 
@@ -2176,8 +2969,6 @@ public class ExamManagementController implements ShellAwareController {
 
         actionsColumn.setCellFactory(col -> new TableCell<>() {
 
-            private final Button editBtn = new Button("Edit");
-            private final Button proctorBtn = new Button("Proctor");
             private final Button viewBtn = new Button("View");
             private final Button publishBtn = new Button("Publish");
             private final Button cancelBtn = new Button("Cancel");
@@ -2185,8 +2976,6 @@ public class ExamManagementController implements ShellAwareController {
 
             private final HBox actionBox = new HBox(
                     8,
-                    editBtn,
-                    proctorBtn,
                     viewBtn,
                     publishBtn,
                     cancelBtn,
@@ -2200,14 +2989,17 @@ public class ExamManagementController implements ShellAwareController {
                 styleButton(publishBtn, "#15803D", "white");
                 styleButton(cancelBtn, "#B91C1C", "white");
                 styleButton(restoreBtn, "#1D4ED8", "white");
-                styleButton(editBtn, "#C9A227", "#302C29");
-                styleButton(proctorBtn, "#800000", "white");
 
                 viewBtn.setOnAction(event -> {
                     ExamRow row = getRowData();
                     if (row == null) return;
 
-                    openExamWorkspace(row.getExamId(), row.getTitle());
+                    if ("DRAFT".equalsIgnoreCase(row.getStatus())){
+                        openExamWizard(row.getExamId(), true);
+                    }else{
+                        openExamWorkspace(row.getExamId(), row.getTitle(), row.getStatus());
+                    }
+
                 });
 
                 publishBtn.setOnAction(event -> {
@@ -2286,20 +3078,6 @@ public class ExamManagementController implements ShellAwareController {
                         }
                     }
                 });
-
-                editBtn.setOnAction(event -> {
-                    ExamRow row = getRowData();
-                    if (row == null) return;
-
-                    openExamWizard(row.getExamId(), false);
-                });
-
-                proctorBtn.setOnAction(event -> {
-                    ExamRow row = getRowData();
-                    if (row == null) return;
-
-                    // openProctorPage(row.getExamId());
-                });
             }
 
             @Override
@@ -2356,18 +3134,18 @@ public class ExamManagementController implements ShellAwareController {
             }
 
             private void updateButtonVisibility(String status) {
+
                 boolean isDraft = "DRAFT".equalsIgnoreCase(status);
                 boolean isScheduled = "SCHEDULED".equalsIgnoreCase(status);
                 boolean isOngoing = "ONGOING".equalsIgnoreCase(status);
+                boolean isCompleted = "COMPLETED".equalsIgnoreCase(status);
                 boolean isCancelled = "CANCELLED".equalsIgnoreCase(status);
 
-                setButtonVisible(editBtn, false);
-                setButtonVisible(viewBtn, true);
-
+                setButtonVisible(viewBtn, !isCancelled);
                 setButtonVisible(publishBtn, isDraft);
                 setButtonVisible(cancelBtn, isDraft || isScheduled);
-                setButtonVisible(proctorBtn, isOngoing);
                 setButtonVisible(restoreBtn, isCancelled);
+                viewBtn.setText(isOngoing || isCompleted ? "View" : "Edit");
             }
 
             private void setButtonVisible(Button button, boolean visible) {
@@ -2522,19 +3300,36 @@ public class ExamManagementController implements ShellAwareController {
     }
 
     private boolean isFullyTaken(String takers) {
-        if (takers == null || takers.isBlank() || !takers.contains("/")) {
+        if (takers == null || takers.isBlank()) {
             return false;
         }
 
         try {
-            String[] parts = takers.trim().split("/");
+            int open = takers.indexOf("(");
+            int close = takers.indexOf(")");
+
+            String ratio = takers;
+
+            if (open >= 0 && close > open) {
+                ratio = takers.substring(open + 1, close);
+            }
+
+            if (!ratio.contains("/")) {
+                return false;
+            }
+
+            String[] parts = ratio.trim().split("/");
+
+            if (parts.length != 2) {
+                return false;
+            }
 
             int submitted = Integer.parseInt(parts[0].trim());
             int total = Integer.parseInt(parts[1].trim());
 
-            return total > 0 && submitted >= total;
+            return total > 0 && submitted == total;
 
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             return false;
         }
     }
@@ -2692,7 +3487,7 @@ public class ExamManagementController implements ShellAwareController {
         alert.showAndWait();
     }
 
-    private void openExamWorkspace(Long examId, String examTitle) {
+    private void openExamWorkspace(Long examId, String examTitle, String status) {
         if (shellController != null) {
             shellController.hideHeroCards();
             shellController.hideHeroSection();
@@ -2700,6 +3495,7 @@ public class ExamManagementController implements ShellAwareController {
 
         selectedWorkspaceExamId = examId;
 
+        setupWorkspaceTabs(status);
         listModeContainer.setVisible(false);
         listModeContainer.setManaged(false);
 
@@ -2710,6 +3506,18 @@ public class ExamManagementController implements ShellAwareController {
         workspaceSubtitleLabel.setText("Review students, submissions, violations, and results.");
 
         showWorkspaceOverview();
+    }
+
+    private void setupWorkspaceTabs(String examStatus) {
+
+        boolean showProctor = "ONGOING".equalsIgnoreCase(safe(examStatus));
+
+        proctorTabButton.setVisible(showProctor);
+        proctorTabButton.setManaged(showProctor);
+
+        if (!showProctor && proctorTabButton.getStyleClass().contains("workspace-tab-active")) {
+            showWorkspaceOverview();
+        }
     }
 
     @FXML
@@ -2731,6 +3539,424 @@ public class ExamManagementController implements ShellAwareController {
 
         loadExamsFromBackend();
     }
+
+    private VBox createEssayRubricReviewBox(ExamAttemptAnswerReviewDTO answer) {
+
+        if (!"ESSAY".equalsIgnoreCase(safe(answer.getQuestionType()))) {
+            return null;
+        }
+
+        if (answer.getRubrics() == null || answer.getRubrics().isEmpty()) {
+            return createEssayFallbackReviewBox(answer);
+        }
+
+        VBox box = new VBox(12);
+        box.getStyleClass().add("essay-review-panel");
+
+        Label title = new Label("Essay Rubric Review");
+        title.getStyleClass().add("essay-review-title");
+
+        Label subtitle = new Label(
+                "Enter score percentage per criterion. Points are calculated automatically."
+        );
+        subtitle.setWrapText(true);
+        subtitle.getStyleClass().add("essay-review-subtitle");
+
+        VBox rowsBox = new VBox(8);
+
+        Map<Long, EssayRubricScoreResponse> savedScoreMap = new HashMap<>();
+
+        if (answer.getRubricScores() != null) {
+            for (EssayRubricScoreResponse score : answer.getRubricScores()) {
+                if (score.getRubricId() != null) {
+                    savedScoreMap.put(score.getRubricId(), score);
+                }
+            }
+        }
+
+        Label totalLabel = new Label();
+        totalLabel.getStyleClass().add("essay-review-total");
+
+        TextArea generalFeedbackArea = new TextArea();
+        generalFeedbackArea.setPromptText("Optional overall essay feedback for the student...");
+        generalFeedbackArea.setWrapText(true);
+        generalFeedbackArea.setPrefRowCount(3);
+        generalFeedbackArea.getStyleClass().add("essay-feedback-area");
+        generalFeedbackArea.setText(safe(answer.getFacultyFeedback()));
+
+        Button saveButton = new Button("✔ Save Essay Review");
+        saveButton.getStyleClass().add("review-save-score-button");
+        saveButton.setFocusTraversable(false);
+
+        Runnable updateTotal = () -> {
+            BigDecimal total = calculateEssayRubricTotal(rowsBox, answer);
+
+            totalLabel.setText(
+                    "Calculated Score: " +
+                            formatPoints(total) +
+                            " / " +
+                            formatPoints(answer.getPoints()) +
+                            " pts"
+            );
+        };
+
+        for (EssayRubricRequest rubric : answer.getRubrics()) {
+
+            EssayRubricScoreResponse savedScore =
+                    savedScoreMap.get(rubric.getRubricId());
+
+            rowsBox.getChildren().add(
+                    createEssayRubricScoreRow(
+                            answer,
+                            rubric,
+                            savedScore,
+                            updateTotal
+                    )
+            );
+        }
+
+        updateTotal.run();
+
+        saveButton.setOnAction(event -> {
+            EssayReviewRequest request = buildEssayReviewRequest(
+                    answer,
+                    rowsBox,
+                    generalFeedbackArea.getText()
+            );
+
+            if (request == null) {
+                return;
+            }
+
+            saveButton.setDisable(true);
+            saveButton.setText("Saving...");
+
+            Task<Void> task = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    examApiService.saveEssayReview(request);
+                    return null;
+                }
+            };
+
+            task.setOnSucceeded(e -> {
+                saveButton.setText("✔ Saved");
+                openStudentReview(currentReviewStudent);
+            });
+
+            task.setOnFailed(e -> {
+                Throwable ex = task.getException();
+
+                if (ex != null) {
+                    ex.printStackTrace();
+                }
+
+                saveButton.setDisable(false);
+                saveButton.setText("✔ Save Essay Review");
+
+                showError("Unable to save essay review.");
+            });
+
+            Thread thread = new Thread(task, "save-essay-review-thread");
+            thread.setDaemon(true);
+            thread.start();
+        });
+
+        HBox saveRow = new HBox(12, totalLabel, saveButton);
+        saveRow.setAlignment(Pos.CENTER_RIGHT);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        saveRow.getChildren().add(1, spacer);
+
+        box.getChildren().addAll(
+                title,
+                subtitle,
+                rowsBox,
+                createFeedbackBlock("Overall Essay Feedback", generalFeedbackArea),
+                saveRow
+        );
+
+        return box;
+    }
+
+    private HBox createEssayRubricScoreRow(
+            ExamAttemptAnswerReviewDTO answer,
+            EssayRubricRequest rubric,
+            EssayRubricScoreResponse savedScore,
+            Runnable updateTotal
+    ) {
+        HBox row = new HBox(10);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.getStyleClass().add("essay-rubric-score-row");
+
+        Label criterionLabel = new Label(safe(rubric.getCriterionName()));
+        criterionLabel.getStyleClass().add("essay-rubric-criterion");
+        criterionLabel.setWrapText(true);
+        criterionLabel.setMinWidth(160);
+        criterionLabel.setPrefWidth(180);
+
+        BigDecimal maxPoints = calculateCriterionMaxPoints(answer, rubric);
+
+        Label weightLabel = new Label(
+                formatPoints(rubric.getWeightPercentage()) +
+                        "% • max " +
+                        formatPoints(maxPoints) +
+                        " pts"
+        );
+        weightLabel.getStyleClass().add("essay-rubric-weight");
+        weightLabel.setMinWidth(150);
+
+        TextField percentField = new TextField();
+
+        percentField.setPromptText("0-100");
+        percentField.setPrefWidth(80);
+        percentField.getStyleClass().add("review-score-field");
+
+        if (savedScore != null && savedScore.getScorePercentage() != null) {
+            percentField.setText(
+                    savedScore == null || savedScore.getScorePercentage() == null
+                            ? ""
+                            : formatPoints(savedScore.getScorePercentage())
+            );
+        }
+
+        Label percentSymbol = new Label("%");
+        percentSymbol.getStyleClass().add("essay-rubric-weight");
+
+        Label pointsPreview = new Label("0 pts");
+        pointsPreview.getStyleClass().add("essay-rubric-points");
+        pointsPreview.setMinWidth(90);
+
+        TextField feedbackField = new TextField();
+        feedbackField.setPromptText("Optional criterion feedback");
+        feedbackField.getStyleClass().add("essay-rubric-feedback-field");
+
+        if (savedScore != null) {
+            feedbackField.setText(safe(savedScore.getFeedback()));
+        }
+
+        HBox.setHgrow(feedbackField, Priority.ALWAYS);
+
+        Runnable updatePreview = () -> {
+            BigDecimal percentage = parsePercentage(percentField.getText());
+
+            BigDecimal awarded = maxPoints
+                    .multiply(percentage)
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+            pointsPreview.setText(formatPoints(awarded) + " pts");
+
+            updateTotal.run();
+        };
+
+        percentField.textProperty().addListener((obs, oldVal, newVal) -> updatePreview.run());
+
+        row.setUserData(new EssayRubricRowData(
+                rubric.getRubricId(),
+                percentField,
+                feedbackField
+        ));
+
+        updatePreview.run();
+
+        row.getChildren().addAll(
+                criterionLabel,
+                weightLabel,
+                percentField,
+                percentSymbol,
+                pointsPreview,
+                feedbackField
+        );
+
+        return row;
+    }
+
+    private EssayReviewRequest buildEssayReviewRequest(
+            ExamAttemptAnswerReviewDTO answer,
+            VBox rowsBox,
+            String generalFeedback
+    ) {
+        EssayReviewRequest request = new EssayReviewRequest();
+
+        request.setAnswerId(answer.getAnswerId());
+        request.setFacultyFeedback(generalFeedback);
+
+        for (javafx.scene.Node node : rowsBox.getChildren()) {
+
+            if (!(node instanceof HBox row)) {
+                continue;
+            }
+
+            if (!(row.getUserData() instanceof EssayRubricRowData rowData)) {
+                continue;
+            }
+
+            String rawScore = rowData.percentField.getText() == null
+                    ? ""
+                    : rowData.percentField.getText().trim();
+
+            if (rawScore.isBlank()) {
+                showError("Please enter a score percentage for all rubric criteria.");
+                rowData.percentField.requestFocus();
+                return null;
+            }
+
+            BigDecimal percentage;
+
+            try {
+                percentage = new BigDecimal(rawScore);
+            } catch (Exception e) {
+                showError("Score percentage must be a valid number.");
+                rowData.percentField.requestFocus();
+                return null;
+            }
+
+            if (percentage.compareTo(BigDecimal.ZERO) < 0 ||
+                    percentage.compareTo(new BigDecimal("100")) > 0) {
+                showError("Score percentage must be between 0 and 100.");
+                rowData.percentField.requestFocus();
+                return null;
+            }
+
+            if (percentage.compareTo(BigDecimal.ZERO) < 0 ||
+                    percentage.compareTo(new BigDecimal("100")) > 0) {
+
+                showError("Rubric score percentage must be between 0 and 100.");
+                return null;
+            }
+
+            EssayRubricScoreRequest score = new EssayRubricScoreRequest();
+            score.setRubricId(rowData.rubricId);
+            score.setScorePercentage(percentage);
+            score.setFeedback(rowData.feedbackField.getText());
+
+            request.getRubricScores().add(score);
+        }
+
+        if (request.getRubricScores().isEmpty()) {
+            showError("Essay rubric score is required.");
+            return null;
+        }
+
+        return request;
+    }
+
+    private BigDecimal calculateEssayRubricTotal(
+            VBox rowsBox,
+            ExamAttemptAnswerReviewDTO answer
+    ) {
+        BigDecimal total = BigDecimal.ZERO;
+
+        if (answer.getRubrics() == null) {
+            return total;
+        }
+
+        Map<Long, EssayRubricRequest> rubricMap = new HashMap<>();
+
+        for (EssayRubricRequest rubric : answer.getRubrics()) {
+            rubricMap.put(rubric.getRubricId(), rubric);
+        }
+
+        for (javafx.scene.Node node : rowsBox.getChildren()) {
+
+            if (!(node instanceof HBox row)) {
+                continue;
+            }
+
+            if (!(row.getUserData() instanceof EssayRubricRowData rowData)) {
+                continue;
+            }
+
+            EssayRubricRequest rubric = rubricMap.get(rowData.rubricId);
+
+            if (rubric == null) {
+                continue;
+            }
+
+            BigDecimal percentage = parsePercentage(rowData.percentField.getText());
+            BigDecimal maxPoints = calculateCriterionMaxPoints(answer, rubric);
+
+            BigDecimal awarded = maxPoints
+                    .multiply(percentage)
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+            total = total.add(awarded);
+        }
+
+        return total;
+    }
+
+    private BigDecimal calculateCriterionMaxPoints(
+            ExamAttemptAnswerReviewDTO answer,
+            EssayRubricRequest rubric
+    ) {
+        BigDecimal questionPoints =
+                answer.getPoints() == null ? BigDecimal.ZERO : answer.getPoints();
+
+        BigDecimal weight =
+                rubric.getWeightPercentage() == null ? BigDecimal.ZERO : rubric.getWeightPercentage();
+
+        return questionPoints
+                .multiply(weight)
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal parsePercentage(String value) {
+        if (value == null || value.trim().isBlank()) {
+            return BigDecimal.ZERO;
+        }
+
+        try {
+            return new BigDecimal(value.trim());
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private VBox createFeedbackBlock(String title, TextArea area) {
+        Label label = new Label(title);
+        label.getStyleClass().add("review-answer-label");
+
+        VBox box = new VBox(6, label, area);
+        box.setMaxWidth(Double.MAX_VALUE);
+
+        return box;
+    }
+
+    private VBox createEssayFallbackReviewBox(ExamAttemptAnswerReviewDTO answer) {
+        VBox box = new VBox(10);
+        box.getStyleClass().add("essay-review-panel");
+
+        Label title = new Label("Essay Manual Review");
+        title.getStyleClass().add("essay-review-title");
+
+        Label note = new Label("No rubric was configured for this essay. Use manual score editing.");
+        note.setWrapText(true);
+        note.getStyleClass().add("essay-review-subtitle");
+
+        box.getChildren().addAll(title, note);
+
+        return box;
+    }
+
+    private static class EssayRubricRowData {
+        private final Long rubricId;
+        private final TextField percentField;
+        private final TextField feedbackField;
+
+        private EssayRubricRowData(
+                Long rubricId,
+                TextField percentField,
+                TextField feedbackField
+        ) {
+            this.rubricId = rubricId;
+            this.percentField = percentField;
+            this.feedbackField = feedbackField;
+        }
+    }
+
+
 
     private void runExamActionAsync(String loadingText, Runnable action) {
         setLoading(true);
@@ -2777,14 +4003,16 @@ public class ExamManagementController implements ShellAwareController {
                 studentsTabButton,
                 proctorTabButton,
                 activityLogTabButton,
-                leaderboardTabButton
+                leaderboardTabButton,
+                reportsTabButton
         );
 
         for (Button button : buttons) {
             button.getStyleClass().remove("workspace-tab-active");
         }
 
-        if (activeButton != null) {
+        if (activeButton != null&&
+                !activeButton.getStyleClass().contains("workspace-tab-active")) {
             activeButton.getStyleClass().add("workspace-tab-active");
         }
     }
@@ -2833,12 +4061,56 @@ public class ExamManagementController implements ShellAwareController {
         return String.format("%.1f / %.1f", s, t);
     }
 
+    private boolean answerNeedsReview(ExamAttemptAnswerReviewDTO answer) {
+        String status = safe(answer.getReviewStatus());
+
+        return "PENDING".equalsIgnoreCase(status)
+                || "FLAGGED".equalsIgnoreCase(status)
+                || Boolean.TRUE.equals(answer.getNeedsChecking());
+    }
+
     private String formatPercent(Double value) {
         if (value == null) {
             return "0%";
         }
 
         return String.format("%.0f%%", value);
+    }
+
+    private String askPortfolioMode() {
+
+        int assignedClassCount =
+                currentWorkspaceDetail == null ||
+                        currentWorkspaceDetail.getAssignedClasses() == null
+                        ? 0
+                        : currentWorkspaceDetail.getAssignedClasses().size();
+
+        if (assignedClassCount <= 1) {
+            return "MERGE";
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Generate Portfolio Report");
+        alert.setHeaderText("This exam has multiple assigned classes.");
+        alert.setContentText("How do you want to generate the portfolio report?");
+
+        ButtonType mergeButton = new ButtonType("Merge into one PDF");
+        ButtonType separateButton = new ButtonType("Separate by class");
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        alert.getButtonTypes().setAll(
+                mergeButton,
+                separateButton,
+                cancelButton
+        );
+
+        Optional<ButtonType> result = alert.showAndWait();
+
+        if (result.isEmpty() || result.get() == cancelButton) {
+            return null;
+        }
+
+        return result.get() == separateButton ? "SEPARATE" : "MERGE";
     }
 
 }

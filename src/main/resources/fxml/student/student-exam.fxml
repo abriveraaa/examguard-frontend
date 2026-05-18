@@ -3,32 +3,64 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane xmlns="http://javafx.com/javafx/17.0.12"
+<BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.example.examguard.controller.student.StudentExamListController"
-            stylesheets="/styles/student-exams.css"
-            styleClass="page-root">
+            fx:controller="com.example.examguard.controller.student.StudentExamsController"
+            styleClass="student-exams-root"
+            stylesheets="@../../styles/student-exam.css">
 
     <top>
-        <VBox spacing="6" styleClass="page-header">
-            <Label text="My Exams" styleClass="page-title"/>
-            <Label text="View and take your assigned exams." styleClass="page-subtitle"/>
+        <VBox spacing="16" styleClass="student-exams-top">
+
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Button fx:id="allButton" text="All" onAction="#filterAll" styleClass="exam-filter-active"/>
+                <Button fx:id="upcomingButton" text="Upcoming" onAction="#filterUpcoming" styleClass="exam-filter-button"/>
+                <Button fx:id="inProgressButton" text="In Progress" onAction="#filterOngoing" styleClass="exam-filter-button"/>
+                <Button fx:id="submittedButton" text="Pending Review" onAction="#filterPendingReview" styleClass="exam-filter-button"/>
+                <Button fx:id="resultsButton" text="Results Released" onAction="#filterResultsReleased" styleClass="exam-filter-button"/>
+                <Button fx:id="missedButton" text="Did Not Take" onAction="#filterMissed" styleClass="exam-filter-button"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <HBox spacing="14" alignment="CENTER_RIGHT" styleClass="student-exams-top-row">
+
+                    <ComboBox fx:id="termComboBox"
+                              promptText="Second Semester, AY 2025-2026"
+                              styleClass="student-term-combo"/>
+
+                    <TextField fx:id="searchField"
+                               promptText="Search exams..."
+                               styleClass="student-search-field"/>
+
+                </HBox>
+            </HBox>
+
         </VBox>
     </top>
 
     <center>
-        <VBox spacing="14" styleClass="content-area">
-            <TableView fx:id="examTable" styleClass="modern-table">
-                <columns>
-                    <TableColumn fx:id="titleColumn" text="Exam Title" prefWidth="280"/>
-                    <TableColumn fx:id="courseColumn" text="Course" prefWidth="120"/>
-                    <TableColumn fx:id="scheduleColumn" text="Schedule" prefWidth="230"/>
-                    <TableColumn fx:id="statusColumn" text="Status" prefWidth="120"/>
-                    <TableColumn fx:id="questionsColumn" text="Questions" prefWidth="90"/>
-                    <TableColumn fx:id="timeColumn" text="Time Limit" prefWidth="100"/>
-                    <TableColumn fx:id="actionColumn" text="Action" prefWidth="140"/>
-                </columns>
-            </TableView>
+        <VBox spacing="12" styleClass="student-exams-panel">
+
+            <ScrollPane fx:id="examScrollPane"
+                        fitToWidth="true"
+                        hbarPolicy="NEVER"
+                        vbarPolicy="AS_NEEDED"
+                        styleClass="exam-card-scroll"
+                        VBox.vgrow="ALWAYS">
+
+                <TilePane fx:id="examCardGrid"
+                          vgap="22"
+                          alignment="TOP_LEFT"
+                          tileAlignment="TOP_LEFT"
+                          styleClass="exam-card-grid"/>
+            </ScrollPane>
+
+            <HBox alignment="CENTER_RIGHT" spacing="8" styleClass="exam-pagination-bar">
+                <Button text="‹" onAction="#previousPage" styleClass="pagination-button"/>
+                <Label fx:id="pageInfoLabel" text="Page 1" styleClass="pagination-label"/>
+                <Button text="›" onAction="#nextPage" styleClass="pagination-button"/>
+            </HBox>
+
         </VBox>
     </center>
 

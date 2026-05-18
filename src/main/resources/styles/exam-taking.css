@@ -509,3 +509,471 @@
 .lobby-actions {
     -fx-max-width: 980;
 }
+
+.exam-instruction-box {
+    -fx-background-color: #FFF8E1;
+    -fx-border-color: #D6A600;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10 12;
+    -fx-text-fill: #4A3500;
+    -fx-font-size: 13px;
+}
+
+.exam-rubric-box {
+    -fx-background-color: #FFFDF8;
+    -fx-border-color: #E7DCC8;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 12;
+}
+
+.exam-rubric-title {
+    -fx-text-fill: #800000;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.exam-rubric-row {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 12px;
+}
+
+.lobby-status-pending {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #374151;
+    -fx-padding: 8 12;
+    -fx-background-radius: 999;
+    -fx-font-weight: bold;
+}
+
+.lobby-status-checking {
+    -fx-background-color: #fff7db;
+    -fx-text-fill: #92400e;
+    -fx-padding: 8 12;
+    -fx-background-radius: 999;
+    -fx-font-weight: bold;
+}
+
+.lobby-status-passed {
+    -fx-background-color: #dcfce7;
+    -fx-text-fill: #166534;
+    -fx-padding: 8 12;
+    -fx-background-radius: 999;
+    -fx-font-weight: bold;
+}
+
+.lobby-status-failed {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #991b1b;
+    -fx-padding: 8 12;
+    -fx-background-radius: 999;
+    -fx-font-weight: bold;
+}
+
+.lobby-status-warning {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #92400e;
+    -fx-padding: 8 12;
+    -fx-background-radius: 999;
+    -fx-font-weight: bold;
+}
+
+.lobby-readiness-card {
+    -fx-background-color: white;
+    -fx-padding: 18;
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-border-color: #e5e7eb;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 16, 0, 0, 4);
+}
+
+.lobby-readiness-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #302C29;
+}
+
+.lobby-readiness-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6b7280;
+}
+
+.lobby-check-row {
+    -fx-background-color: #faf7f2;
+    -fx-padding: 10 14;
+    -fx-background-radius: 13;
+    -fx-border-radius: 13;
+    -fx-border-color: #eee4da;
+
+    -fx-min-height: 72;
+    -fx-pref-height: 72;
+    -fx-max-height: 72;
+
+    -fx-alignment: center-left;
+}
+
+.lobby-check-row:hover {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d1d5db;
+}
+
+.lobby-check-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #302C29;
+}
+
+.lobby-check-description {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6b7280;
+}
+
+.lobby-check-detail {
+    -fx-font-size: 11px;
+    -fx-text-fill: #7a7069;
+
+    -fx-max-height: 16;
+}
+
+.lobby-status-pending,
+.lobby-status-checking,
+.lobby-status-passed,
+.lobby-status-failed,
+.lobby-status-warning {
+    -fx-padding: 5 10;
+    -fx-background-radius: 999;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-min-width: 68;
+    -fx-alignment: center;
+}
+
+.lobby-status-pending {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #374151;
+}
+
+.lobby-status-checking {
+    -fx-background-color: #fff7db;
+    -fx-text-fill: #92400e;
+}
+
+.lobby-status-passed {
+    -fx-background-color: #dcfce7;
+    -fx-text-fill: #166534;
+}
+
+.lobby-status-failed {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #991b1b;
+}
+
+.lobby-status-warning {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #92400e;
+}
+
+.lobby-root {
+    -fx-background-color: #f6f3ef;
+    -fx-padding: 32;
+}
+
+.lobby-card {
+    -fx-alignment: center;
+}
+
+.lobby-step-card {
+    -fx-background-color: white;
+    -fx-padding: 28;
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-border-color: #e6ded6;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 18, 0, 0, 6);
+    -fx-min-width: 620;
+    -fx-max-width: 720;
+}
+
+.lobby-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #302C29;
+}
+
+.lobby-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6b625c;
+}
+
+.agreement-box,
+.checks-list {
+    -fx-background-color: #faf8f5;
+    -fx-padding: 16;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #eee4da;
+}
+
+.section-title {
+    -fx-font-weight: 700;
+    -fx-text-fill: #302C29;
+}
+
+.primary-button {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 999;
+    -fx-padding: 9 18;
+}
+
+.secondary-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #800000;
+    -fx-border-color: #800000;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-padding: 9 18;
+}
+
+/* Exam lobby one-card wizard */
+.lobby-page-center {
+    -fx-padding: 28;
+}
+
+.lobby-wizard-card {
+    -fx-background-color: white;
+    -fx-background-radius: 24;
+    -fx-border-radius: 24;
+    -fx-border-color: #eadfd7;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 24, 0, 0, 8);
+
+    -fx-pref-width: 590;
+    -fx-max-width: 590;
+}
+
+.lobby-card-header {
+    -fx-padding: 20 24 14 24;
+    -fx-border-color: transparent transparent #efe7df transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.lobby-eyebrow {
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #800000;
+    -fx-letter-spacing: 0.4px;
+}
+
+.lobby-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #302C29;
+}
+
+.lobby-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6b625c;
+}
+
+.lobby-step-pill {
+    -fx-background-color: #fff4e6;
+    -fx-text-fill: #8a4b00;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-padding: 6 12;
+    -fx-background-radius: 999;
+}
+
+.lobby-meta-row {
+    -fx-padding: 2 0 0 0;
+}
+
+.lobby-meta-item {
+    -fx-background-color: #faf7f2;
+    -fx-padding: 10 12;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: #eee4da;
+}
+
+.lobby-meta-label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #8a817a;
+}
+
+.lobby-meta-value {
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #302C29;
+}
+
+.lobby-step-wrapper {
+    -fx-padding: 16 24 14 24;
+}
+
+.lobby-step-content {
+    -fx-fill-width: true;
+}
+
+.lobby-section-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #302C29;
+}
+
+.lobby-section-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #736a63;
+}
+
+.lobby-rules-list {
+    -fx-padding: 0;
+}
+
+.lobby-rule-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #3f3a36;
+}
+
+.lobby-agreement-check {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #302C29;
+    -fx-padding: 8 0 0 0;
+}
+
+.lobby-check-row {
+    -fx-background-color: #faf7f2;
+    -fx-padding: 10 12;
+    -fx-background-radius: 13;
+    -fx-border-radius: 13;
+    -fx-border-color: #eee4da;
+}
+
+.lobby-check-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #302C29;
+}
+
+.lobby-check-detail {
+    -fx-font-size: 11px;
+    -fx-text-fill: #7a7069;
+}
+
+.lobby-footer-actions {
+    -fx-padding: 14 24 20 24;
+    -fx-border-color: #efe7df transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.lobby-status-pending,
+.lobby-status-checking,
+.lobby-status-passed,
+.lobby-status-failed,
+.lobby-status-warning {
+    -fx-padding: 4 10;
+    -fx-background-radius: 999;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+}
+
+.lobby-status-pending {
+    -fx-background-color: #f1f5f9;
+    -fx-text-fill: #475569;
+}
+
+.lobby-status-checking {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #92400e;
+}
+
+.lobby-status-passed {
+    -fx-background-color: #dcfce7;
+    -fx-text-fill: #166534;
+}
+
+.lobby-status-failed {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #991b1b;
+}
+
+.lobby-status-warning {
+    -fx-background-color: #ffedd5;
+    -fx-text-fill: #9a3412;
+}
+
+/* =========================
+   LOBBY BRANDING SPLIT LAYOUT
+   Add this below the existing exam lobby CSS.
+========================= */
+
+.lobby-shell-root {
+    -fx-background-color:
+            linear-gradient(
+                    to bottom right,
+                    #2A0E12 0%,
+                    #4A1016 45%,
+                    #701A22 100%
+            );
+}
+
+.lobby-brand-panel {
+    -fx-padding: 48;
+}
+
+.lobby-brand-content {
+    -fx-alignment: center;
+}
+
+.lobby-card-side {
+    -fx-padding: 36 44 36 24;
+}
+
+.brand-title {
+    -fx-font-size: 42px;
+    -fx-font-weight: 900;
+    -fx-text-fill: white;
+}
+
+.brand-subtitle {
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #D4AF37;
+}
+
+.brand-description {
+    -fx-font-size: 14px;
+    -fx-text-fill: rgba(255,255,255,0.78);
+}
+
+.lobby-wizard-card {
+    -fx-background-color: rgba(255,255,255,0.98);
+    -fx-background-radius: 26;
+    -fx-border-radius: 26;
+    -fx-border-color: rgba(255,255,255,0.42);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 30, 0, 0, 12);
+    -fx-pref-width: 560;
+    -fx-max-width: 560;
+    -fx-max-height: 620;
+}
+
+.lobby-status-pending,
+.lobby-status-checking,
+.lobby-status-passed,
+.lobby-status-failed,
+.lobby-status-warning {
+
+    -fx-padding: 4 10;
+    -fx-background-radius: 999;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+
+    -fx-min-width: 78;
+    -fx-pref-width: 78;
+    -fx-max-width: 78;
+
+    -fx-alignment: center;
+}

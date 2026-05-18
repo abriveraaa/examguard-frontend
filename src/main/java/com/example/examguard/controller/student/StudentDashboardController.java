@@ -1,7 +1,9 @@
 package com.example.examguard.controller.student;
 
-import com.example.examguard.model.student.*;
-import com.example.examguard.model.student.response.StudentDashboardResponse;
+import com.example.examguard.controller.layout.DashboardShellController;
+import com.example.examguard.controller.layout.ShellAwareController;
+import com.example.examguard.model.student.dashboard.*;
+import com.example.examguard.model.student.StudentDashboardResponse;
 import com.example.examguard.service.StudentApiService;
 import com.example.examguard.utility.LoadingSpinner;
 import javafx.animation.PauseTransition;
@@ -25,7 +27,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class StudentDashboardController {
+public class StudentDashboardController implements ShellAwareController {
+
+    private DashboardShellController shellController;
 
     @FXML private ImageView studentAvatarImageView;
     @FXML private Label studentInitialsLabel;
@@ -35,18 +39,24 @@ public class StudentDashboardController {
     @FXML private Label studentProgramLabel;
     @FXML private Label studentCollegeLabel;
     @FXML private Label studentCurrentTermLabel;
-    @FXML private Label studentIntegrityStatusLabel;
-    @FXML private Label studentIntegritySubtitleLabel;
+    @FXML private Label viewAllUpcomingExamsLabel;
+    @FXML private Label viewAllPendingReviewLabel;
+    @FXML private Label viewAllResultsReleasedLabel;
 
     @FXML private VBox upcomingExamList;
     @FXML private VBox violationList;
     @FXML private VBox resultSummaryList;
 
-    private final StudentApiService dashboardApiService =
-            new StudentApiService();
+    private final StudentApiService dashboardApiService = new StudentApiService();
+
+    @Override
+    public void setShellController(DashboardShellController shellController) {
+        this.shellController = shellController;
+    }
 
     @FXML
     public void initialize() {
+        setupViewAllRedirects();
         showLoadingState();
         loadDashboardAsync();
     }
@@ -211,17 +221,6 @@ public class StudentDashboardController {
 
         studentCurrentTermLabel.setText(safe(profile.getCurrentTerm()));
 
-        studentIntegrityStatusLabel.setText(
-                safe(profile.getIntegrityStatus()).isBlank()
-                        ? "Good Standing"
-                        : profile.getIntegrityStatus()
-        );
-
-        studentIntegritySubtitleLabel.setText(
-                safe(profile.getIntegritySubtitle()).isBlank()
-                        ? "No unresolved major violation."
-                        : profile.getIntegritySubtitle()
-        );
     }
 
     private void loadUpcomingExams(List<StudentUpcomingExam> exams) {
@@ -339,48 +338,39 @@ public class StudentDashboardController {
 
     private HBox createViolationRow(StudentViolationSummary violation) {
 
-        String label = violation.getViolationType();
-
-        if (label == null || label.isBlank()) {
-            label = "VIOLATION";
-        }
-
-        label = label.replace("_", " ");
-
-        String displayText =
-                violation.getCountViolation() + " - " + label;
+        Label title = new Label(safe(violation.getExamTitle()));
+        title.getStyleClass().add("oracle-row-title");
 
         Label course = new Label(safe(violation.getCourseCode()));
-        course.getStyleClass().add("student-course-pill");
+        course.getStyleClass().add("oracle-row-subtitle");
 
-        Label text = new Label(displayText);
-        text.getStyleClass().add("oracle-row-title");
+        VBox textBox = new VBox(3, title, course);
+        HBox.setHgrow(textBox, Priority.ALWAYS);
 
-        Label reviewText = new Label("PENDING REVIEW");
-        reviewText.getStyleClass().add("review-text");
+        Label status = new Label(safe(violation.getStatus()));
 
-        Region topSpacer = new Region();
-        HBox.setHgrow(topSpacer, Priority.ALWAYS);
+        if ("Decision Released".equalsIgnoreCase(violation.getStatus())) {
+            status.getStyleClass().add("result-status-released");
+        } else {
+            status.getStyleClass().add("review-text");
+        }
 
-        HBox topRow = new HBox(
-                8,
-                text,
-                topSpacer,
-                reviewText
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox row = new HBox(
+                12,
+                textBox,
+                spacer,
+                status
         );
 
-        topRow.setAlignment(Pos.TOP_LEFT);
-
-        Label exam = new Label(safe(violation.getExamTitle()));
-        exam.getStyleClass().add("oracle-row-subtitle");
-        exam.setWrapText(true);
-
-        VBox infoBox = new VBox(3, topRow, exam);
-        HBox.setHgrow(infoBox, Priority.ALWAYS);
-
-        HBox row = new HBox(10, course, infoBox);
-        row.setAlignment(Pos.TOP_LEFT);
+        row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add("oracle-small-row");
+
+        row.setOnMouseClicked(event -> {
+            openViolationWorkspace(violation);
+        });
 
         return row;
     }
@@ -408,67 +398,34 @@ public class StudentDashboardController {
 
     private HBox createResultRow(StudentResultSummary result) {
 
+        Label title = new Label(safe(result.getExamTitle()));
+        title.getStyleClass().add("oracle-row-title");
+
         Label course = new Label(safe(result.getCourseCode()));
-        course.getStyleClass().add("student-course-pill");
+        course.getStyleClass().add("oracle-row-subtitle");
 
-        course.setMinWidth(Region.USE_PREF_SIZE);
-        course.setMaxWidth(Region.USE_PREF_SIZE);
-        course.setWrapText(false);
+        VBox textBox = new VBox(3, title, course);
+        HBox.setHgrow(textBox, Priority.ALWAYS);
 
-        String scoreText = result.getScorePercentage() == null
-                ? "RESULT PENDING"
-                : String.format("%.0f%%", defaultDouble(result.getScorePercentage()));
-
-        Label score = new Label(scoreText);
-        score.getStyleClass().add("oracle-row-title");
-
-        Label statusText = new Label(
-                result.getScorePercentage() == null
-                        ? "FOR CHECKING"
-                        : formatStatus(result.getAttemptStatus())
-        );
-
-        statusText.getStyleClass().add(
-                result.getScorePercentage() == null
-                        ? "result-status-checking"
-                        : "result-status-released"
-        );
-
-        Region topSpacer = new Region();
-        HBox.setHgrow(topSpacer, Priority.ALWAYS);
-
-        HBox topRow = new HBox(8, score, topSpacer, statusText);
-        topRow.setAlignment(Pos.CENTER_LEFT);
-
-        Label exam = new Label(safe(result.getExamTitle()));
-        exam.getStyleClass().add("oracle-row-subtitle");
-        exam.setWrapText(false);
-        exam.setTextOverrun(OverrunStyle.ELLIPSIS);
-        exam.setMaxWidth(Double.MAX_VALUE);
-
-        VBox infoBox = new VBox(3, topRow, exam);
-        HBox.setHgrow(infoBox, Priority.ALWAYS);
-
-        HBox row = new HBox(10, course, infoBox);
-        row.setAlignment(Pos.TOP_LEFT);
-        row.getStyleClass().add("oracle-small-row");
-
-        return row;
-    }
-
-    private HBox createAverageRow(double average) {
-        Label label = new Label("Average Score");
-        label.getStyleClass().add("oracle-row-title");
+        Label status = new Label(safe(result.getStatus()));
+        status.getStyleClass().add("result-status-released");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label value = new Label(String.format("%.0f%%", average));
-        value.getStyleClass().add("student-course-score");
+        HBox row = new HBox(
+                12,
+                textBox,
+                spacer,
+                status
+        );
 
-        HBox row = new HBox(12, label, spacer, value);
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add("oracle-small-row");
+
+        row.setOnMouseClicked(event -> {
+            openResultWorkspace(result);
+        });
 
         return row;
     }
@@ -538,20 +495,6 @@ public class StudentDashboardController {
         }
     }
 
-    private String formatDateTime(String value) {
-        if (value == null || value.isBlank()) {
-            return "";
-        }
-
-        try {
-            return OffsetDateTime.parse(value)
-                    .atZoneSameInstant(java.time.ZoneId.of("Asia/Manila"))
-                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a"));
-        } catch (Exception e) {
-            return value;
-        }
-    }
-
     private String formatDateRange(OffsetDateTime startValue, OffsetDateTime endValue) {
         if (startValue == null || endValue == null) {
             return "";
@@ -579,20 +522,6 @@ public class StudentDashboardController {
         } catch (Exception e) {
             return startValue + " - " + endValue;
         }
-    }
-
-    private double computeAverage(List<StudentResultSummary> results) {
-        if (results == null || results.isEmpty()) {
-            return 0;
-        }
-
-        double total = 0;
-
-        for (StudentResultSummary result : results) {
-            total += defaultDouble(result.getScorePercentage());
-        }
-
-        return total / results.size();
     }
 
     private String getInitials(String firstName, String lastName) {
@@ -627,8 +556,88 @@ public class StudentDashboardController {
         return value == null ? 0 : value;
     }
 
-    private double defaultDouble(Double value) {
-        return value == null ? 0 : value;
+    private void openResultWorkspace(StudentResultSummary result) {
+
+        if (result == null || result.getExamId() == null) {
+            return;
+        }
+
+        try {
+            dashboardApiService.markResultViewed(result.getExamId());
+
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource(
+                            "/fxml/student/student-results-workspace.fxml"
+                    )
+            );
+
+            Parent content = loader.load();
+
+            StudentResultsWorkspaceController controller =
+                    loader.getController();
+
+            if (shellController != null) {
+                controller.setShellController(shellController);
+
+                shellController.hideHeroSection();
+                shellController.hideHeroCards();
+
+                shellController.setGreeting(
+                        "Released Exam Results",
+                        "Review your submitted answers, feedback, and rubric evaluation."
+                );
+
+                shellController.setWorkspaceContent(content);
+            }
+
+            controller.loadResult(result.getExamId());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+//            showError("Failed to open released result.");
+        }
+    }
+
+    private void openViolationWorkspace(StudentViolationSummary violation) {
+
+        if (violation == null || violation.getExamId() == null) {
+            return;
+        }
+
+        try {
+            dashboardApiService.markViolationViewed(violation.getExamId());
+
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource(
+                            "/fxml/student/student-results-workspace.fxml"
+                    )
+            );
+
+            Parent content = loader.load();
+
+            StudentResultsWorkspaceController controller =
+                    loader.getController();
+
+            if (shellController != null) {
+                controller.setShellController(shellController);
+
+                shellController.hideHeroSection();
+                shellController.hideHeroCards();
+
+                shellController.setGreeting(
+                        "Reviewed Violation",
+                        "Review the related exam result, violation decision, and feedback."
+                );
+
+                shellController.setWorkspaceContent(content);
+            }
+
+            controller.loadResult(violation.getExamId());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+//            showError("Failed to open violation result.");
+        }
     }
 
     private void openExamPage(StudentUpcomingExam exam, Button clickedButton) {
@@ -652,7 +661,9 @@ public class StudentDashboardController {
                 ExamTakingController controller = loader.getController();
                 controller.setExamLobby(
                         exam.getExamId(),
-                        defaultInt(exam.getTimeLimitMinutes())
+                        exam.getTitle(),
+                        exam.getTimeLimitMinutes(),
+                        exam.getQuestionCount()
                 );
 
                 Scene examScene = new Scene(root);
@@ -673,6 +684,42 @@ public class StudentDashboardController {
         });
 
         delay.play();
+    }
+
+    private void setupViewAllRedirects() {
+
+        setupViewAllLabel(
+                viewAllUpcomingExamsLabel,
+                "UPCOMING"
+        );
+
+        setupViewAllLabel(
+                viewAllPendingReviewLabel,
+                "PENDING REVIEW"
+        );
+
+        setupViewAllLabel(
+                viewAllResultsReleasedLabel,
+                "RESULTS RELEASED"
+        );
+    }
+
+    private void setupViewAllLabel(Label label, String filter) {
+
+        if (label == null) {
+            return;
+        }
+
+        label.setOnMouseClicked(event -> {
+
+            if (shellController != null) {
+                shellController.openStudentExamsPageWithFilter(filter);
+            }
+        });
+
+        label.setOnMouseEntered(event -> {
+            label.setStyle("-fx-cursor: hand;");
+        });
     }
 
     private void openExamReview(StudentUpcomingExam exam) {

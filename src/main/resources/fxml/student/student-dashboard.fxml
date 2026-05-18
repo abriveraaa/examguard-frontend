@@ -31,15 +31,15 @@
             <VBox alignment="CENTER" spacing="3">
                 <Label fx:id="studentNameLabel"
                        styleClass="student-profile-name"
-                       text="Student Name" />
+                       text=" " />
 
                 <Label fx:id="studentEmailLabel"
                        styleClass="student-profile-email"
-                       text="student@email.com" />
+                       text=" " />
 
                 <Label fx:id="studentIDLabel"
                        styleClass="student-profile-id"
-                       text="2024-00000-MN-0" />
+                       text=" " />
             </VBox>
 
             <Separator />
@@ -70,17 +70,6 @@
                 </VBox>
             </VBox>
 
-            <VBox spacing="7" styleClass="student-risk-box">
-                <Label styleClass="student-risk-title" text="Integrity Status" />
-                <Label fx:id="studentIntegrityStatusLabel"
-                       styleClass="student-risk-good"
-                       text="Good Standing" />
-                <Label fx:id="studentIntegritySubtitleLabel"
-                       styleClass="student-risk-subtitle"
-                       text="No unresolved major violation."
-                       wrapText="true" />
-            </VBox>
-
             <Region VBox.vgrow="ALWAYS" />
 
             <Label styleClass="student-profile-link" text="My Profile →" />
@@ -103,10 +92,14 @@
 
                         <Region HBox.hgrow="ALWAYS" />
                         <Button onAction="#handleReloadUpcomingExams"
-                                styleClass="student-small-reload-button"
-                                text="Reload" />
+                                styleClass="student-reload-button"
+                                text="↻" />
 
-                        <Label styleClass="student-view-all" text="View All →" />
+                        <Label
+                                fx:id="viewAllUpcomingExamsLabel"
+                                styleClass="student-view-all"
+                                text="View All →"
+                        />
 
                     </HBox>
 
@@ -122,7 +115,7 @@
                 <!-- RIGHT COLUMN -->
                 <VBox spacing="18" styleClass="student-side-section">
 
-                    <VBox spacing="12" styleClass="student-clean-box">
+                    <VBox spacing="12" styleClass="student-clean-box" VBox.vgrow="ALWAYS">
                         <HBox alignment="CENTER_LEFT">
                             <VBox spacing="2">
                                 <Label styleClass="student-section-title-small" text="Violations" />
@@ -132,20 +125,25 @@
                             <Region HBox.hgrow="ALWAYS" />
 
                             <Button onAction="#handleReloadViolations"
-                                    styleClass="student-small-reload-button"
-                                    text="Reload" />
+                                    styleClass="student-reload-button"
+                                    text="↻" />
 
-                            <Label styleClass="student-view-all" text="View All →" />
+                            <Label
+                                    fx:id="viewAllPendingReviewLabel"
+                                    styleClass="student-view-all"
+                                    text="View All →"
+                            />
                         </HBox>
 
                         <Pane styleClass="student-gold-line" />
 
                         <VBox fx:id="violationList"
-                              spacing="0"
+                              spacing="6"
                               styleClass="oracle-list" />
+
                     </VBox>
 
-                    <VBox spacing="12" styleClass="student-clean-box">
+                    <VBox spacing="12" styleClass="student-clean-box" VBox.vgrow="ALWAYS">
                         <HBox alignment="CENTER_LEFT">
                             <VBox spacing="2">
                                 <Label styleClass="student-section-title-small" text="Results" />
@@ -155,16 +153,20 @@
                             <Region HBox.hgrow="ALWAYS" />
 
                             <Button onAction="#handleReloadResults"
-                                    styleClass="student-small-reload-button"
-                                    text="Reload" />
+                                    styleClass="student-reload-button"
+                                    text="↻" />
 
-                            <Label styleClass="student-view-all" text="History →" />
+                            <Label
+                                    fx:id="viewAllResultsReleasedLabel"
+                                    styleClass="student-view-all"
+                                    text="View All →"
+                            />
                         </HBox>
 
                         <Pane styleClass="student-gold-line" />
 
                         <VBox fx:id="resultSummaryList"
-                              spacing="0"
+                              spacing="6"
                               styleClass="oracle-list" />
                     </VBox>
 

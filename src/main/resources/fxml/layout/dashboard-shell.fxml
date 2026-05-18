@@ -45,30 +45,30 @@
 
                 <children>
 
-                    <ImageView fx:id="bgImage" fitHeight="220.0" preserveRatio="true" StackPane.alignment="CENTER_RIGHT">
-                        <image>
-                            <Image url="@/images/banner-background-pin.png" />
-                        </image>
+                    <ImageView fx:id="bannerImage" fitHeight="220.0" preserveRatio="true"
+                               StackPane.alignment="CENTER_RIGHT">
+                        <Image url="@/images/banner-background-pin.png"/>
                     </ImageView>
 
                     <Pane style="-fx-background-color: linear-gradient(to right,                                             rgba(101,0,0,0.94),                                             rgba(128,0,0,0.88),                                             rgba(128,0,0,0.83));" />
 
                     <HBox alignment="CENTER_LEFT" maxWidth="Infinity" spacing="24.0" style="-fx-padding: 0 28 0 28;">
 
-                        <children>
+                        <!-- LEFT SIDE -->
+                        <VBox alignment="CENTER_LEFT" spacing="10.0" HBox.hgrow="ALWAYS">
 
-                            <!-- LEFT SIDE -->
-                            <VBox alignment="CENTER_LEFT" spacing="10.0" HBox.hgrow="ALWAYS">
+                            <Label fx:id="greetingTitleLabel"
+                                   style="-fx-font-size: 30px;                                               -fx-font-weight: bold;                                               -fx-text-fill: #F4D27A;                                               -fx-font-family: 'Segoe UI';"
+                                   text="Welcome, Admin"/>
 
-                                <Label fx:id="greetingTitleLabel" style="-fx-font-size: 30px;                                               -fx-font-weight: bold;                                               -fx-text-fill: #F4D27A;                                               -fx-font-family: 'Segoe UI';" text="Welcome, Admin" />
+                            <Label fx:id="greetingSubtitleLabel" maxWidth="560.0"
+                                   style="-fx-font-size: 14px;                                               -fx-text-fill: rgba(255,255,255,0.92);                                               -fx-font-family: 'Segoe UI';"
+                                   text="Monitor exams, violations, and manage users and system." wrapText="true"/>
+                        </VBox>
 
-                                <Label fx:id="greetingSubtitleLabel" maxWidth="560.0" style="-fx-font-size: 14px;                                               -fx-text-fill: rgba(255,255,255,0.92);                                               -fx-font-family: 'Segoe UI';" text="Monitor exams, violations, and manage users and system." wrapText="true" />
-                            </VBox>
+                        <!-- RIGHT SIDE: DYNAMIC HERO CARDS -->
+                        <HBox fx:id="heroCardsContainer" alignment="CENTER_RIGHT" maxHeight="100.0" spacing="15.0"/>
 
-                            <!-- RIGHT SIDE: DYNAMIC HERO CARDS -->
-                            <HBox fx:id="heroCardsContainer" alignment="CENTER_RIGHT" maxHeight="100.0" spacing="15.0" />
-
-                        </children>
                     </HBox>
 
                 </children>

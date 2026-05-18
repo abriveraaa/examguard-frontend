@@ -1,6 +1,6 @@
 package com.example.examguard.model.faculty.response;
 
-import com.example.examguard.model.faculty.*;
+import com.example.examguard.model.faculty.dto.*;
 
 import java.util.List;
 

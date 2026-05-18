@@ -1,12 +1,18 @@
 package com.example.examguard.controller.student;
 
 import com.example.examguard.controller.layout.DashboardShellController;
-import com.example.examguard.model.exam.ViolationLogRequest;
-import com.example.examguard.model.exam.ViolationSettingRequest;
+import com.example.examguard.model.exam.request.EssayRubricRequest;
+import com.example.examguard.model.exam.request.ViolationLogRequest;
+import com.example.examguard.model.exam.request.ViolationSettingRequest;
 import com.example.examguard.model.exam.take.ExamTakeChoice;
 import com.example.examguard.model.exam.take.ExamTakeQuestion;
 import com.example.examguard.model.enums.QuestionType;
 import com.example.examguard.model.exam.take.ExamTakingResponse;
+import com.example.examguard.model.core.response.BrandingResponse;
+import com.example.examguard.model.exam.request.ExamActivityRequest;
+import com.example.examguard.utility.LobbyCameraVerifier;
+import com.example.examguard.utility.LobbyCheckResult;
+import com.example.examguard.service.BrandingService;
 import com.example.examguard.service.ExamApiService;
 import com.example.examguard.utility.LoadingSpinner;
 import javafx.animation.KeyFrame;
@@ -31,6 +37,7 @@ import javafx.util.Duration;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.concurrent.Task;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -43,12 +50,30 @@ import java.util.Map;
 
 public class ExamTakingController {
 
-    @FXML private BorderPane lobbyView;
+    @FXML private StackPane lobbyView;
+    @FXML private ImageView schoolLogoImageView;
+    @FXML private Label brandSchoolNameLabel;
+    @FXML private Label brandTaglineLabel;
     @FXML private Label lobbyExamTitleLabel;
     @FXML private Label lobbyExamSubtitleLabel;
-    @FXML private CheckBox cameraCheckBox;
-    @FXML private CheckBox speedCheckBox;
-    @FXML private CheckBox deskCheckBox;
+    @FXML private Label lobbyStepLabel;
+    @FXML private Label lobbyDurationLabel;
+    @FXML private Label lobbyQuestionCountLabel;
+    @FXML private Label cameraStatusLabel;
+    @FXML private Label faceStatusLabel;
+    @FXML private Label deskStatusLabel;
+    @FXML private Label internetStatusLabel;
+    @FXML private Label systemStatusLabel;
+    @FXML private Label cameraDetailLabel;
+    @FXML private Label faceDetailLabel;
+    @FXML private Label deskDetailLabel;
+    @FXML private Label internetDetailLabel;
+    @FXML private Label systemDetailLabel;
+
+    @FXML private VBox lobbyAgreementStep;
+    @FXML private VBox lobbySystemCheckStep;
+    @FXML private Button continueToChecksButton;
+    @FXML private Button backToAgreementButton;
     @FXML private CheckBox agreementCheckBox;
     @FXML private Button beginExamButton;
     @FXML private Button cancelLobbyButton;
@@ -68,6 +93,9 @@ public class ExamTakingController {
     @FXML private Button previousButton;
     @FXML private Button nextButton;
     @FXML private Button markReviewButton;
+    @FXML private Button runChecksButton;
+    @FXML private Button requestCameraPermissionButton;
+    @FXML private Label cameraPermissionStatusLabel;
     @FXML private Button submitButton;
 
     @FXML private StackPane examRoot;
@@ -82,10 +110,13 @@ public class ExamTakingController {
     private int lobbyTimeLimitMinutes;
     private boolean examLoading = false;
 
+
     private final List<ExamTakeQuestion> questions = new ArrayList<>();
     private final Map<String, ViolationSettingRequest> violationSettingMap = new HashMap<>();
     private final Map<String, Integer> violationAttemptMap = new HashMap<>();
     private final ExamApiService examApiService = new ExamApiService();
+    private final BrandingService brandingService = new BrandingService();
+    private final LobbyCameraVerifier lobbyCameraVerifier = new LobbyCameraVerifier();
 
     private StackPane reviewOverlay;
     private Stage dashboardStage;
@@ -93,12 +124,29 @@ public class ExamTakingController {
     private boolean internalDialogOpen = false;
     private boolean violationMonitoringReady = false;
     private int currentQuestionIndex = 0;
+    private Long activeQuestionId = null;
+    private long activeQuestionStartedAt = 0L;
     private ToggleGroup currentToggleGroup;
     private Timeline timerTimeline;
     private int remainingSeconds = 60 * 60;
     private boolean examStarted = false;
     private boolean examEnding = false;
     private boolean violationMonitoringEnabled = false;
+    private boolean cameraPassed = false;
+    private boolean facePassed = false;
+    private boolean deskPassed = false;
+    private boolean internetPassed = false;
+    private boolean systemPassed = false;
+    private boolean lobbyChecksRunning = false;
+    private boolean lobbyChecksCompletedOnce = false;
+    private enum LobbyCheckStatus {
+        PENDING,
+        CHECKING,
+        PASSED,
+        FAILED,
+        WARNING
+    }
+    private final Map<Long, Boolean> savingQuestionMap = new HashMap<>();
 
     private static final DateTimeFormatter VIOLATION_TIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss a");
@@ -115,18 +163,290 @@ public class ExamTakingController {
         violationOverlay.setManaged(false);
 
         beginExamButton.setDisable(true);
+        continueToChecksButton.setDisable(true);
 
-        cameraCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> updateBeginExamButton());
-        speedCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> updateBeginExamButton());
-        deskCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> updateBeginExamButton());
-        agreementCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> updateBeginExamButton());
+        lobbyAgreementStep.setVisible(true);
+        lobbyAgreementStep.setManaged(true);
+
+        lobbySystemCheckStep.setVisible(false);
+        lobbySystemCheckStep.setManaged(false);
+
+        agreementCheckBox.selectedProperty().addListener((obs, oldVal, selected) -> {
+            continueToChecksButton.setDisable(!selected);
+        });
+
+        loadBranding();
+        showAgreementStep();
+        resetLobbyChecks();
+    }
+
+    private void loadBranding() {
+        Task<BrandingResponse> task = new Task<>() {
+            @Override
+            protected BrandingResponse call() throws Exception {
+                return brandingService.getBranding();
+            }
+        };
+
+        task.setOnSucceeded(event -> applyBranding(task.getValue()));
+        task.setOnFailed(event -> applyBranding(null));
+
+        Thread thread = new Thread(task, "load-branding-thread");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void applyBranding(BrandingResponse branding) {
+        String defaultTitle = "ExamGuard";
+        String defaultTagline = "Secure Digital Examination Platform";
+
+        if (branding == null) {
+            brandSchoolNameLabel.setText(defaultTitle);
+            brandTaglineLabel.setText(defaultTagline);
+            return;
+        }
+
+        String schoolName = firstNonBlank(
+                branding.getSchoolName(),
+                branding.getShortName(),
+                defaultTitle
+        );
+
+        String tagline = firstNonBlank(
+                branding.getTagline(),
+                defaultTagline
+        );
+
+        brandSchoolNameLabel.setText(schoolName);
+        brandTaglineLabel.setText(tagline);
+
+        String logoUrl = branding.getLogoUrl();
+        if (logoUrl != null && !logoUrl.isBlank()) {
+            String fullLogoUrl = logoUrl.startsWith("http://") || logoUrl.startsWith("https://")
+                    ? logoUrl
+                    : ExamApiService.BASE_URL + (logoUrl.startsWith("/") ? logoUrl : "/" + logoUrl);
+
+            schoolLogoImageView.setImage(new Image(fullLogoUrl, true));
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+
+        return "";
+    }
+
+    private void showAgreementStep() {
+
+        runChecksButton.setVisible(false);
+        runChecksButton.setManaged(false);
+
+        lobbyAgreementStep.setVisible(true);
+        lobbyAgreementStep.setManaged(true);
+
+        lobbySystemCheckStep.setVisible(false);
+        lobbySystemCheckStep.setManaged(false);
+
+        lobbyStepLabel.setText("Step 1 of 2");
+
+        continueToChecksButton.setVisible(true);
+        continueToChecksButton.setManaged(true);
+
+        backToAgreementButton.setVisible(false);
+        backToAgreementButton.setManaged(false);
+
+        beginExamButton.setVisible(false);
+        beginExamButton.setManaged(false);
+        beginExamButton.setDisable(true);
+    }
+
+    private void showSystemCheckStep() {
+        runChecksButton.setVisible(true);
+        runChecksButton.setManaged(true);
+        runChecksButton.setDisable(false);
+
+        lobbyAgreementStep.setVisible(false);
+        lobbyAgreementStep.setManaged(false);
+
+        lobbySystemCheckStep.setVisible(true);
+        lobbySystemCheckStep.setManaged(true);
+
+        lobbyStepLabel.setText("Step 2 of 2");
+
+        continueToChecksButton.setVisible(false);
+        continueToChecksButton.setManaged(false);
+
+        backToAgreementButton.setVisible(true);
+        backToAgreementButton.setManaged(true);
+
+        beginExamButton.setVisible(true);
+        beginExamButton.setManaged(true);
+        beginExamButton.setDisable(true);
+    }
+
+    private String formatDuration(int minutes) {
+        if (minutes <= 0) {
+            return "--";
+        }
+
+        int hours = minutes / 60;
+        int remainingMinutes = minutes % 60;
+
+        if (hours > 0 && remainingMinutes > 0) {
+            return hours + " hr " + remainingMinutes + " min";
+        }
+
+        if (hours > 0) {
+            return hours + " hr" + (hours == 1 ? "" : "s");
+        }
+
+        return minutes + " min";
     }
 
     // ACTIONS
 
     @FXML
+    private void handleRequestCameraPermission() {
+        requestCameraPermissionButton.setDisable(true);
+        cameraPermissionStatusLabel.setText("Requesting camera access...");
+
+        Task<LobbyCheckResult> task = new Task<>() {
+            @Override
+            protected LobbyCheckResult call() {
+                return lobbyCameraVerifier.checkCamera();
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            LobbyCheckResult result = task.getValue();
+
+            if (result.isPassed()) {
+                cameraPermissionStatusLabel.setText("Camera access granted.");
+            } else {
+                cameraPermissionStatusLabel.setText(result.getMessage());
+                requestCameraPermissionButton.setDisable(false);
+            }
+        });
+
+        task.setOnFailed(event -> {
+            cameraPermissionStatusLabel.setText("Camera permission check failed.");
+            requestCameraPermissionButton.setDisable(false);
+        });
+
+        Thread thread = new Thread(task, "camera-permission-check-thread");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    @FXML
+    private void handleRunSystemCheck() {
+        if (!agreementCheckBox.isSelected()) {
+            showError("Please read and accept the exam rules and data privacy agreement before continuing.");
+            return;
+        }
+
+        showSystemCheckStep();
+        handleRunLobbyChecks();
+    }
+
+    @FXML
+    private void handleContinueToSystemChecks() {
+        if (!agreementCheckBox.isSelected()) {
+            showError("Please read and accept the exam rules and data privacy agreement before continuing.");
+            return;
+        }
+
+        showSystemCheckStep();
+        resetLobbyChecks();
+    }
+
+    @FXML
+    private void handleBackToAgreement() {
+        showAgreementStep();
+        resetLobbyChecks();
+    }
+
+    @FXML
+    private void handleRunLobbyChecks() {
+        if (lobbyChecksRunning || examLoading) {
+            return;
+        }
+
+        lobbyChecksRunning = true;
+
+        backToAgreementButton.setDisable(true);
+        runChecksButton.setDisable(true);
+        beginExamButton.setDisable(true);
+
+        cameraPassed = false;
+        facePassed = false;
+        deskPassed = false;
+        internetPassed = false;
+        systemPassed = false;
+
+        setLobbyStatus(cameraStatusLabel, cameraDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setLobbyStatus(faceStatusLabel, faceDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setLobbyStatus(deskStatusLabel, deskDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setLobbyStatus(internetStatusLabel, internetDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+
+        updateBeginExamButton();
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                runCameraCheck();
+                runFaceCheck();
+                runDeskCheck();
+                runInternetCheck();
+                runSystemCheck();
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            lobbyChecksRunning = false;
+            lobbyChecksCompletedOnce = true;
+
+            runChecksButton.setText("Recheck All");
+            runChecksButton.setDisable(false);
+            backToAgreementButton.setDisable(false);
+
+            updateBeginExamButton();
+        });
+
+        task.setOnFailed(event -> {
+            lobbyChecksRunning = false;
+            lobbyChecksCompletedOnce = true;
+
+            runChecksButton.setText("Recheck All");
+            runChecksButton.setDisable(false);
+            backToAgreementButton.setDisable(false);
+
+            updateBeginExamButton();
+
+            if (task.getException() != null) {
+                task.getException().printStackTrace();
+            }
+        });
+
+        Thread thread = new Thread(task, "lobby-system-check-thread");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    @FXML
     private void handlePrevious() {
         saveCurrentAnswer();
+        stopQuestionTimer();
 
         if (currentQuestionIndex > 0) {
             showQuestion(currentQuestionIndex - 1);
@@ -136,6 +456,7 @@ public class ExamTakingController {
     @FXML
     private void handleNext() {
         saveCurrentAnswer();
+        stopQuestionTimer();
 
         if (currentQuestionIndex < questions.size() - 1) {
             showQuestion(currentQuestionIndex + 1);
@@ -168,7 +489,17 @@ public class ExamTakingController {
         }
 
         examLoading = true;
-        beginExamButton.setDisable(true);
+
+        LoadingSpinner.setLoading(
+                beginExamButton,
+                true,
+                "Preparing...",
+                "Begin Exam"
+        );
+
+        continueToChecksButton.setDisable(true);
+        backToAgreementButton.setDisable(true);
+        cancelLobbyButton.setDisable(true);
 
         startExam(lobbyExamId, lobbyTimeLimitMinutes);
     }
@@ -318,7 +649,24 @@ public class ExamTakingController {
         this.dashboardStage = dashboardStage;
     }
 
-    public void setExamLobby(Long examId, int timeLimitMinutes) {
+    public void setExamLobby(
+            Long examId,
+            String examTitle,
+            int timeLimitMinutes,
+            Long questionCount
+    ) {
+        this.lobbyExamId = examId;
+        this.lobbyTimeLimitMinutes = timeLimitMinutes;
+
+        lobbyExamTitleLabel.setText(
+                examTitle == null || examTitle.isBlank()
+                        ? "Exam"
+                        : examTitle
+        );
+
+        lobbyDurationLabel.setText(formatDuration(timeLimitMinutes));
+        lobbyQuestionCountLabel.setText(questionCount + " questions");
+
         this.lobbyExamId = examId;
         this.lobbyTimeLimitMinutes = timeLimitMinutes;
         this.remainingSeconds = timeLimitMinutes * 60;
@@ -342,8 +690,11 @@ public class ExamTakingController {
         updateTimerLabel();
 
         lobbyExamSubtitleLabel.setText(
-                "Complete the checks below before starting. Timer will begin only after you click Begin Exam."
+                "Run the required system checks before starting. Timer will begin only after you click Begin Exam."
         );
+
+        showAgreementStep();
+        resetLobbyChecks();
 
         updateBeginExamButton();
     }
@@ -356,6 +707,18 @@ public class ExamTakingController {
 
             if (!loaded || questions.isEmpty()) {
                 examLoading = false;
+
+                LoadingSpinner.setLoading(
+                        beginExamButton,
+                        false,
+                        "Preparing...",
+                        "Begin Exam"
+                );
+
+                continueToChecksButton.setDisable(false);
+                backToAgreementButton.setDisable(false);
+                cancelLobbyButton.setDisable(false);
+
                 updateBeginExamButton();
                 return;
             }
@@ -371,6 +734,14 @@ public class ExamTakingController {
             if (violationMonitoringEnabled) {
                 setupViolationMonitoring();
             }
+
+            LoadingSpinner.setLoading(
+                    beginExamButton,
+                    false,
+                    "Preparing...",
+                    "Begin Exam"
+            );
+
             setupTimer();
             renderQuestionNavigation();
 
@@ -387,13 +758,163 @@ public class ExamTakingController {
         }
     }
 
-    private void updateBeginExamButton() {
-        boolean ready = cameraCheckBox.isSelected()
-                && speedCheckBox.isSelected()
-                && deskCheckBox.isSelected()
-                && agreementCheckBox.isSelected();
+    private void resetLobbyChecks() {
+        cameraPassed = false;
+        facePassed = false;
+        deskPassed = false;
+        internetPassed = false;
+        systemPassed = false;
+        lobbyChecksRunning = false;
+        lobbyChecksCompletedOnce = false;
 
-        beginExamButton.setDisable(!ready);
+        if (runChecksButton != null) {
+            runChecksButton.setText("Run System Checks");
+            runChecksButton.setDisable(false);
+        }
+
+        setLobbyStatus(cameraStatusLabel, cameraDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setLobbyStatus(faceStatusLabel, faceDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setLobbyStatus(deskStatusLabel, deskDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setLobbyStatus(internetStatusLabel, internetDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+
+        updateBeginExamButton();
+    }
+
+    private void runCameraCheck() {
+        setLobbyStatus(cameraStatusLabel, cameraDetailLabel, LobbyCheckStatus.CHECKING, "Checking", "Opening camera...");
+
+        LobbyCheckResult result = lobbyCameraVerifier.checkCamera();
+
+        cameraPassed = result.isPassed();
+
+        setLobbyStatus(
+                cameraStatusLabel,
+                cameraDetailLabel,
+                cameraPassed ? LobbyCheckStatus.PASSED : LobbyCheckStatus.FAILED,
+                cameraPassed ? "Passed" : "Failed",
+                result.getMessage()
+        );
+    }
+
+    private void runFaceCheck() {
+        setLobbyStatus(faceStatusLabel, faceDetailLabel, LobbyCheckStatus.CHECKING, "Checking", "Detecting face...");
+
+        LobbyCheckResult result = lobbyCameraVerifier.checkFace();
+
+        facePassed = result.isPassed();
+
+        setLobbyStatus(
+                faceStatusLabel,
+                faceDetailLabel,
+                facePassed ? LobbyCheckStatus.PASSED : LobbyCheckStatus.FAILED,
+                facePassed ? "Passed" : "Failed",
+                result.getMessage()
+        );
+    }
+
+    private void runDeskCheck() {
+        setLobbyStatus(deskStatusLabel, deskDetailLabel, LobbyCheckStatus.CHECKING, "Checking", "Checking camera view quality...");
+
+        LobbyCheckResult result = lobbyCameraVerifier.checkDeskAndFrameQuality();
+
+        deskPassed = result.isPassed();
+
+        setLobbyStatus(
+                deskStatusLabel,
+                deskDetailLabel,
+                deskPassed ? LobbyCheckStatus.PASSED : LobbyCheckStatus.FAILED,
+                deskPassed ? "Passed" : "Failed",
+                result.getMessage()
+        );
+    }
+
+    private void runInternetCheck() {
+        setLobbyStatus(
+                internetStatusLabel,
+                internetDetailLabel,
+                LobbyCheckStatus.CHECKING,
+                "Checking",
+                "Connecting to the ExamGuard server..."
+        );
+
+        try {
+            long latencyMs = examApiService.checkBackendLatency();
+
+            if (latencyMs <= 1000) {
+                internetPassed = true;
+                setLobbyStatus(
+                        internetStatusLabel,
+                        internetDetailLabel,
+                        LobbyCheckStatus.PASSED,
+                        "Passed",
+                        "Server connection is stable. Latency: " + latencyMs + " ms."
+                );
+            } else if (latencyMs <= 2500) {
+                internetPassed = true;
+                setLobbyStatus(
+                        internetStatusLabel,
+                        internetDetailLabel,
+                        LobbyCheckStatus.WARNING,
+                        "Warning",
+                        "Connection is slow but usable. Latency: " + latencyMs + " ms."
+                );
+            } else {
+                internetPassed = false;
+                setLobbyStatus(
+                        internetStatusLabel,
+                        internetDetailLabel,
+                        LobbyCheckStatus.FAILED,
+                        "Failed",
+                        "Connection is too slow. Latency: " + latencyMs + " ms."
+                );
+            }
+
+        } catch (Exception e) {
+            internetPassed = false;
+            setLobbyStatus(
+                    internetStatusLabel,
+                    internetDetailLabel,
+                    LobbyCheckStatus.FAILED,
+                    "Failed",
+                    "This device cannot reach the ExamGuard server."
+            );
+        }
+    }
+
+    private void runSystemCheck() {
+        setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.CHECKING, "Checking","Checking system...");
+
+        try {
+            Thread.sleep(400);
+
+            int screenCount = Screen.getScreens().size();
+
+            if (screenCount > 1) {
+                systemPassed = false;
+                setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.FAILED, "Failed", "Multiple monitors detected.");
+
+                return;
+            }
+
+            systemPassed = true;
+            setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.PASSED, "Passed", "System Ready.");
+        } catch (Exception e) {
+            systemPassed = false;
+            setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.FAILED, "Failed", "System check failed.");
+        }
+    }
+
+    private void updateBeginExamButton() {
+        boolean ready =
+                agreementCheckBox.isSelected()
+                        && cameraPassed
+                        && facePassed
+                        && deskPassed
+                        && internetPassed
+                        && systemPassed;
+
+        beginExamButton.setDisable(!ready || examLoading || lobbyChecksRunning);
     }
 
     private boolean loadExamFromBackend(Long examId) {
@@ -428,6 +949,9 @@ public class ExamTakingController {
             if (response.getQuestions() != null) {
                 questions.addAll(response.getQuestions());
             }
+
+            lobbyQuestionCountLabel.setText(questions.size() + " question" + (questions.size() == 1 ? "" : "s"));
+            lobbyDurationLabel.setText(formatDuration(minutes));
 
             violationSettingMap.clear();
             violationAttemptMap.clear();
@@ -472,9 +996,25 @@ public class ExamTakingController {
     }
 
     private void updateTimerLabel() {
-        int minutes = remainingSeconds / 60;
+
+        int hours = remainingSeconds / 3600;
+        int minutes = (remainingSeconds % 3600) / 60;
         int seconds = remainingSeconds % 60;
-        timerLabel.setText(String.format("%02d:%02d", minutes, seconds));
+
+        if (remainingSeconds >= 3600) {
+
+            timerLabel.setText(
+                    String.format("%02d:%02d:%02d", hours, minutes, seconds)
+            );
+
+        } else {
+
+            int totalMinutes = remainingSeconds / 60;
+
+            timerLabel.setText(
+                    String.format("%02d:%02d", totalMinutes, seconds)
+            );
+        }
     }
 
     private String buildImageUrl(String imagePath) {
@@ -507,6 +1047,7 @@ public class ExamTakingController {
 
             button.setOnAction(event -> {
                 saveCurrentAnswer();
+                stopQuestionTimer();
                 showQuestion(index);
             });
 
@@ -541,6 +1082,7 @@ public class ExamTakingController {
     }
 
     private void showQuestion(int index) {
+
         if (index < 0 || index >= questions.size()) {
             return;
         }
@@ -552,6 +1094,7 @@ public class ExamTakingController {
         questionNumberLabel.setText("Question " + (currentQuestionIndex + 1));
         questionTypeLabel.setText(formatQuestionType(question.getQuestionType()) + " • " + question.getPoints() + " point(s)");
         questionTextLabel.setText(question.getQuestionText());
+        renderQuestionInstructionAndRubric(question, answerContainer);
 
         String fullUrl = buildImageUrl(question.getQuestionImageUrl());
 
@@ -574,6 +1117,7 @@ public class ExamTakingController {
 
         refreshQuestionNavigationStyles();
         updateProgress();
+        startQuestionTimer(question);
     }
 
     private void saveCurrentAnswer() {
@@ -612,6 +1156,17 @@ public class ExamTakingController {
         String finalAnswerText = answerText;
         Long finalQuestionId = question.getQuestionId();
 
+        if (Boolean.TRUE.equals(savingQuestionMap.get(finalQuestionId))) {
+            return;
+        }
+
+        savingQuestionMap.put(finalQuestionId, true);
+
+        Platform.runLater(() -> {
+            nextButton.setDisable(true);
+            previousButton.setDisable(true);
+        });
+
         new Thread(() -> {
             try {
                 examApiService.saveAnswer(
@@ -622,6 +1177,13 @@ public class ExamTakingController {
                 );
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                savingQuestionMap.put(finalQuestionId, false);
+
+                Platform.runLater(() -> {
+                    nextButton.setDisable(false);
+                    previousButton.setDisable(currentQuestionIndex == 0);
+                });
             }
         }, "save-answer-thread").start();
     }
@@ -812,6 +1374,7 @@ public class ExamTakingController {
             timerTimeline.stop();
         }
 
+        stopQuestionTimer();
         saveCurrentAnswer();
 
         try {
@@ -844,6 +1407,7 @@ public class ExamTakingController {
         internalDialogOpen = true;
         examStarted = false;
 
+        stopQuestionTimer();
         saveCurrentAnswer();
 
         try {
@@ -1038,6 +1602,8 @@ public class ExamTakingController {
     private void renderAnswerInput(ExamTakeQuestion question) {
         answerContainer.getChildren().clear();
         currentToggleGroup = null;
+
+        renderQuestionInstructionAndRubric(question, answerContainer);
 
         switch (question.getQuestionType()) {
             case MULTIPLE_CHOICE, TRUE_FALSE -> renderRadioChoices(question);
@@ -1261,4 +1827,151 @@ public class ExamTakingController {
             e.printStackTrace();
         }
     }
+
+    private void renderQuestionInstructionAndRubric(
+            ExamTakeQuestion question,
+            VBox questionContainer
+    ) {
+        if (question.getQuestionInstruction() != null &&
+                !question.getQuestionInstruction().isBlank()) {
+
+            Label instruction = new Label(question.getQuestionInstruction());
+            instruction.setWrapText(true);
+            instruction.getStyleClass().add("exam-instruction-box");
+
+            questionContainer.getChildren().add(instruction);
+        }
+
+        if (question.getRubrics() != null &&
+                !question.getRubrics().isEmpty()) {
+
+            VBox rubricBox = new VBox(6);
+            rubricBox.getStyleClass().add("exam-rubric-box");
+
+            Label title = new Label("Grading Rubric");
+            title.getStyleClass().add("exam-rubric-title");
+
+            rubricBox.getChildren().add(title);
+
+            for (EssayRubricRequest rubric : question.getRubrics()) {
+                Label row = new Label(
+                        rubric.getCriterionName()
+                                + " - "
+                                + rubric.getWeightPercentage()
+                                + "%"
+                );
+                row.getStyleClass().add("exam-rubric-row");
+                rubricBox.getChildren().add(row);
+            }
+
+            questionContainer.getChildren().add(rubricBox);
+        }
+    }
+
+
+    private void startQuestionTimer(ExamTakeQuestion question) {
+        if (question == null || question.getQuestionId() == null) {
+            return;
+        }
+
+        if (question.getQuestionId().equals(activeQuestionId)) {
+            return;
+        }
+
+        activeQuestionId = question.getQuestionId();
+        activeQuestionStartedAt = System.currentTimeMillis();
+    }
+
+    private void stopQuestionTimer() {
+        if (activeQuestionId == null || activeQuestionStartedAt <= 0) {
+            return;
+        }
+
+        long durationMs =
+                System.currentTimeMillis() - activeQuestionStartedAt;
+
+        long seconds = durationMs / 1000;
+        long minutes = seconds / 60;
+        long remainingSeconds = seconds % 60;
+
+        String durationText =
+                minutes > 0
+                        ? minutes + "m " + remainingSeconds + "s"
+                        : remainingSeconds + "s";
+
+        logExamActivity(
+                "QUESTION_DURATION",
+                "Stayed for " + durationText,
+                activeQuestionId,
+                durationMs
+        );
+
+        activeQuestionId = null;
+        activeQuestionStartedAt = 0L;
+    }
+
+    private void logExamActivity(
+            String action,
+            String message,
+            Long questionId,
+            Long durationMs
+    ) {
+        ExamActivityRequest request = new ExamActivityRequest();
+        request.setExamId(currentExamId);
+        request.setAttemptId(currentAttemptId);
+        request.setQuestionId(questionId);
+        request.setAction(action);
+        request.setMessage(message);
+        request.setDurationMs(durationMs);
+
+        new Thread(() -> {
+            try {
+                examApiService.logActivity(request);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, "exam-activity-log-thread").start();
+    }
+
+    private void setLobbyStatus(
+            Label statusLabel,
+            Label detailLabel,
+            LobbyCheckStatus status,
+            String statusText,
+            String detailText
+    ) {
+        if (statusLabel == null) {
+            return;
+        }
+
+        Platform.runLater(() -> {
+            statusLabel.setText(statusText);
+
+            statusLabel.getStyleClass().removeAll(
+                    "lobby-status-pending",
+                    "lobby-status-checking",
+                    "lobby-status-passed",
+                    "lobby-status-failed",
+                    "lobby-status-warning"
+            );
+
+            switch (status) {
+                case CHECKING -> statusLabel.getStyleClass().add("lobby-status-checking");
+                case PASSED -> statusLabel.getStyleClass().add("lobby-status-passed");
+                case FAILED -> statusLabel.getStyleClass().add("lobby-status-failed");
+                case WARNING -> statusLabel.getStyleClass().add("lobby-status-warning");
+                default -> statusLabel.getStyleClass().add("lobby-status-pending");
+            }
+
+            if (detailLabel != null) {
+                boolean hasDetail = detailText != null && !detailText.isBlank();
+
+                detailLabel.setText(hasDetail ? detailText : "");
+                detailLabel.setVisible(hasDetail);
+                detailLabel.setManaged(hasDetail);
+            }
+        });
+    }
+
+
 }

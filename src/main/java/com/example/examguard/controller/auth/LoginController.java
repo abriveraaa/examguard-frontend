@@ -1,7 +1,6 @@
 package com.example.examguard.controller.auth;
 
-import com.example.examguard.model.LoginApiResponse;
-import com.example.examguard.model.UserAccess;
+import com.example.examguard.model.core.response.LoginApiResponse;
 import com.example.examguard.model.enums.UserType;
 import com.example.examguard.service.AuthApiService;
 import com.example.examguard.utility.SceneManager;

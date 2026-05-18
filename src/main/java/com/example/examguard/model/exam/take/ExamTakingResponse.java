@@ -1,6 +1,6 @@
 package com.example.examguard.model.exam.take;
 
-import com.example.examguard.model.exam.ViolationSettingRequest;
+import com.example.examguard.model.exam.request.ViolationSettingRequest;
 
 import java.util.List;
 

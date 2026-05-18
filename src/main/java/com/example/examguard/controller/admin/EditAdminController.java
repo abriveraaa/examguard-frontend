@@ -1,7 +1,7 @@
 package com.example.examguard.controller.admin;
 
 import com.example.examguard.controller.layout.ReactivationJustificationDialogController;
-import com.example.examguard.model.UserManagementRow;
+import com.example.examguard.model.core.UserManagementRow;
 import com.example.examguard.service.AdminApiService;
 import com.google.gson.Gson;
 import javafx.application.Platform;

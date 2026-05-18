@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.layout.Region?>
+
+<?import javafx.scene.chart.PieChart?>
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.examguard.controller.admin.AdminMonitoringController"
+            styleClass="monitoring-page"
+            stylesheets="@../../styles/admin-monitoring.css">
+
+    <top>
+        <VBox spacing="14">
+            <padding>
+                <Insets top="0" right="0" bottom="16" left="0"/>
+            </padding>
+
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Monitoring Overview" styleClass="page-title"/>
+                    <Label text="Track violations, system logs, session activity, and concurrent users."
+                           styleClass="page-subtitle"/>
+                </VBox>
+
+                <ComboBox fx:id="academicYearComboBox"
+                          promptText="Academic Year"
+                          prefWidth="180"/>
+
+                <ComboBox fx:id="termComboBox"
+                          promptText="Term"
+                          prefWidth="150"/>
+
+                <ComboBox fx:id="rangeComboBox"
+                          promptText="Range"
+                          prefWidth="170"/>
+
+                <DatePicker fx:id="customStartDatePicker"
+                            promptText="Start Date"
+                            prefWidth="150"
+                            visible="false"
+                            managed="false"/>
+
+                <DatePicker fx:id="customEndDatePicker"
+                            promptText="End Date"
+                            prefWidth="150"
+                            visible="false"
+                            managed="false"/>
+
+                <Button text="Refresh"
+                        onAction="#handleRefresh"
+                        styleClass="primary-button"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <HBox spacing="18">
+
+            <VBox spacing="10"
+                  prefWidth="210"
+                  minWidth="210"
+                  maxWidth="210"
+                  styleClass="monitoring-sidebar">
+
+                <Button fx:id="overviewTabButton"
+                        text="Overview"
+                        prefWidth="180"
+                        minWidth="180"
+                        maxWidth="180"
+                        onAction="#showOverviewPane"
+                        styleClass="side-tab-active"/>
+
+                <Button fx:id="allLogsTabButton"
+                        text="All Logs"
+                        prefWidth="180"
+                        minWidth="180"
+                        maxWidth="180"
+                        onAction="#showAllLogsPane"
+                        styleClass="side-tab"/>
+
+                <Button fx:id="violationLogsTabButton"
+                        text="Violation Logs"
+                        prefWidth="180"
+                        minWidth="180"
+                        maxWidth="180"
+                        onAction="#showViolationLogsPane"
+                        styleClass="side-tab"/>
+
+                <Button fx:id="systemLogsTabButton"
+                        text="System Logs"
+                        prefWidth="180"
+                        minWidth="180"
+                        maxWidth="180"
+                        onAction="#showSystemLogsPane"
+                        styleClass="side-tab"/>
+
+                <Button fx:id="sessionsTabButton"
+                        text="Sessions"
+                        prefWidth="180"
+                        minWidth="180"
+                        maxWidth="180"
+                        onAction="#showSessionsPane"
+                        styleClass="side-tab"/>
+
+                <Button fx:id="accessLogsTabButton"
+                        text="Access Logs"
+                        onAction="#showAccessLogsPane"
+                        prefWidth="180"
+                        minWidth="180"
+                        maxWidth="180"
+                        styleClass="side-tab" />
+
+                <Button fx:id="accountLogsTabButton"
+                        text="Account Logs"
+                        onAction="#showAccountLogsPane"
+                        prefWidth="180"
+                        minWidth="180"
+                        maxWidth="180"
+                        styleClass="side-tab" />
+
+                <Button fx:id="registrarLogsTabButton"
+                        text="Registrar Sync"
+                        onAction="#showRegistrarLogsPane"
+                        prefWidth="180"
+                        minWidth="180"
+                        maxWidth="180"
+                        styleClass="side-tab" />
+            </VBox>
+
+            <StackPane fx:id="contentStack" HBox.hgrow="ALWAYS">
+
+                <ScrollPane fx:id="overviewScrollPane"
+                            fitToWidth="true"
+                            fitToHeight="true"
+                            pannable="true"
+                            hbarPolicy="NEVER"
+                            vbarPolicy="AS_NEEDED"
+                            styleClass="monitoring-scroll">
+
+                    <content>
+
+                        <!-- OVERVIEW -->
+                        <VBox fx:id="overviewPane" spacing="16" styleClass="monitoring-content">
+
+                            <!-- SUMMARY CARDS -->
+                            <HBox spacing="14">
+                                <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                                    <Label text="Concurrent Users" styleClass="summary-label"/>
+                                    <Label fx:id="concurrentUsersLabel" text="0" styleClass="summary-value"/>
+                                </VBox>
+
+                                <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                                    <Label text="Active Sessions" styleClass="summary-label"/>
+                                    <Label fx:id="activeSessionsLabel" text="0" styleClass="summary-value"/>
+                                </VBox>
+
+                                <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                                    <Label text="Violations Today" styleClass="summary-label"/>
+                                    <Label fx:id="violationLogsLabel" text="0" styleClass="summary-value"/>
+                                </VBox>
+
+                                <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                                    <Label text="System Events" styleClass="summary-label"/>
+                                    <Label fx:id="systemLogsLabel" text="0" styleClass="summary-value"/>
+                                </VBox>
+                            </HBox>
+
+                            <!-- ROW 1 -->
+                            <HBox spacing="14" VBox.vgrow="ALWAYS">
+
+                                <VBox styleClass="panel-card" HBox.hgrow="ALWAYS">
+                                    <HBox alignment="CENTER_LEFT" spacing="10">
+                                        <Label text="Concurrent Users Trend by Role"
+                                               styleClass="section-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <ComboBox fx:id="concurrentTimeScaleComboBox"
+                                                  prefWidth="130"/>
+                                    </HBox>
+
+                                    <LineChart fx:id="concurrentUsersChart"
+                                               animated="false"
+                                               legendVisible="true"
+                                               VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <CategoryAxis label="Time"/>
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis label="Users"/>
+                                        </yAxis>
+                                    </LineChart>
+                                </VBox>
+
+                                <VBox styleClass="panel-card" prefWidth="390">
+                                    <HBox alignment="CENTER_LEFT" spacing="10">
+                                        <Label text="Violation Distribution"
+                                               styleClass="section-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <ComboBox fx:id="violationDistributionGroupComboBox"
+                                                  prefWidth="150"/>
+                                    </HBox>
+
+                                    <PieChart fx:id="violationDistributionChart"
+                                              labelsVisible="true"
+                                              legendVisible="true"
+                                              VBox.vgrow="ALWAYS"/>
+                                </VBox>
+
+                            </HBox>
+
+                            <!-- ROW 2 -->
+                            <HBox spacing="14" VBox.vgrow="ALWAYS">
+
+                                <VBox styleClass="panel-card" HBox.hgrow="ALWAYS">
+                                    <HBox alignment="CENTER_LEFT" spacing="10">
+                                        <Label text="Activity Volume"
+                                               styleClass="section-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <ComboBox fx:id="activityVolumeGroupComboBox"
+                                                  prefWidth="150"/>
+                                    </HBox>
+
+                                    <BarChart fx:id="activityVolumeChart"
+                                              animated="false"
+                                              legendVisible="false"
+                                              VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <CategoryAxis label="Group"/>
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis label="Events"/>
+                                        </yAxis>
+                                    </BarChart>
+                                </VBox>
+
+                                <VBox styleClass="panel-card" HBox.hgrow="ALWAYS">
+                                    <HBox alignment="CENTER_LEFT" spacing="10">
+                                        <Label text="Violations by Program"
+                                               styleClass="section-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <ComboBox fx:id="violationsByProgramGroupComboBox"
+                                                  prefWidth="150"/>
+                                    </HBox>
+
+                                    <BarChart fx:id="violationsByProgramChart"
+                                              animated="false"
+                                              legendVisible="false"
+                                              VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <CategoryAxis label="Program"/>
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis label="Violations"/>
+                                        </yAxis>
+                                    </BarChart>
+                                </VBox>
+
+                            </HBox>
+
+                            <!-- ROW 3 -->
+                            <HBox spacing="14">
+
+                                <VBox styleClass="panel-card" HBox.hgrow="ALWAYS">
+                                    <Label text="Recent Critical Violations" styleClass="section-title"/>
+                                    <ListView fx:id="recentViolationsListView"
+                                              prefHeight="220"
+                                              VBox.vgrow="ALWAYS"/>
+                                </VBox>
+
+                                <VBox styleClass="panel-card" HBox.hgrow="ALWAYS">
+                                    <Label text="Recent System Events" styleClass="section-title"/>
+                                    <ListView fx:id="recentSystemEventsListView"
+                                              prefHeight="220"
+                                              VBox.vgrow="ALWAYS"/>
+                                </VBox>
+
+                            </HBox>
+
+                        </VBox>
+
+                    </content>
+
+                </ScrollPane>
+
+                <!-- ALL LOGS -->
+                <VBox fx:id="allLogsPane"
+                      visible="false"
+                      managed="false"
+                      spacing="12"
+                      styleClass="monitoring-content">
+
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <TextField fx:id="allLogsSearchField"
+                                   promptText="Search all logs..."
+                                   HBox.hgrow="ALWAYS"/>
+
+                        <Button text="Export Excel"
+                                onAction="#handleExportAllLogs"
+                                styleClass="secondary-button"/>
+                    </HBox>
+
+                    <TableView fx:id="allLogsTable" VBox.vgrow="ALWAYS" >
+                        <columns>
+                            <TableColumn fx:id="allLogTimeColumn" text="Time" prefWidth="170"/>
+                            <TableColumn fx:id="allLogTypeColumn" text="Type" prefWidth="120"/>
+                            <TableColumn fx:id="allLogActorColumn" text="Actor" prefWidth="170"/>
+                            <TableColumn fx:id="allLogActorRoleColumn" text="Actor Role" prefWidth="120" />
+                            <TableColumn fx:id="allLogTargetUserColumn" text="Target User" prefWidth="150" />
+                            <TableColumn fx:id="allLogTargetRoleColumn" text="Target Role" prefWidth="120" />
+                            <TableColumn fx:id="allLogModuleColumn" text="Module" prefWidth="150"/>
+                            <TableColumn fx:id="allLogActionColumn" text="Action" prefWidth="150"/>
+                            <TableColumn fx:id="allLogStatusColumn" text="Status" prefWidth="120"/>
+                            <TableColumn fx:id="allLogMessageColumn" text="Message" prefWidth="350"/>
+                            <TableColumn fx:id="allLogDurationColumn" text="Duration" prefWidth="120" />
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Label fx:id="allLogsPageLabel" text="Page 1 of 1" styleClass="pagination-label" />
+                        <Button fx:id="allLogsPrevButton" text="Previous" onAction="#handleAllLogsPrevious" styleClass="secondary-button" />
+                        <Button fx:id="allLogsNextButton" text="Next" onAction="#handleAllLogsNext" styleClass="primary-button" />
+                    </HBox>
+                </VBox>
+
+                <!-- VIOLATION LOGS -->
+                <VBox fx:id="violationLogsPane"
+                      visible="false"
+                      managed="false"
+                      spacing="12"
+                      styleClass="monitoring-content">
+
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <TextField fx:id="violationSearchField"
+                                   promptText="Search violations..."
+                                   HBox.hgrow="ALWAYS"/>
+
+                        <ComboBox fx:id="violationTypeFilterComboBox"
+                                  promptText="Violation Type"
+                                  prefWidth="180"/>
+
+                        <Button text="Export Excel"
+                                onAction="#handleExportViolationLogs"
+                                styleClass="secondary-button"/>
+                    </HBox>
+
+                    <TableView fx:id="violationLogsTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="violationTimeColumn" text="Time" prefWidth="170"/>
+                            <TableColumn fx:id="violationStudentColumn" text="Student" prefWidth="180"/>
+                            <TableColumn fx:id="violationCourseColumn" text="Course" prefWidth="120" />
+                            <TableColumn fx:id="violationExamTitleColumn" text="Exam" prefWidth="220" />
+                            <TableColumn fx:id="violationQuestionColumn" text="Question #" prefWidth="100" />
+                            <TableColumn fx:id="violationTypeColumn" text="Violation" prefWidth="160"/>
+                            <TableColumn fx:id="violationSeverityColumn" text="Severity" prefWidth="120"/>
+                            <TableColumn fx:id="violationStatusColumn" text="Review Status" prefWidth="150"/>
+                            <TableColumn fx:id="violationMessageColumn" text="Message" prefWidth="360"/>
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Label fx:id="violationLogsPageLabel" text="Page 1 of 1"  styleClass="pagination-label"  />
+                        <Button fx:id="violationLogsPrevButton" text="Previous" onAction="#handleViolationLogsPrevious" styleClass="secondary-button" />
+                        <Button fx:id="violationLogsNextButton" text="Next" onAction="#handleViolationLogsNext" styleClass="primary-button" />
+                    </HBox>
+                </VBox>
+
+                <!-- SYSTEM LOGS -->
+                <VBox fx:id="systemLogsPane"
+                      visible="false"
+                      managed="false"
+                      spacing="12"
+                      styleClass="monitoring-content">
+
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <TextField fx:id="systemSearchField"
+                                   promptText="Search system logs..."
+                                   HBox.hgrow="ALWAYS"/>
+
+                        <ComboBox fx:id="systemModuleFilterComboBox"
+                                  promptText="Module"
+                                  prefWidth="170"/>
+
+                        <Button text="Export Excel"
+                                onAction="#handleExportSystemLogs"
+                                styleClass="secondary-button"/>
+                    </HBox>
+
+                    <TableView fx:id="systemLogsTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="systemTimeColumn" text="Time" prefWidth="170"/>
+                            <TableColumn fx:id="systemActorColumn" text="Actor" prefWidth="180"/>
+                            <TableColumn fx:id="systemRoleColumn" text="Role" prefWidth="110"/>
+                            <TableColumn fx:id="systemTargetUserColumn" text="Target User" prefWidth="150" />
+                            <TableColumn fx:id="systemTargetRoleColumn" text="Target Role" prefWidth="120" />
+                            <TableColumn fx:id="systemModuleColumn" text="Module" prefWidth="150"/>
+                            <TableColumn fx:id="systemActionColumn" text="Action" prefWidth="150"/>
+                            <TableColumn fx:id="systemStatusColumn" text="Status" prefWidth="120"/>
+                            <TableColumn fx:id="systemMessageColumn" text="Message" prefWidth="420"/>
+                            <TableColumn fx:id="systemDurationColumn" text="Duration" prefWidth="120" />
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Label fx:id="systemLogsPageLabel" text="Page 1 of 1"  styleClass="pagination-label"  />
+                        <Button fx:id="systemLogsPrevButton" text="Previous" onAction="#handleSystemLogsPrevious" styleClass="secondary-button" />
+                        <Button fx:id="systemLogsNextButton" text="Next" onAction="#handleSystemLogsNext" styleClass="primary-button" />
+                    </HBox>
+                </VBox>
+
+                <!-- SESSIONS -->
+                <VBox fx:id="sessionsPane"
+                      visible="false"
+                      managed="false"
+                      spacing="12"
+                      styleClass="monitoring-content">
+
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <TextField fx:id="sessionSearchField"
+                                   promptText="Search sessions..."
+                                   HBox.hgrow="ALWAYS"/>
+
+                        <Button text="Export Excel"
+                                onAction="#handleExportSessionLogs"
+                                styleClass="secondary-button"/>
+                    </HBox>
+
+                    <TableView fx:id="sessionLogsTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="sessionStartedColumn" text="Started" prefWidth="170"/>
+                            <TableColumn fx:id="sessionUserColumn" text="User" prefWidth="180"/>
+                            <TableColumn fx:id="sessionRoleColumn" text="Role" prefWidth="110"/>
+                            <TableColumn fx:id="sessionDeviceColumn" text="Device" prefWidth="180"/>
+                            <TableColumn fx:id="sessionIpColumn" text="IP Address" prefWidth="150"/>
+                            <TableColumn fx:id="sessionStatusColumn" text="Status" prefWidth="120"/>
+                            <TableColumn fx:id="sessionLastSeenColumn" text="Last Seen" prefWidth="170"/>
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Label fx:id="sessionLogsPageLabel" text="Page 1 of 1"  styleClass="pagination-label"  />
+                        <Button fx:id="sessionLogsPrevButton" text="Previous" onAction="#handleSessionLogsPrevious" styleClass="secondary-button" />
+                        <Button fx:id="sessionLogsNextButton" text="Next" onAction="#handleSessionLogsNext" styleClass="primary-button" />
+                    </HBox>
+                </VBox>
+
+                <!-- ACCESS LOGS -->
+                <VBox fx:id="accessLogsPane" visible="false" managed="false" spacing="14" styleClass="tab-content">
+
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <TextField fx:id="accessSearchField" promptText="Search access logs..." HBox.hgrow="ALWAYS" />
+                        <Button text="Export" onAction="#handleExportAccessLogs" styleClass="secondary-button" />
+                    </HBox>
+
+                    <TableView fx:id="accessLogsTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="accessTimeColumn" text="Time" prefWidth="170" />
+                            <TableColumn fx:id="accessActorColumn" text="User" prefWidth="150" />
+                            <TableColumn fx:id="accessActionColumn" text="Event" prefWidth="140" />
+                            <TableColumn fx:id="accessStatusColumn" text="Status" prefWidth="120" />
+                            <TableColumn fx:id="accessMessageColumn" text="Message" prefWidth="420" />
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Label fx:id="accessLogsPageLabel" text="Page 1 of 1" styleClass="pagination-label" />
+                        <Button fx:id="accessLogsPrevButton" text="Previous" onAction="#handleAccessLogsPrevious" styleClass="secondary-button" />
+                        <Button fx:id="accessLogsNextButton" text="Next" onAction="#handleAccessLogsNext" styleClass="primary-button" />
+                    </HBox>
+
+                </VBox>
+
+                <!-- ACCOUNT LOGS -->
+                <VBox fx:id="accountLogsPane" visible="false" managed="false" spacing="14" styleClass="tab-content">
+
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <TextField fx:id="accountSearchField" promptText="Search account logs..." HBox.hgrow="ALWAYS" />
+                        <Button text="Export" onAction="#handleExportAccountLogs" styleClass="secondary-button" />
+                    </HBox>
+
+                    <TableView fx:id="accountLogsTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="accountTimeColumn" text="Time" prefWidth="170" />
+                            <TableColumn fx:id="accountActorColumn" text="Performed By" prefWidth="150" />
+                            <TableColumn fx:id="accountActionColumn" text="Action" prefWidth="140" />
+                            <TableColumn fx:id="accountStatusColumn" text="New Status" prefWidth="120" />
+                            <TableColumn fx:id="accountMessageColumn" text="Reason" prefWidth="420" />
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Label fx:id="accountLogsPageLabel" text="Page 1 of 1" styleClass="pagination-label" />
+                        <Button fx:id="accountLogsPrevButton" text="Previous" onAction="#handleAccountLogsPrevious" styleClass="secondary-button" />
+                        <Button fx:id="accountLogsNextButton" text="Next" onAction="#handleAccountLogsNext" styleClass="primary-button" />
+                    </HBox>
+
+                </VBox>
+
+                <!-- REGISTRAR SYNC -->
+                <VBox fx:id="registrarLogsPane" visible="false" managed="false" spacing="14" styleClass="tab-content">
+
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <TextField fx:id="registrarSearchField" promptText="Search registrar sync logs..." HBox.hgrow="ALWAYS" />
+                        <Button text="Export" onAction="#handleExportRegistrarLogs" styleClass="secondary-button" />
+                    </HBox>
+
+                    <TableView fx:id="registrarLogsTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="registrarTimeColumn" text="Time" prefWidth="170" />
+                            <TableColumn fx:id="registrarActorColumn" text="Performed By" prefWidth="150" />
+                            <TableColumn fx:id="registrarActionColumn" text="Sync Type" prefWidth="140" />
+                            <TableColumn fx:id="registrarStatusColumn" text="Status" prefWidth="120" />
+                            <TableColumn fx:id="registrarMessageColumn" text="Message" prefWidth="420" />
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Label fx:id="registrarLogsPageLabel" text="Page 1 of 1" styleClass="pagination-label" />
+                        <Button fx:id="registrarLogsPrevButton" text="Previous" onAction="#handleRegistrarLogsPrevious" styleClass="secondary-button" />
+                        <Button fx:id="registrarLogsNextButton" text="Next" onAction="#handleRegistrarLogsNext" styleClass="primary-button" />
+                    </HBox>
+
+                </VBox>
+
+            </StackPane>
+        </HBox>
+    </center>
+
+</BorderPane>

@@ -1,13 +1,19 @@
 package com.example.examguard.service;
 
-import com.example.examguard.model.ReactivateUserRequest;
+import com.example.examguard.model.admin.monitoring.AdminMonitoringLogsResponse;
+import com.example.examguard.model.admin.monitoring.MonitoringOverviewResponse;
+import com.example.examguard.model.core.request.ReactivateUserRequest;
 import com.example.examguard.utility.Session;
 import com.google.gson.Gson;
 
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,6 +28,16 @@ public class AdminApiService {
         this.gson = new Gson();
     }
 
+    public MonitoringOverviewResponse getOverview(Map<String, Object> body) throws Exception {
+        String response = postJson("/admin/monitoring/overview", body);
+        return gson.fromJson(response, MonitoringOverviewResponse.class);
+    }
+
+    public AdminMonitoringLogsResponse getLogs(Map<String, Object> body) throws Exception {
+        String response = postJson("/admin/monitoring/logs", body);
+        return gson.fromJson(response, AdminMonitoringLogsResponse.class);
+    }
+
     public String createAdminProfile(String jsonBody) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -34,9 +50,6 @@ public class AdminApiService {
                     request,
                     HttpResponse.BodyHandlers.ofString()
             );
-
-            System.out.println("CREATE ADMIN STATUS: " + response.statusCode());
-            System.out.println("CREATE ADMIN BODY: " + response.body());
 
             return response.body();
 
@@ -58,9 +71,6 @@ public class AdminApiService {
                     request,
                     HttpResponse.BodyHandlers.ofString()
             );
-
-            System.out.println("UPDATE ADMIN STATUS: " + response.statusCode());
-            System.out.println("UPDATE ADMIN BODY: " + response.body());
 
             return response.body();
 
@@ -113,9 +123,6 @@ public class AdminApiService {
 
             HttpResponse<String> response = HttpClient.newHttpClient()
                     .send(request, HttpResponse.BodyHandlers.ofString());
-
-            System.out.println("REACTIVATE ADMIN STATUS: " + response.statusCode());
-            System.out.println("REACTIVATE ADMIN BODY: " + response.body());
 
             return response.body();
 
@@ -179,9 +186,6 @@ public class AdminApiService {
                     HttpResponse.BodyHandlers.ofString()
             );
 
-            System.out.println("ELIGIBLE STATUS: " + response.statusCode());
-            System.out.println("ELIGIBLE BODY: " + response.body());
-
             return response.statusCode() >= 200 && response.statusCode() < 300
                     ? response.body()
                     : "[]";
@@ -189,33 +193,6 @@ public class AdminApiService {
         } catch (Exception e) {
             e.printStackTrace();
             return "[]";
-        }
-    }
-
-    public String bulkReactivateEligibleUsers(String justification) {
-        try {
-            ReactivateUserRequest payload = new ReactivateUserRequest(null, null, justification);
-            String jsonBody = gson.toJson(payload);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/cache/bulk-reactivate"))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(
-                    request,
-                    HttpResponse.BodyHandlers.ofString()
-            );
-
-            System.out.println("BULK REACTIVATE STATUS: " + response.statusCode());
-            System.out.println("BULK REACTIVATE BODY: " + response.body());
-
-            return response.body();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Error reactivating eligible users.";
         }
     }
 
@@ -237,9 +214,6 @@ public class AdminApiService {
                     request,
                     HttpResponse.BodyHandlers.ofString()
             );
-
-            System.out.println("REACTIVATE USER STATUS: " + response.statusCode());
-            System.out.println("REACTIVATE USER BODY: " + response.body());
 
             return response.body();
 
@@ -273,4 +247,39 @@ public class AdminApiService {
             return null;
         }
     }
+
+    private String postJson(String endpoint, Object body) throws Exception {
+        URL url = new URL(BASE_URL + endpoint);
+
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(15000);
+        connection.setDoOutput(true);
+
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("X-User-Id", Session.getSchoolId());
+        connection.setRequestProperty("X-Role", "ADMIN");
+
+        String json = gson.toJson(body);
+
+        try (OutputStream os = connection.getOutputStream()) {
+            os.write(json.getBytes(StandardCharsets.UTF_8));
+        }
+
+        int status = connection.getResponseCode();
+
+        byte[] responseBytes = status >= 200 && status < 300
+                ? connection.getInputStream().readAllBytes()
+                : connection.getErrorStream().readAllBytes();
+
+        String response = new String(responseBytes, StandardCharsets.UTF_8);
+
+        if (status < 200 || status >= 300) {
+            throw new RuntimeException("Monitoring API failed: HTTP " + status + " - " + response);
+        }
+
+        return response;
+    }
+
 }

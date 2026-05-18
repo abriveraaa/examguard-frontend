@@ -2,7 +2,7 @@ package com.example.examguard.controller.faculty;
 
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
-import com.example.examguard.model.faculty.*;
+import com.example.examguard.model.faculty.dto.*;
 import com.example.examguard.service.FacultyApiService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;

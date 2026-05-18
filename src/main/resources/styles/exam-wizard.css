@@ -986,3 +986,77 @@
     -fx-background-radius: 10;
     -fx-padding: 10;
 }
+
+/* =========================================================
+   15. ESSAY RUBRIC / QUESTION INSTRUCTION
+   ========================================================= */
+
+.rubric-builder {
+    -fx-background-color: #FFFDF8;
+
+    -fx-border-color: #E7DCC8;
+    -fx-border-radius: 14;
+
+    -fx-background-radius: 14;
+
+    -fx-padding: 14;
+    -fx-spacing: 10;
+}
+
+.rubric-row {
+    -fx-alignment: center-left;
+    -fx-spacing: 8;
+}
+
+.rubric-title {
+    -fx-text-fill: #800000;
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+}
+
+.rubric-weight {
+    -fx-text-fill: #7A5200;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.rubric-total-valid {
+    -fx-text-fill: #15803D;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.rubric-total-invalid {
+    -fx-text-fill: #B3261E;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.question-instruction-preview {
+    -fx-background-color: #FFF8E1;
+
+    -fx-border-color: rgba(201,162,39,0.35);
+    -fx-border-radius: 10;
+
+    -fx-background-radius: 10;
+
+    -fx-padding: 10 12;
+
+    -fx-text-fill: #4A3B00;
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+}
+
+.review-rubric-row {
+    -fx-background-color: #F7F3ED;
+
+    -fx-background-radius: 10;
+
+    -fx-padding: 8 10;
+}
+
+.review-rubric-text {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
