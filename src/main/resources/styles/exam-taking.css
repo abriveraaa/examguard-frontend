@@ -742,14 +742,18 @@
 }
 
 .lobby-wizard-card {
-    -fx-background-color: white;
-    -fx-background-radius: 24;
-    -fx-border-radius: 24;
-    -fx-border-color: #eadfd7;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 24, 0, 0, 8);
+    -fx-background-color: rgba(255,255,255,0.98);
+    -fx-background-radius: 26;
+    -fx-border-radius: 26;
+    -fx-border-color: rgba(255,255,255,0.42);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 30, 0, 0, 12);
 
-    -fx-pref-width: 590;
-    -fx-max-width: 590;
+    -fx-pref-width: 700;
+    -fx-max-width: 700;
+
+    -fx-pref-height: 860;
+    -fx-min-height: 860;
+    -fx-max-height: 860;
 }
 
 .lobby-card-header {
@@ -955,9 +959,9 @@
     -fx-border-radius: 26;
     -fx-border-color: rgba(255,255,255,0.42);
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 30, 0, 0, 12);
-    -fx-pref-width: 560;
-    -fx-max-width: 560;
-    -fx-max-height: 620;
+    -fx-pref-width: 700;
+    -fx-max-width: 700;
+    -fx-max-height: 700;
 }
 
 .lobby-status-pending,
@@ -976,4 +980,44 @@
     -fx-max-width: 78;
 
     -fx-alignment: center;
+}
+
+.lobby-camera-preview {
+    -fx-background-color: #111827;
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: rgba(255,255,255,0.20);
+    -fx-alignment: center;
+    -fx-padding: 8;
+}
+
+.lobby-camera-placeholder {
+    -fx-text-fill: rgba(255,255,255,0.75);
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.phone-camera-pairing-box {
+    -fx-background-color: #fffafa;
+    -fx-padding: 14;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #eadfd7;
+}
+
+.lobby-step-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+    -fx-fit-to-width: true;
+
+    -fx-pref-height: 650;
+    -fx-max-height: 650;
+}
+.lobby-step-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.lobby-step-scroll .scroll-bar:vertical {
+    -fx-pref-width: 8;
 }

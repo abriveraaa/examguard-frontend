@@ -19,6 +19,14 @@ import com.example.examguard.model.faculty.request.FacultyUpdateAnswerScoreReque
 import com.example.examguard.model.faculty.response.FacultyAttemptReviewResponse;
 import com.example.examguard.model.faculty.response.FacultyExamDetailResponse;
 import com.example.examguard.model.faculty.response.SimpleMessageResponse;
+import com.example.examguard.model.camera.CreateCameraSessionRequest;
+import com.example.examguard.model.camera.CreateCameraSessionResponse;
+import com.example.examguard.model.camera.CameraSessionStatusResponse;
+import com.google.gson.Gson;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import com.example.examguard.utility.OffsetDateTimeAdapter;
 import com.example.examguard.utility.Session;
 import com.google.gson.Gson;
@@ -385,6 +393,129 @@ public class ExamApiService {
     // ===================
     // EXAM TAKING
     // ===================
+
+    public CreateCameraSessionResponse createCameraSession(
+            Long attemptId,
+            Long examId,
+            String studentId
+    ) {
+        try {
+            URL url = new URL(BASE_URL + "/exam-camera/sessions");
+
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+
+            CreateCameraSessionRequest request =
+                    new CreateCameraSessionRequest(attemptId, examId, studentId);
+
+            String json = gson.toJson(request);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(json.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int statusCode = conn.getResponseCode();
+
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new RuntimeException("Failed to create camera session. HTTP " + statusCode);
+            }
+
+            String responseBody = new String(
+                    conn.getInputStream().readAllBytes(),
+                    StandardCharsets.UTF_8
+            );
+
+            return gson.fromJson(responseBody, CreateCameraSessionResponse.class);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Camera session creation failed: " + e.getMessage(), e);
+        }
+    }
+
+    public CameraSessionStatusResponse getCameraSessionStatus(String token) {
+        try {
+            URL url = new URL(BASE_URL + "/exam-camera/sessions/" + token);
+
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+
+            int statusCode = conn.getResponseCode();
+
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new RuntimeException("Failed to get camera session status. HTTP " + statusCode);
+            }
+
+            String responseBody = new String(
+                    conn.getInputStream().readAllBytes(),
+                    StandardCharsets.UTF_8
+            );
+
+            return gson.fromJson(responseBody, CameraSessionStatusResponse.class);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Camera session status check failed: " + e.getMessage(), e);
+        }
+    }
+
+    public void endPhoneCameraSession(String token) {
+        try {
+            URL url = new URL(
+                    BASE_URL + "/exam-camera/sessions/" + token + "/end"
+            );
+
+            HttpURLConnection conn =
+                    (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+
+            int statusCode = conn.getResponseCode();
+
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new RuntimeException(
+                        "Failed to end phone camera session. HTTP "
+                                + statusCode
+                );
+            }
+
+            conn.disconnect();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public byte[] getCameraPreviewFrame(String token) {
+        try {
+            URL url = new URL(BASE_URL + "/exam-camera/sessions/" + token + "/preview-frame");
+
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "image/jpeg");
+
+            int statusCode = conn.getResponseCode();
+
+            if (statusCode == 404) {
+                return null;
+            }
+
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new RuntimeException("Failed to get camera preview frame. HTTP " + statusCode);
+            }
+
+            return conn.getInputStream().readAllBytes();
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     public long checkBackendLatency() throws Exception {
         long start = System.currentTimeMillis();

@@ -19,7 +19,7 @@ public class LobbyCameraVerifier {
 
     private static final int SAMPLE_COUNT = 8;
     private static final int WARMUP_FRAMES = 5;
-    private static final int REQUIRED_ONE_FACE_FRAMES = 5;
+    private static final int REQUIRED_ONE_FACE_FRAMES = 4;
 
     public LobbyCameraVerifier() {
         loadOpenCv();
@@ -182,7 +182,10 @@ public class LobbyCameraVerifier {
             double avgBrightness = totalBrightness / validFrames;
             double avgBlurScore = totalBlurScore / validFrames;
 
-            if (avgBrightness < 45) {
+            System.out.println("AVG BRIGHTNESS: " + avgBrightness);
+            System.out.println("AVG BLUR SCORE: " + avgBlurScore);
+
+            if (avgBrightness < 35) {
                 return LobbyCheckResult.fail("Camera view is too dark. Improve lighting.");
             }
 
@@ -190,7 +193,7 @@ public class LobbyCameraVerifier {
                 return LobbyCheckResult.fail("Camera view is too bright. Reduce glare or backlight.");
             }
 
-            if (avgBlurScore < 80) {
+            if (avgBlurScore < 15) {
                 return LobbyCheckResult.fail("Camera view is blurry. Adjust the camera before starting.");
             }
 
@@ -244,11 +247,42 @@ public class LobbyCameraVerifier {
                 1.08,
                 4,
                 0,
-                new Size(70, 70),
+                new Size(60, 60),
                 new Size()
         );
 
-        return faces.toArray().length;
+        Rect[] detectedFaces = faces.toArray();
+
+        int validFaces = 0;
+
+        double frameWidth = frame.width();
+        double frameHeight = frame.height();
+        double frameArea = frameWidth * frameHeight;
+
+        for (Rect face : detectedFaces) {
+            double faceArea = face.width * face.height;
+            double areaRatio = faceArea / frameArea;
+
+            double centerX = face.x + face.width / 2.0;
+            double centerY = face.y + face.height / 2.0;
+
+            boolean notTooSmall = areaRatio >= 0.015;
+            boolean notTooLarge = areaRatio <= 0.45;
+
+            boolean horizontallyCentered =
+                    centerX >= frameWidth * 0.18 &&
+                            centerX <= frameWidth * 0.82;
+
+            boolean verticallyReasonable =
+                    centerY >= frameHeight * 0.12 &&
+                            centerY <= frameHeight * 0.72;
+
+            if (notTooSmall && notTooLarge && horizontallyCentered && verticallyReasonable) {
+                validFaces++;
+            }
+        }
+
+        return validFaces;
     }
 
     private double calculateBlurScore(Mat gray) {

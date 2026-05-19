@@ -165,69 +165,169 @@
                                   managed="false"
                                   styleClass="lobby-step-content">
 
+                                <!-- FIXED TITLE AREA -->
                                 <HBox alignment="CENTER_LEFT" spacing="12">
-
                                     <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                        <Label text="System Readiness Check"
+                                        <Label text="Camera Setup and Environment Check"
                                                styleClass="lobby-section-title"/>
 
-                                        <Label text="ExamGuard will verify this device before the exam can begin."
+                                        <Label text="Position your camera at a 45° side angle so your face, hands, keyboard, desk, and screen area are visible before clicking Check Now."
                                                wrapText="true"
                                                styleClass="lobby-check-description"/>
                                     </VBox>
 
                                     <Button fx:id="runChecksButton"
-                                            text="Run System Checks"
+                                            text="Check Now"
                                             onAction="#handleRunLobbyChecks"
                                             styleClass="primary-button"/>
                                 </HBox>
 
-                                <VBox spacing="8">
-                                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
-                                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                            <Label text="Camera Access" styleClass="lobby-check-title"/>
-                                            <Label fx:id="cameraDetailLabel" text="" wrapText="true" styleClass="lobby-check-detail"/>
-                                        </VBox>
-                                        <Label fx:id="cameraStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                    </HBox>
+                                <!-- SCROLLABLE CONTENT STARTS HERE -->
+                                <ScrollPane fitToWidth="true"
+                                            hbarPolicy="NEVER"
+                                            vbarPolicy="AS_NEEDED"
+                                            styleClass="lobby-step-scroll">
 
-                                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
-                                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                            <Label text="Face Detection" styleClass="lobby-check-title"/>
-                                            <Label fx:id="faceDetailLabel" text="" wrapText="true" styleClass="lobby-check-detail"/>
+                                    <VBox spacing="12"
+                                          styleClass="lobby-step-content">
 
-                                        </VBox>
-                                        <Label fx:id="faceStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                    </HBox>
+                                        <StackPane fx:id="lobbyCameraPreviewPane"
+                                                   prefHeight="220"
+                                                   minHeight="220"
+                                                   maxHeight="220"
+                                                   styleClass="lobby-camera-preview">
 
-                                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
-                                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                            <Label text="Desk Scan" styleClass="lobby-check-title"/>
-                                            <Label fx:id="deskDetailLabel" text="" wrapText="true" styleClass="lobby-check-detail"/>
+                                            <ImageView fx:id="lobbyCameraPreviewImageView"
+                                                       preserveRatio="true"
+                                                       fitHeight="210"
+                                                       smooth="true"/>
 
-                                        </VBox>
-                                        <Label fx:id="deskStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                    </HBox>
+                                            <Label fx:id="lobbyCameraPreviewPlaceholder"
+                                                   text="Camera preview will appear here"
+                                                   styleClass="lobby-camera-placeholder"/>
 
-                                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
-                                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                            <Label text="ExamGuard Connectivity" styleClass="lobby-check-title"/>
-                                            <Label fx:id="internetDetailLabel" text="" wrapText="true" styleClass="lobby-check-detail"/>
+                                        </StackPane>
 
-                                        </VBox>
-                                        <Label fx:id="internetStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                    </HBox>
+                                        <HBox alignment="CENTER_RIGHT" spacing="10">
+                                            <Label text="Cannot position your webcam at 45°?"
+                                                   styleClass="lobby-check-description"/>
 
-                                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
-                                        <HBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
-                                            <Label text="System Lockdown" styleClass="lobby-check-title"/>
-                                            <Label fx:id="systemDetailLabel" text="" wrapText="true" styleClass="lobby-check-detail"/>
-
+                                            <Button fx:id="pairPhoneCameraButton"
+                                                    text="Pair my phone camera"
+                                                    onAction="#handlePairPhoneCamera"
+                                                    styleClass="outline-button"/>
                                         </HBox>
-                                        <Label fx:id="systemStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                    </HBox>
-                                </VBox>
+
+                                        <VBox fx:id="phoneCameraPairingBox"
+                                              spacing="10"
+                                              visible="false"
+                                              managed="false"
+                                              styleClass="phone-camera-pairing-box">
+
+                                            <HBox alignment="CENTER_LEFT" spacing="12">
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                                    <Label text="Phone Camera Pairing"
+                                                           styleClass="lobby-check-title"/>
+
+                                                    <Label text="Scan this QR code using your phone. Keep the phone at a 45° side angle during the exam."
+                                                           wrapText="true"
+                                                           styleClass="lobby-check-description"/>
+                                                </VBox>
+
+                                                <Label fx:id="phoneCameraStatusLabel"
+                                                       text="Pending"
+                                                       alignment="CENTER"
+                                                       styleClass="lobby-status-pending"/>
+                                            </HBox>
+
+                                            <HBox alignment="CENTER" spacing="14">
+                                                <ImageView fx:id="phoneCameraQrImageView"
+                                                           fitWidth="150"
+                                                           fitHeight="150"
+                                                           preserveRatio="true"
+                                                           smooth="true"/>
+
+                                                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                                    <Label text="Required view:"
+                                                           styleClass="lobby-check-title"/>
+
+                                                    <Label text="• Face and upper body visible&#10;• Hands and keyboard visible&#10;• Desk and screen area visible&#10;• No reviewer, notes, or extra phone nearby"
+                                                           wrapText="true"
+                                                           styleClass="lobby-check-description"/>
+                                                </VBox>
+                                            </HBox>
+                                        </VBox>
+
+                                        <VBox spacing="8">
+                                            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                                    <Label text="Camera View" styleClass="lobby-check-title"/>
+                                                    <Label text="Checks if a camera feed is available."
+                                                           wrapText="true"
+                                                           styleClass="lobby-check-description"/>
+                                                </VBox>
+                                                <Label fx:id="cameraStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
+                                            </HBox>
+
+                                            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                                    <Label text="Examinee Presence" styleClass="lobby-check-title"/>
+                                                    <Label text="Checks whether exactly one examinee is clearly visible from the required camera angle."
+                                                           wrapText="true"
+                                                           styleClass="lobby-check-description"/>
+
+                                                </VBox>
+                                                <Label fx:id="faceStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
+                                            </HBox>
+
+                                            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                                    <Label text="Clean Desk and Screen Area" styleClass="lobby-check-title"/>
+                                                    <Label text="Checks for visible phone, book, reviewer, or suspicious object near the screen or desk."
+                                                           wrapText="true"
+                                                           styleClass="lobby-check-description"/>
+                                                </VBox>
+
+                                                <Label fx:id="deskStatusLabel"
+                                                       text="Pending"
+                                                       alignment="CENTER"
+                                                       styleClass="lobby-status-pending"/>
+                                            </HBox>
+
+                                            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                                    <Label text="ExamGuard Connectivity" styleClass="lobby-check-title"/>
+                                                    <Label fx:id="internetDetailLabel" text="" wrapText="true" styleClass="lobby-check-detail"/>
+
+                                                </VBox>
+                                                <Label fx:id="internetStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
+                                            </HBox>
+
+                                            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="lobby-check-row">
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+
+                                                    <Label text="System Lockdown"
+                                                           styleClass="lobby-check-title"/>
+
+                                                    <Label text="Checks whether prohibited applications, multiple displays, or unsafe system configurations are active."
+                                                           wrapText="true"
+                                                           styleClass="lobby-check-description"/>
+                                                </VBox>
+                                                <Label fx:id="systemDetailLabel" text="" wrapText="true" visible="false" managed="false" styleClass="lobby-check-detail"/>
+
+
+                                                <Label fx:id="systemStatusLabel"
+                                                       text="Pending"
+                                                       alignment="CENTER"
+                                                       styleClass="lobby-status-pending"/>
+                                            </HBox>
+                                        </VBox>
+
+                                    </VBox>
+                                </ScrollPane>
+
                             </VBox>
+
                         </StackPane>
                     </center>
 
@@ -249,7 +349,7 @@
 
                             <Button fx:id="continueToChecksButton"
                                     text="Run System Check"
-                                    onAction="#handleRunSystemCheck"
+                                    onAction="#handleContinueToSystemChecks"
                                     styleClass="primary-button"/>
 
                             <Button fx:id="beginExamButton"
