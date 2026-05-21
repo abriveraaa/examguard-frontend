@@ -27,6 +27,7 @@ import javafx.stage.Stage;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +59,35 @@ public class StudentExamsController implements ShellAwareController {
     private final Image overlayImage = new Image(getClass().getResourceAsStream("/images/exam-card-overlay.png"));
 
     private final StudentApiService studentApiService = new StudentApiService();
+
+    private static final ZoneId MANILA_ZONE = ZoneId.of("Asia/Manila");
+    private static final int LOBBY_OPEN_MINUTES_BEFORE_START = 15;
+
+    private OffsetDateTime nowManila() {
+        return ZonedDateTime.now(MANILA_ZONE).toOffsetDateTime();
+    }
+
+    private OffsetDateTime toManila(OffsetDateTime value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value.atZoneSameInstant(MANILA_ZONE).toOffsetDateTime();
+    }
+
+    private boolean canEnterLobbyNow(OffsetDateTime startValue, OffsetDateTime endValue) {
+        OffsetDateTime start = toManila(startValue);
+        OffsetDateTime end = toManila(endValue);
+
+        if (start == null || end == null) {
+            return false;
+        }
+
+        OffsetDateTime now = nowManila();
+        OffsetDateTime lobbyOpenAt = start.minusMinutes(LOBBY_OPEN_MINUTES_BEFORE_START);
+
+        return !now.isBefore(lobbyOpenAt) && !now.isAfter(end);
+    }
 
     @Override
     public void setShellController(DashboardShellController shellController) {
@@ -230,9 +260,11 @@ public class StudentExamsController implements ShellAwareController {
                 dto.getFaculty(),
                 dto.getDurationMinutes(),
                 schedule,
-                dto.getStatus(),
+                computeStudentExamStatus(dto),
                 dto.getQuestionCount(),
-                Boolean.TRUE.equals(dto.getActionable())
+                Boolean.TRUE.equals(dto.getActionable()),
+                dto.getStartDateTime(),
+                dto.getEndDateTime()
         );
     }
 
@@ -347,23 +379,32 @@ public class StudentExamsController implements ShellAwareController {
         titleLabel.getStyleClass().add("exam-card-title");
         titleLabel.setWrapText(true);
 
-        Label modeDurationLabel = new Label("🕘 " + mode + " | " + formatDuration(duration));
-        modeDurationLabel.getStyleClass().add("exam-card-meta");
+        HBox modeDurationRow = createIconTextRow(
+                "/icons/online-learning.png",
+                mode + " | " + formatDuration(duration),
+                "exam-card-meta"
+        );
 
-        Label facultyLabel = new Label("👤 " + faculty);
-        facultyLabel.getStyleClass().add("exam-card-meta");
+        HBox facultyRow = createIconTextRow(
+                "/icons/teacher.png",
+                faculty,
+                "exam-card-meta"
+        );
 
-        Label scheduleLabel = new Label("📅 " + schedule);
-        scheduleLabel.getStyleClass().add("exam-card-schedule");
-        scheduleLabel.setWrapText(true);
+        HBox scheduleRow = createIconTextRow(
+                "/icons/calendar.png",
+                schedule,
+                "exam-card-schedule"
+        );
+
 
         VBox body = new VBox(
                 7,
                 statusLabel,
                 titleLabel,
-                modeDurationLabel,
-                facultyLabel,
-                scheduleLabel
+                modeDurationRow,
+                facultyRow,
+                scheduleRow
         );
 
         body.setPadding(new Insets(10));
@@ -377,8 +418,11 @@ public class StudentExamsController implements ShellAwareController {
                 return;
             }
 
-            if ("ONGOING".equalsIgnoreCase(status)) {
-                openExamLobby(examId, title, duration, questionCount);
+            if ("LOBBY OPEN".equalsIgnoreCase(status)
+                    || "ONGOING".equalsIgnoreCase(status)) {
+
+                openExamLobby(examId, title, duration, questionCount, null, null);
+
             } else if ("RESULTS RELEASED".equalsIgnoreCase(status)) {
                 openStudentResultsWorkspace(examId);
             }
@@ -393,7 +437,7 @@ public class StudentExamsController implements ShellAwareController {
             case "UPCOMING" ->
                     "exam-status-upcoming";
 
-            case "ONGOING" ->
+            case "ONGOING", "LOBBY OPEN" ->
                     "exam-status-progress";
 
             case "PENDING REVIEW" ->
@@ -504,7 +548,7 @@ public class StudentExamsController implements ShellAwareController {
     }
 
     private VBox createExamCard(ExamCardVM exam) {
-        return createExamCard(
+        VBox card = createExamCard(
                 exam.examId(),
                 exam.title(),
                 exam.courseCode(),
@@ -515,7 +559,36 @@ public class StudentExamsController implements ShellAwareController {
                 exam.schedule(),
                 exam.status(),
                 exam.questionCount(),
-                exam.actionable());
+                exam.actionable()
+        );
+
+        /*
+         * We attach the correct click handler here because this method has access
+         * to startDateTime and endDateTime from ExamCardVM.
+         */
+        card.setOnMouseClicked(event -> {
+            if (!exam.actionable()) {
+                return;
+            }
+
+            if ("LOBBY OPEN".equalsIgnoreCase(exam.status())
+                    || "ONGOING".equalsIgnoreCase(exam.status())) {
+
+                openExamLobby(
+                        exam.examId(),
+                        exam.title(),
+                        exam.duration(),
+                        exam.questionCount(),
+                        exam.startDateTime(),
+                        exam.endDateTime()
+                );
+
+            } else if ("RESULTS RELEASED".equalsIgnoreCase(exam.status())) {
+                openStudentResultsWorkspace(exam.examId());
+            }
+        });
+
+        return card;
     }
 
     private void renderExamCards(List<ExamCardVM> cards) {
@@ -753,7 +826,9 @@ public class StudentExamsController implements ShellAwareController {
             Long examId,
             String title,
             Integer durationMinutes,
-            Long questionCount
+            Long questionCount,
+            OffsetDateTime startDateTime,
+            OffsetDateTime endDateTime
     ) {
 
         if (examId == null) {
@@ -773,7 +848,9 @@ public class StudentExamsController implements ShellAwareController {
                     examId,
                     title,
                     durationMinutes == null ? 60 : durationMinutes,
-                    questionCount
+                    questionCount,
+                    startDateTime,
+                    endDateTime
             );
 
             Scene scene = new Scene(root);
@@ -868,6 +945,67 @@ public class StudentExamsController implements ShellAwareController {
         } catch (Exception e) {
             return 60;
         }
+    }
+
+    private String computeStudentExamStatus(StudentExamResponse dto) {
+        if (dto == null) {
+            return "UPCOMING";
+        }
+
+        String status = dto.getStatus();
+
+        if ("SUBMITTED".equalsIgnoreCase(status)
+                || "PENDING REVIEW".equalsIgnoreCase(status)
+                || "RESULTS RELEASED".equalsIgnoreCase(status)
+                || "DID NOT TAKE".equalsIgnoreCase(status)) {
+            return status;
+        }
+
+        OffsetDateTime start = dto.getStartDateTime();
+        OffsetDateTime end = dto.getEndDateTime();
+
+        if (start == null || end == null) {
+            return status == null ? "UPCOMING" : status;
+        }
+
+        OffsetDateTime now = nowManila();
+        OffsetDateTime startManila = toManila(start);
+        OffsetDateTime endManila = toManila(end);
+        OffsetDateTime lobbyOpenAt = startManila.minusMinutes(15);
+
+        if (now.isAfter(endManila)) {
+            return "DID NOT TAKE";
+        }
+
+        if (now.isBefore(lobbyOpenAt)) {
+            return "UPCOMING";
+        }
+
+        if (now.isBefore(startManila)) {
+            return "LOBBY OPEN";
+        }
+
+        return "ONGOING";
+    }
+
+    private HBox createIconTextRow(String iconPath, String text, String textStyleClass) {
+        ImageView icon = new ImageView(
+                new Image(getClass().getResourceAsStream(iconPath))
+        );
+
+        icon.setFitWidth(14);
+        icon.setFitHeight(14);
+        icon.setPreserveRatio(true);
+        icon.setSmooth(true);
+
+        Label label = new Label(text == null ? "" : text);
+        label.getStyleClass().add(textStyleClass);
+        label.setWrapText(true);
+
+        HBox row = new HBox(6, icon, label);
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        return row;
     }
 
 }

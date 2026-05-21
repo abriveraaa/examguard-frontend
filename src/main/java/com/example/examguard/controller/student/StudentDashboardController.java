@@ -23,6 +23,7 @@ import javafx.util.Duration;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -48,6 +49,48 @@ public class StudentDashboardController implements ShellAwareController {
     @FXML private VBox resultSummaryList;
 
     private final StudentApiService dashboardApiService = new StudentApiService();
+
+    private static final ZoneId MANILA_ZONE = ZoneId.of("Asia/Manila");
+    private static final int LOBBY_OPEN_MINUTES_BEFORE_START = 15;
+
+    private OffsetDateTime nowManila() {
+        return ZonedDateTime.now(MANILA_ZONE).toOffsetDateTime();
+    }
+
+    private OffsetDateTime toManila(OffsetDateTime value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value.atZoneSameInstant(MANILA_ZONE).toOffsetDateTime();
+    }
+
+    private boolean canEnterLobbyNow(OffsetDateTime startValue, OffsetDateTime endValue) {
+        OffsetDateTime start = toManila(startValue);
+        OffsetDateTime end = toManila(endValue);
+
+        if (start == null || end == null) {
+            return false;
+        }
+
+        OffsetDateTime now = nowManila();
+        OffsetDateTime lobbyOpenAt = start.minusMinutes(LOBBY_OPEN_MINUTES_BEFORE_START);
+
+        return !now.isBefore(lobbyOpenAt) && !now.isAfter(end);
+    }
+
+    private boolean canBeginExamNow(OffsetDateTime startValue, OffsetDateTime endValue) {
+        OffsetDateTime start = toManila(startValue);
+        OffsetDateTime end = toManila(endValue);
+
+        if (start == null || end == null) {
+            return false;
+        }
+
+        OffsetDateTime now = nowManila();
+
+        return !now.isBefore(start) && !now.isAfter(end);
+    }
 
     @Override
     public void setShellController(DashboardShellController shellController) {
@@ -226,15 +269,29 @@ public class StudentDashboardController implements ShellAwareController {
     private void loadUpcomingExams(List<StudentUpcomingExam> exams) {
         upcomingExamList.getChildren().clear();
 
-        if (exams == null || exams.isEmpty()) {
+        List<StudentUpcomingExam> visibleExams =
+                exams == null
+                        ? List.of()
+                        : exams.stream()
+                        .filter(exam -> {
+                            String status = formatExamStatus(exam);
+
+                            return "Scheduled".equalsIgnoreCase(status)
+                                   || "Lobby Open".equalsIgnoreCase(status)
+                                   || "Available".equalsIgnoreCase(status)
+                                   || "Resume".equalsIgnoreCase(status);
+                        })
+                        .toList();
+
+        if (visibleExams.isEmpty()) {
             upcomingExamList.getChildren().add(createEmptyRow("No upcoming exams."));
             return;
         }
 
-        for (int i = 0; i < exams.size(); i++) {
-            upcomingExamList.getChildren().add(createUpcomingExamRow(exams.get(i)));
+        for (int i = 0; i < visibleExams.size(); i++) {
+            upcomingExamList.getChildren().add(createUpcomingExamRow(visibleExams.get(i)));
 
-            if (i < exams.size() - 1) {
+            if (i < visibleExams.size() - 1) {
                 upcomingExamList.getChildren().add(new Separator());
             }
         }
@@ -283,7 +340,7 @@ public class StudentDashboardController implements ShellAwareController {
         Button actionButton = null;
 
         switch (computedStatus) {
-            case "Available", "Resume" -> {
+            case "Lobby Open", "Available", "Resume" -> {
                 Button enterButton = new Button(
                         "Resume".equals(computedStatus)
                                 ? "Resume"
@@ -465,30 +522,40 @@ public class StudentDashboardController implements ShellAwareController {
     private String formatExamStatus(StudentUpcomingExam exam) {
         String baseStatus = formatStatus(exam.getStatus());
 
-        if ("IN_PROGRESS".equalsIgnoreCase(exam.getAttemptStatus())) {
-            return "Resume";
-        }
-
         try {
             if (!"PUBLISHED".equalsIgnoreCase(exam.getStatus())) {
                 return baseStatus;
             }
 
-            ZoneId manila = ZoneId.of("Asia/Manila");
+            OffsetDateTime start = exam.getStartDateTime();
+            OffsetDateTime end = exam.getEndDateTime();
 
-            ZonedDateTime now = ZonedDateTime.now(manila);
-            ZonedDateTime start = exam.getStartDateTime()
-                    .atZoneSameInstant(manila);
-            ZonedDateTime end = exam.getEndDateTime()
-                    .atZoneSameInstant(manila);
-
-            if (now.isBefore(start)) {
-                return "Scheduled";
-            } else if (now.isAfter(end)) {
-                return "Expired";
-            } else {
-                return "Available";
+            if (start == null || end == null) {
+                return baseStatus;
             }
+
+            OffsetDateTime now = nowManila();
+            OffsetDateTime startManila = toManila(start);
+            OffsetDateTime endManila = toManila(end);
+            OffsetDateTime lobbyOpenAt = startManila.minusMinutes(15);
+
+            if (now.isAfter(endManila)) {
+                return "Expired";
+            }
+
+            if (now.isBefore(lobbyOpenAt)) {
+                return "Scheduled";
+            }
+
+            if (now.isBefore(startManila)) {
+                return "Lobby Open";
+            }
+
+            if ("IN_PROGRESS".equalsIgnoreCase(exam.getAttemptStatus())) {
+                return "Resume";
+            }
+
+            return "Available";
 
         } catch (Exception e) {
             return baseStatus;
@@ -663,7 +730,9 @@ public class StudentDashboardController implements ShellAwareController {
                         exam.getExamId(),
                         exam.getTitle(),
                         exam.getTimeLimitMinutes(),
-                        exam.getQuestionCount()
+                        exam.getQuestionCount(),
+                        exam.getStartDateTime(),
+                        exam.getEndDateTime()
                 );
 
                 Scene examScene = new Scene(root);
@@ -727,12 +796,5 @@ public class StudentDashboardController implements ShellAwareController {
 
         // TODO next:
         // redirect to exam-taking page and pass exam.getExamId()
-    }
-
-    private void openViolationReview(StudentViolationSummary violation) {
-        System.out.println("Open violation review. Violation ID: " + violation.getViolationId());
-
-        // TODO next:
-        // open result summary page with violation proof/details
     }
 }

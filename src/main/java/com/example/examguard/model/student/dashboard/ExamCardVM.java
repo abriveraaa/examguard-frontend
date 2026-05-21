@@ -1,5 +1,7 @@
 package com.example.examguard.model.student.dashboard;
 
+import java.time.OffsetDateTime;
+
 public record ExamCardVM(
         Long examId,
         String title,
@@ -14,5 +16,7 @@ public record ExamCardVM(
         String schedule,
         String status,
         Long questionCount,
-        boolean actionable
+        boolean actionable,
+        OffsetDateTime startDateTime,
+        OffsetDateTime endDateTime
 ) {}

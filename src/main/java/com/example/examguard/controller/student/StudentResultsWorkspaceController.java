@@ -406,12 +406,7 @@ public class StudentResultsWorkspaceController implements ShellAwareController {
 
     private void downloadAnswerSheetReport() {
 
-        LoadingSpinner.setLoading(
-                printReportButton,
-                true,
-                "Generating...",
-                "🖨 Print Report"
-        );
+        setPrintButtonLoading(true);
 
         Task<StudentApiService.FileDownloadResponse> task = new Task<>() {
             @Override
@@ -453,12 +448,7 @@ public class StudentResultsWorkspaceController implements ShellAwareController {
 
             } finally {
 
-                LoadingSpinner.setLoading(
-                        printReportButton,
-                        false,
-                        "Generating...",
-                        "🖨 Print Report"
-                );
+                setPrintButtonLoading(false);
             }
         });
 
@@ -471,12 +461,7 @@ public class StudentResultsWorkspaceController implements ShellAwareController {
                             (ex != null ? ex.getMessage() : "Unknown error")
             );
 
-            LoadingSpinner.setLoading(
-                    printReportButton,
-                    false,
-                    "Generating...",
-                    "🖨 Print Report"
-            );
+            setPrintButtonLoading(false);
         });
 
         Thread thread = new Thread(task);
@@ -490,6 +475,47 @@ public class StudentResultsWorkspaceController implements ShellAwareController {
             shellController.showHeroSection();
             shellController.openStudentExamsPageWithFilter("RESULTS RELEASED");
         }
+    }
+
+
+    private void setPrintButtonLoading(boolean loading) {
+
+        if (loading) {
+
+            ImageView icon = new ImageView(
+                    new Image(
+                            getClass().getResourceAsStream("/icons/printer.png")
+                    )
+            );
+
+            icon.setFitWidth(14);
+            icon.setFitHeight(14);
+            icon.setPreserveRatio(true);
+
+            printReportButton.setGraphic(icon);
+
+            LoadingSpinner.setLoading(
+                    printReportButton,
+                    true,
+                    "Generating...",
+                    ""
+            );
+
+            return;
+        }
+
+        ImageView icon = new ImageView(
+                new Image(
+                        getClass().getResourceAsStream("/icons/printer.png")
+                )
+        );
+
+        icon.setFitWidth(14);
+        icon.setFitHeight(14);
+        icon.setPreserveRatio(true);
+
+        printReportButton.setGraphic(icon);
+        printReportButton.setText("Print Report");
     }
 
     private String formatDateTime(java.time.OffsetDateTime value) {

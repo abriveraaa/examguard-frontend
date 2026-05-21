@@ -3,6 +3,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.example.examguard.controller.student.StudentResultsWorkspaceController"
             stylesheets="@../../styles/student-exam.css"
@@ -20,8 +22,22 @@
                 <Region HBox.hgrow="ALWAYS"/>
 
                 <Button fx:id="printReportButton"
-                        text="🖨Print Report"
-                        styleClass="results-print-button"/>
+                        text="Print Report"
+                        styleClass="results-print-button">
+
+                    <graphic>
+                        <ImageView fitWidth="14"
+                                   fitHeight="14"
+                                   preserveRatio="true">
+
+                            <image>
+                                <Image url="@/icons/printer.png"/>
+                            </image>
+
+                        </ImageView>
+                    </graphic>
+
+                </Button>
             </HBox>
 
             <HBox spacing="18" alignment="CENTER_LEFT">

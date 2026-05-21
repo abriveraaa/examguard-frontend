@@ -1,300 +1,162 @@
 package com.example.examguard.utility;
 
-import nu.pattern.OpenCV;
+import com.example.examguard.model.ai.MediaPipeFaceResult;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
-import org.opencv.videoio.VideoCapture;
-
-import java.io.File;
-import java.io.InputStream;
-import java.nio.file.Files;
 
 public class LobbyCameraVerifier {
 
-    private static boolean openCvLoaded = false;
-
-    private Mat lastFrame;
-    private int lastFaceCount = -1;
+    private final LobbyCameraPreviewService previewService;
 
     private static final int SAMPLE_COUNT = 8;
-    private static final int WARMUP_FRAMES = 5;
-    private static final int REQUIRED_ONE_FACE_FRAMES = 4;
+    private static final int REQUIRED_VALID_FRAMES = 4;
 
-    public LobbyCameraVerifier() {
-        loadOpenCv();
-    }
-
-    private static synchronized void loadOpenCv() {
-        if (!openCvLoaded) {
-            OpenCV.loadLocally();
-            openCvLoaded = true;
-        }
+    public LobbyCameraVerifier(LobbyCameraPreviewService previewService) {
+        this.previewService = previewService;
     }
 
     public LobbyCheckResult checkCamera() {
-        VideoCapture camera = null;
-
-        try {
-            camera = new VideoCapture(0);
-
-            if (!camera.isOpened()) {
-                return LobbyCheckResult.fail("No camera detected or camera permission was denied.");
-            }
-
-            Mat frame = captureStableFrame(camera);
-
-            if (frame == null || frame.empty()) {
-                return LobbyCheckResult.fail("Camera opened, but no clear frame was captured.");
-            }
-
-            lastFrame = frame.clone();
-            return LobbyCheckResult.pass("Camera is available.");
-
-        } catch (Exception e) {
-            return LobbyCheckResult.fail("Camera unavailable or permission denied.");
-        } finally {
-            if (camera != null) {
-                camera.release();
-            }
+        if (previewService == null) {
+            return LobbyCheckResult.fail("Camera preview is not ready.");
         }
+
+        Mat frame = previewService.getActiveFrame();
+
+        if (frame == null || frame.empty()) {
+            return LobbyCheckResult.fail("No camera frame detected. Please allow camera access or pair your phone camera.");
+        }
+
+        return LobbyCheckResult.pass("Camera is available.");
     }
 
     public LobbyCheckResult checkFace() {
-        VideoCapture camera = null;
+        MediaPipeFaceResult result = MediaPipeOverlayStore.getLatestResult();
 
-        try {
-            camera = new VideoCapture(0);
-
-            if (!camera.isOpened()) {
-                return LobbyCheckResult.fail("No camera detected or camera permission was denied.");
-            }
-
-            CascadeClassifier faceDetector = new CascadeClassifier(extractCascadeFile());
-
-            if (faceDetector.empty()) {
-                return LobbyCheckResult.fail("Face detector file failed to load.");
-            }
-
-            warmUpCamera(camera);
-
-            int oneFaceFrames = 0;
-            int noFaceFrames = 0;
-            int multipleFaceFrames = 0;
-            Mat bestFrame = null;
-
-            for (int i = 0; i < SAMPLE_COUNT; i++) {
-                Mat frame = new Mat();
-                boolean captured = camera.read(frame);
-
-                if (!captured || frame.empty()) {
-                    sleepQuietly(120);
-                    continue;
-                }
-
-                int faceCount = countFaces(frame, faceDetector);
-
-                if (faceCount == 1) {
-                    oneFaceFrames++;
-                    bestFrame = frame.clone();
-                } else if (faceCount == 0) {
-                    noFaceFrames++;
-                } else {
-                    multipleFaceFrames++;
-                }
-
-                sleepQuietly(150);
-            }
-
-            if (multipleFaceFrames >= 2) {
-                lastFaceCount = 2;
-                return LobbyCheckResult.fail("Multiple faces detected. Only one student is allowed.");
-            }
-
-            if (oneFaceFrames >= REQUIRED_ONE_FACE_FRAMES) {
-                lastFaceCount = 1;
-
-                if (bestFrame != null) {
-                    lastFrame = bestFrame.clone();
-                }
-
-                return LobbyCheckResult.pass("One face detected consistently.");
-            }
-
-            lastFaceCount = 0;
-
-            if (noFaceFrames >= oneFaceFrames) {
-                return LobbyCheckResult.fail("No face detected consistently. Sit in front of the camera.");
-            }
-
-            return LobbyCheckResult.fail("Face detection is unstable. Center your face and improve lighting.");
-
-        } catch (Exception e) {
-            return LobbyCheckResult.fail("Face detection failed.");
-        } finally {
-            if (camera != null) {
-                camera.release();
-            }
+        if (result == null) {
+            return LobbyCheckResult.fail("Face verification is still loading. Please wait a moment and try again.");
         }
+
+        if (!result.isFacePresent()) {
+            return LobbyCheckResult.fail("No face detected. Please center your face in the camera.");
+        }
+
+        if (result.isMultipleFaces()) {
+            return LobbyCheckResult.fail("Multiple faces detected. Only one examinee should be visible.");
+        }
+
+        if (result.isLookingAway()) {
+            return LobbyCheckResult.fail("Please face the camera directly.");
+        }
+
+        if (result.isLookingDown()) {
+            return LobbyCheckResult.fail("Please keep your face visible and avoid looking down.");
+        }
+
+        if (result.isFaceTooFar()) {
+            return LobbyCheckResult.fail("Please move closer or adjust the camera so your face is clearer.");
+        }
+
+        return LobbyCheckResult.pass("One examinee is clearly visible.");
     }
 
     public LobbyCheckResult checkDeskAndFrameQuality() {
-        VideoCapture camera = null;
-
-        try {
-            camera = new VideoCapture(0);
-
-            if (!camera.isOpened()) {
-                return LobbyCheckResult.fail("No camera detected or camera permission was denied.");
-            }
-
-            warmUpCamera(camera);
-
-            int validFrames = 0;
-            double totalBrightness = 0;
-            double totalBlurScore = 0;
-
-            for (int i = 0; i < SAMPLE_COUNT; i++) {
-                Mat frame = new Mat();
-                boolean captured = camera.read(frame);
-
-                if (!captured || frame.empty()) {
-                    sleepQuietly(120);
-                    continue;
-                }
-
-                lastFrame = frame.clone();
-
-                Mat gray = new Mat();
-                Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
-
-                totalBrightness += Core.mean(gray).val[0];
-                totalBlurScore += calculateBlurScore(gray);
-                validFrames++;
-
-                sleepQuietly(150);
-            }
-
-            if (validFrames < 4) {
-                return LobbyCheckResult.fail("Camera view is unstable. Please retry.");
-            }
-
-            double avgBrightness = totalBrightness / validFrames;
-            double avgBlurScore = totalBlurScore / validFrames;
-
-            System.out.println("AVG BRIGHTNESS: " + avgBrightness);
-            System.out.println("AVG BLUR SCORE: " + avgBlurScore);
-
-            if (avgBrightness < 35) {
-                return LobbyCheckResult.fail("Camera view is too dark. Improve lighting.");
-            }
-
-            if (avgBrightness > 230) {
-                return LobbyCheckResult.fail("Camera view is too bright. Reduce glare or backlight.");
-            }
-
-            if (avgBlurScore < 15) {
-                return LobbyCheckResult.fail("Camera view is blurry. Adjust the camera before starting.");
-            }
-
-            return LobbyCheckResult.pass("Camera view is clear enough for monitoring.");
-
-        } catch (Exception e) {
-            return LobbyCheckResult.fail("Camera view quality check failed.");
-        } finally {
-            if (camera != null) {
-                camera.release();
-            }
+        if (previewService == null) {
+            return LobbyCheckResult.fail("Camera preview is not ready.");
         }
-    }
 
-    private Mat captureStableFrame(VideoCapture camera) {
-        warmUpCamera(camera);
+        int validFrames = 0;
+        double totalBrightness = 0;
+        double totalBlurScore = 0;
 
         for (int i = 0; i < SAMPLE_COUNT; i++) {
-            Mat frame = new Mat();
-            boolean captured = camera.read(frame);
+            Mat frame = previewService.getActiveFrame();
 
-            if (captured && !frame.empty()) {
-                return frame;
+            if (frame == null || frame.empty()) {
+                sleepQuietly(120);
+                continue;
             }
+
+            Mat gray = new Mat();
+
+            Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
+
+            totalBrightness += Core.mean(gray).val[0];
+            totalBlurScore += calculateBlurScore(gray);
+
+            validFrames++;
+
+            gray.release();
 
             sleepQuietly(120);
         }
 
-        return null;
-    }
-
-    private void warmUpCamera(VideoCapture camera) {
-        for (int i = 0; i < WARMUP_FRAMES; i++) {
-            Mat ignored = new Mat();
-            camera.read(ignored);
-            sleepQuietly(80);
+        if (validFrames < REQUIRED_VALID_FRAMES) {
+            return LobbyCheckResult.fail("Camera view is unstable. Please retry.");
         }
-    }
 
-    private int countFaces(Mat frame, CascadeClassifier faceDetector) {
-        Mat gray = new Mat();
+        double avgBrightness = totalBrightness / validFrames;
+        double avgBlurScore = totalBlurScore / validFrames;
 
-        Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.equalizeHist(gray, gray);
+        if (avgBrightness < 35) {
+            return LobbyCheckResult.fail("Camera view is too dark. Improve lighting.");
+        }
 
-        MatOfRect faces = new MatOfRect();
+        if (avgBrightness > 230) {
+            return LobbyCheckResult.fail("Camera view is too bright. Reduce glare or backlight.");
+        }
 
-        faceDetector.detectMultiScale(
-                gray,
-                faces,
-                1.08,
-                4,
-                0,
-                new Size(60, 60),
-                new Size()
-        );
+        if (avgBlurScore < 15) {
+            return LobbyCheckResult.fail("Camera view is blurry. Adjust the camera before starting.");
+        }
 
-        Rect[] detectedFaces = faces.toArray();
+        MediaPipeFaceResult result = MediaPipeOverlayStore.getLatestResult();
 
-        int validFaces = 0;
+        if (result != null) {
+            if (result.isTooDark()) {
+                return LobbyCheckResult.fail("Camera view is too dark. Improve lighting.");
+            }
 
-        double frameWidth = frame.width();
-        double frameHeight = frame.height();
-        double frameArea = frameWidth * frameHeight;
+            if (result.isTooBright()) {
+                return LobbyCheckResult.fail("Camera view is too bright. Reduce glare or backlight.");
+            }
 
-        for (Rect face : detectedFaces) {
-            double faceArea = face.width * face.height;
-            double areaRatio = faceArea / frameArea;
+            if (result.isTooBlurry()) {
+                return LobbyCheckResult.fail("Camera view is blurry. Adjust the camera before starting.");
+            }
 
-            double centerX = face.x + face.width / 2.0;
-            double centerY = face.y + face.height / 2.0;
+            if (result.isEyesProbablyCovered()) {
+                return LobbyCheckResult.fail("Eyes are not clearly visible. Please adjust lighting or camera angle.");
+            }
 
-            boolean notTooSmall = areaRatio >= 0.015;
-            boolean notTooLarge = areaRatio <= 0.45;
-
-            boolean horizontallyCentered =
-                    centerX >= frameWidth * 0.18 &&
-                            centerX <= frameWidth * 0.82;
-
-            boolean verticallyReasonable =
-                    centerY >= frameHeight * 0.12 &&
-                            centerY <= frameHeight * 0.72;
-
-            if (notTooSmall && notTooLarge && horizontallyCentered && verticallyReasonable) {
-                validFaces++;
+            if (result.isFacePartiallyObstructed()) {
+                return LobbyCheckResult.fail("Face is partially obstructed. Please keep your face visible.");
             }
         }
 
-        return validFaces;
+        return LobbyCheckResult.pass("Camera view is clear enough for monitoring.");
     }
 
     private double calculateBlurScore(Mat gray) {
         Mat laplacian = new Mat();
-        Imgproc.Laplacian(gray, laplacian, CvType.CV_64F);
+
+        Imgproc.Laplacian(
+                gray,
+                laplacian,
+                CvType.CV_64F
+        );
 
         MatOfDouble mean = new MatOfDouble();
         MatOfDouble stdDev = new MatOfDouble();
 
         Core.meanStdDev(laplacian, mean, stdDev);
 
-        return Math.pow(stdDev.toArray()[0], 2);
+        double score = Math.pow(stdDev.toArray()[0], 2);
+
+        laplacian.release();
+        mean.release();
+        stdDev.release();
+
+        return score;
     }
 
     private void sleepQuietly(long millis) {
@@ -303,25 +165,5 @@ public class LobbyCameraVerifier {
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    private String extractCascadeFile() throws Exception {
-        InputStream inputStream =
-                getClass().getResourceAsStream("/opencv/haarcascade_frontalface_default.xml");
-
-        if (inputStream == null) {
-            throw new IllegalStateException("Missing haarcascade_frontalface_default.xml");
-        }
-
-        File tempFile = File.createTempFile("haarcascade_frontalface_default", ".xml");
-        tempFile.deleteOnExit();
-
-        Files.copy(
-                inputStream,
-                tempFile.toPath(),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING
-        );
-
-        return tempFile.getAbsolutePath();
     }
 }

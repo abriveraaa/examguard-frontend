@@ -1,49 +1,86 @@
 package com.example.examguard.utility;
 
+import com.example.examguard.model.ai.AiRulesConfig;
+import com.example.examguard.service.AiAssetSyncService;
+import com.example.examguard.service.AiRulesService;
 import nu.pattern.OpenCV;
 import org.opencv.core.*;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.videoio.VideoCapture;
-import org.opencv.imgcodecs.Imgcodecs;
-import java.io.File;
-import java.io.InputStream;
+
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class LobbyObjectDetector {
 
     private static boolean openCvLoaded = false;
 
-    private static final int INPUT_SIZE = 640;
-    private static final float CONFIDENCE_THRESHOLD = 0.25f;
-    private static final float PROHIBITED_CONFIDENCE_THRESHOLD = 0.60f;
-    private static final int REQUIRED_PROHIBITED_HITS = 3;
-    private static final float NMS_THRESHOLD = 0.45f;
-    private static final float PERSON_CONFIDENCE_THRESHOLD = 0.45f;
-    private static final int REQUIRED_PERSON_HITS = 3;
-    private static final int SIDE_VIEW_SAMPLE_COUNT = 5;
+    private final int inputSize;
+    private final float confidenceThreshold;
+    private final float nmsThreshold;
+    private final float phoneConfidenceThreshold;
+    private final int requiredPhoneHits;
+    private final float personConfidenceThreshold;
+    private final int requiredPersonHits;
+    private final int sideViewSampleCount;
+    private final double maxPhoneAreaRatio;
+
+    private final boolean detectBook;
+    private final boolean detectPaper;
 
     private final Net net;
     private final List<String> classNames;
+    private final boolean available;
 
-    private final Set<String> prohibitedClasses = Set.of(
-            "cell phone",
-            "book",
-            "paper"
-    );
+    private final AiRulesConfig rules;
 
     public LobbyObjectDetector() {
         loadOpenCv();
 
-        try {
-            this.net = Dnn.readNetFromONNX(extractResource("/yolo/yolov8s.onnx", "yolov8s", ".onnx"));
-            this.classNames = loadClassNames();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load YOLO object detector.", e);
-        }
-    }
+        this.rules = AiRulesService.getRules();
 
+        AiRulesConfig.Yolo yoloRules = rules.getYolo();
+
+        this.inputSize = yoloRules.getInputSize();
+        this.confidenceThreshold = yoloRules.getConfidenceThreshold();
+        this.nmsThreshold = yoloRules.getNmsThreshold();
+        this.phoneConfidenceThreshold = yoloRules.getPhoneConfidence();
+        this.requiredPhoneHits = yoloRules.getRequiredPhoneHits();
+        this.personConfidenceThreshold = yoloRules.getPersonConfidence();
+        this.requiredPersonHits = yoloRules.getRequiredPersonHits();
+        this.sideViewSampleCount = yoloRules.getSideViewSampleCount();
+        this.maxPhoneAreaRatio = yoloRules.getMaxPhoneAreaRatio();
+        this.detectBook = yoloRules.isDetectBook();
+        this.detectPaper = yoloRules.isDetectPaper();
+
+        Net loadedNet = null;
+        List<String> loadedNames = List.of();
+        boolean loaded = false;
+
+        try {
+            if (rules.isEnabled() && yoloRules.isEnabled()) {
+                Path modelPath = AiAssetSyncService.getRequiredAssetPath(
+                        yoloRules.getModelKey()
+                );
+
+                loadedNet = Dnn.readNetFromONNX(modelPath.toString());
+
+                loadedNames = loadClassNames(yoloRules.getLabelsKey());
+
+                loaded = loadedNet != null && !loadedNames.isEmpty();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            loaded = false;
+        }
+
+        this.net = loadedNet;
+        this.classNames = loadedNames;
+        this.available = loaded;
+    }
     private static synchronized void loadOpenCv() {
         if (!openCvLoaded) {
             OpenCV.loadLocally();
@@ -51,12 +88,21 @@ public class LobbyObjectDetector {
         }
     }
 
+    public boolean isAvailable() {
+        return available && net != null && classNames != null && !classNames.isEmpty();
+    }
+
     public LobbyCheckResult checkCleanDesk() {
+        if (!isAvailable()) {
+            return LobbyCheckResult.pass("AI object detection unavailable. Manual review mode enabled.");
+        }
+
+        System.out.println("===== USING YOLO DETECTOR =====");
+
         VideoCapture camera = null;
 
         try {
             camera = new VideoCapture(0);
-
             camera.set(3, 1280);
             camera.set(4, 720);
 
@@ -66,7 +112,14 @@ public class LobbyObjectDetector {
 
             warmUpCamera(camera);
 
-            Map<String, Integer> prohibitedHits = new HashMap<>();
+            int framesChecked = 0;
+            int phoneFrameHits = 0;
+            int bookFrameHits = 0;
+            int paperFrameHits = 0;
+
+            float bestPhoneConfidence = 0f;
+            float bestBookConfidence = 0f;
+            float bestPaperConfidence = 0f;
 
             for (int i = 0; i < 5; i++) {
                 Mat frame = new Mat();
@@ -76,64 +129,118 @@ public class LobbyObjectDetector {
                     continue;
                 }
 
-                if (i == 0) {
-                    org.opencv.imgcodecs.Imgcodecs.imwrite(
-                            "debug-clean-desk-frame.png",
-                            frame
-                    );
-                }
+                framesChecked++;
 
                 List<DetectedObject> detected = detect(frame);
 
-                for (DetectedObject object : detected) {
-                    System.out.println(
-                            "DETECTED: "
-                                    + object.getClassName()
-                                    + " | CONF="
-                                    + object.getConfidence()
-                    );
+                boolean phoneFoundThisFrame = false;
+                boolean bookFoundThisFrame = false;
+                boolean paperFoundThisFrame = false;
 
+                for (DetectedObject object : detected) {
                     String name = object.getClassName();
+
+                    if (name == null) {
+                        continue;
+                    }
+
+                    name = name.trim().toLowerCase();
 
                     double frameArea = frame.width() * frame.height();
                     double objectArea = object.getWidth() * object.getHeight();
                     double areaRatio = objectArea / frameArea;
 
-                    boolean reasonablePhoneSize = areaRatio <= 0.18;
+                    float confidence = object.getConfidence();
 
-                    if (prohibitedClasses.contains(name)
-                            && object.getConfidence() >= PROHIBITED_CONFIDENCE_THRESHOLD
-                            && reasonablePhoneSize) {
+                    System.out.println(
+                            "YOLO OBJECT: " + name +
+                                    " | conf=" + confidence +
+                                    " | areaRatio=" + areaRatio
+                    );
 
-                        prohibitedHits.put(
-                                name,
-                                prohibitedHits.getOrDefault(name, 0) + 1
-                        );
+                    boolean validSmallObject =
+                            areaRatio > 0.0005 &&
+                                    areaRatio <= maxPhoneAreaRatio;
+
+                    if (!phoneFoundThisFrame
+                            && isPhoneLabel(name)
+                            && confidence >= phoneConfidenceThreshold
+                            && validSmallObject) {
+
+                        phoneFoundThisFrame = true;
+                        bestPhoneConfidence = Math.max(bestPhoneConfidence, confidence);
                     }
+
+                    if (detectBook
+                            && !bookFoundThisFrame
+                            && "book".equals(name)
+                            && confidence >= phoneConfidenceThreshold
+                            && validSmallObject) {
+
+                        bookFoundThisFrame = true;
+                        bestBookConfidence = Math.max(bestBookConfidence, confidence);
+                    }
+
+                    if (detectPaper
+                            && !paperFoundThisFrame
+                            && isPaperLabel(name)
+                            && confidence >= phoneConfidenceThreshold
+                            && validSmallObject) {
+
+                        paperFoundThisFrame = true;
+                        bestPaperConfidence = Math.max(bestPaperConfidence, confidence);
+                    }
+                }
+
+                if (phoneFoundThisFrame) {
+                    phoneFrameHits++;
+                }
+
+                if (bookFoundThisFrame) {
+                    bookFrameHits++;
+                }
+
+                if (paperFoundThisFrame) {
+                    paperFrameHits++;
                 }
 
                 sleepQuietly(180);
             }
 
-            List<String> confirmedItems = new ArrayList<>();
+            System.out.println("YOLO framesChecked=" + framesChecked);
+            System.out.println("YOLO phoneFrameHits=" + phoneFrameHits + " | bestPhoneConfidence=" + bestPhoneConfidence);
+            System.out.println("YOLO bookFrameHits=" + bookFrameHits + " | bestBookConfidence=" + bestBookConfidence);
+            System.out.println("YOLO paperFrameHits=" + paperFrameHits + " | bestPaperConfidence=" + bestPaperConfidence);
 
-            for (Map.Entry<String, Integer> entry : prohibitedHits.entrySet()) {
-                if (entry.getValue() >= REQUIRED_PROHIBITED_HITS) {
-                    confirmedItems.add(entry.getKey());
-                }
-            }
-
-            if (!confirmedItems.isEmpty()) {
+            if (phoneFrameHits >= requiredPhoneHits) {
                 return LobbyCheckResult.fail(
-                        "Restricted item detected: " + String.join(", ", confirmedItems) + "."
+                        "Possible phone detected. Please remove any phone or second device from the desk. " +
+                                "Detected in " + phoneFrameHits + "/" + framesChecked +
+                                " frames. Confidence: " + String.format("%.2f", bestPhoneConfidence)
                 );
             }
 
-            return LobbyCheckResult.pass("No phone or book detected on desk.");
+            if (detectBook && bookFrameHits >= requiredPhoneHits) {
+                return LobbyCheckResult.fail(
+                        "Possible book detected. Please clear your desk before starting. " +
+                                "Detected in " + bookFrameHits + "/" + framesChecked +
+                                " frames. Confidence: " + String.format("%.2f", bestBookConfidence)
+                );
+            }
+
+            if (detectPaper && paperFrameHits >= requiredPhoneHits) {
+                return LobbyCheckResult.fail(
+                        "Possible reviewer or paper detected. Please clear your desk before starting. " +
+                                "Detected in " + paperFrameHits + "/" + framesChecked +
+                                " frames. Confidence: " + String.format("%.2f", bestPaperConfidence)
+                );
+            }
+
+            return LobbyCheckResult.pass("No confirmed phone, book, or reviewer detected on desk.");
 
         } catch (Exception e) {
             e.printStackTrace();
-            return LobbyCheckResult.fail("Clean desk object detection failed: " + e.getMessage());
+            return LobbyCheckResult.pass("AI object detection unavailable. Manual review mode enabled.");
         } finally {
             if (camera != null) {
                 camera.release();
@@ -142,16 +249,19 @@ public class LobbyObjectDetector {
     }
 
     public LobbyCheckResult checkSinglePersonSideView() {
+        if (!isAvailable()) {
+            return LobbyCheckResult.pass("AI presence detection unavailable. Manual review mode enabled.");
+        }
+
         VideoCapture camera = null;
 
         try {
             camera = new VideoCapture(0);
-
             camera.set(3, 1280);
             camera.set(4, 720);
 
             if (!camera.isOpened()) {
-                return LobbyCheckResult.pass("Exactly one examinee is clearly visible.");
+                return LobbyCheckResult.fail("Camera unavailable for examinee presence check.");
             }
 
             warmUpCamera(camera);
@@ -160,7 +270,7 @@ public class LobbyObjectDetector {
             int onePersonFrames = 0;
             int multiplePersonFrames = 0;
 
-            for (int i = 0; i < SIDE_VIEW_SAMPLE_COUNT; i++) {
+            for (int i = 0; i < sideViewSampleCount; i++) {
                 Mat frame = new Mat();
 
                 if (!camera.read(frame) || frame.empty()) {
@@ -174,7 +284,7 @@ public class LobbyObjectDetector {
 
                 for (DetectedObject object : detected) {
                     if ("person".equals(object.getClassName())
-                            && object.getConfidence() >= PERSON_CONFIDENCE_THRESHOLD) {
+                            && object.getConfidence() >= personConfidenceThreshold) {
                         personCount++;
                     }
                 }
@@ -194,11 +304,11 @@ public class LobbyObjectDetector {
                 return LobbyCheckResult.fail("Multiple persons detected. Only the student should be visible.");
             }
 
-            if (onePersonFrames >= REQUIRED_PERSON_HITS) {
+            if (onePersonFrames >= requiredPersonHits) {
                 return LobbyCheckResult.pass("One student is visible from the side-view camera.");
             }
 
-            if (noPersonFrames >= REQUIRED_PERSON_HITS) {
+            if (noPersonFrames >= requiredPersonHits) {
                 return LobbyCheckResult.fail("No examinee is clearly visible. Adjust the camera angle.");
             }
 
@@ -206,7 +316,7 @@ public class LobbyObjectDetector {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return LobbyCheckResult.fail("Examinee detection failed: " + e.getMessage());
+            return LobbyCheckResult.pass("AI presence detection unavailable. Manual review mode enabled.");
         } finally {
             if (camera != null) {
                 camera.release();
@@ -215,10 +325,14 @@ public class LobbyObjectDetector {
     }
 
     public List<DetectedObject> detect(Mat frame) {
+        if (!isAvailable() || frame == null || frame.empty()) {
+            return Collections.emptyList();
+        }
+
         Mat blob = Dnn.blobFromImage(
                 frame,
                 1.0 / 255.0,
-                new Size(INPUT_SIZE, INPUT_SIZE),
+                new Size(inputSize, inputSize),
                 new Scalar(0, 0, 0),
                 true,
                 false
@@ -228,22 +342,16 @@ public class LobbyObjectDetector {
 
         Mat output = net.forward();
 
-        System.out.println("YOLO OUTPUT DIMS: " + output.dims());
-        System.out.println("YOLO OUTPUT SIZE 0: " + output.size(0));
-        System.out.println("YOLO OUTPUT SIZE 1: " + output.size(1));
-        System.out.println("YOLO OUTPUT SIZE 2: " + output.size(2));
-
         return parseYoloV8Output(output);
     }
 
     private List<DetectedObject> parseYoloV8Output(Mat output) {
-
         List<Rect2d> boxes = new ArrayList<>();
         List<Float> confidences = new ArrayList<>();
         List<Integer> classIds = new ArrayList<>();
 
-        int dimensions = (int) output.size(1);   // 84
-        int rows = (int) output.size(2);         // 8400
+        int dimensions = (int) output.size(1);
+        int rows = (int) output.size(2);
 
         Mat reshaped = output.reshape(1, dimensions);
 
@@ -251,7 +359,6 @@ public class LobbyObjectDetector {
         Core.transpose(reshaped, transposed);
 
         for (int i = 0; i < rows; i++) {
-
             float[] data = new float[dimensions];
             transposed.get(i, 0, data);
 
@@ -270,7 +377,7 @@ public class LobbyObjectDetector {
                 }
             }
 
-            if (bestScore < CONFIDENCE_THRESHOLD) {
+            if (bestScore < confidenceThreshold) {
                 continue;
             }
 
@@ -293,8 +400,8 @@ public class LobbyObjectDetector {
         Dnn.NMSBoxes(
                 boxMat,
                 confidenceMat,
-                CONFIDENCE_THRESHOLD,
-                NMS_THRESHOLD,
+                confidenceThreshold,
+                nmsThreshold,
                 indices
         );
 
@@ -324,36 +431,21 @@ public class LobbyObjectDetector {
         }
 
         return objects;
-
     }
 
-    private List<String> loadClassNames() throws Exception {
-        InputStream inputStream = getClass().getResourceAsStream("/yolo/coco.names");
+    private List<String> loadClassNames(String labelsKey) throws Exception {
+        Optional<Path> labelsPathOpt = AiAssetSyncService.getOptionalAssetPath(labelsKey);
 
-        if (inputStream == null) {
-            throw new IllegalStateException("Missing /yolo/coco.names");
+        if (labelsPathOpt.isEmpty()) {
+            return List.of();
         }
 
-        String content = new String(inputStream.readAllBytes());
+        String content = Files.readString(labelsPathOpt.get());
+
         return Arrays.stream(content.split("\\R"))
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
                 .toList();
-    }
-
-    private String extractResource(String resourcePath, String prefix, String suffix) throws Exception {
-        InputStream inputStream = getClass().getResourceAsStream(resourcePath);
-
-        if (inputStream == null) {
-            throw new IllegalStateException("Missing resource: " + resourcePath);
-        }
-
-        File tempFile = File.createTempFile(prefix, suffix);
-        tempFile.deleteOnExit();
-
-        Files.copy(inputStream, tempFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-        return tempFile.getAbsolutePath();
     }
 
     private void warmUpCamera(VideoCapture camera) {
@@ -370,5 +462,33 @@ public class LobbyObjectDetector {
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private boolean isPhoneLabel(String name) {
+        if (name == null) {
+            return false;
+        }
+
+        String label = name.trim().toLowerCase();
+
+        return label.equals("cell phone")
+                || label.equals("phone")
+                || label.equals("mobile phone")
+                || label.equals("smartphone")
+                || label.equals("tablet");
+    }
+
+    private boolean isPaperLabel(String name) {
+        if (name == null) {
+            return false;
+        }
+
+        String label = name.trim().toLowerCase();
+
+        return label.equals("paper")
+                || label.equals("document")
+                || label.equals("notebook")
+                || label.equals("reviewer")
+                || label.equals("sheet");
     }
 }

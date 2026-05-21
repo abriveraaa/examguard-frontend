@@ -394,6 +394,45 @@ public class ExamApiService {
     // EXAM TAKING
     // ===================
 
+    public ExamTakingResponse beginExam(Long examId) throws Exception {
+        String endpoint = BASE_URL + "/exams/" + examId + "/begin";
+
+        HttpURLConnection conn = null;
+
+        try {
+            URL url = new URL(endpoint);
+            conn = (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("Content-Type", "application/json");
+
+            applyAuthHeaders(conn);
+
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(15000);
+
+            String responseBody = getResponseBody(conn);
+
+            if (isSuccess(conn.getResponseCode())) {
+                return gson.fromJson(responseBody, ExamTakingResponse.class);
+            }
+
+            throw new RuntimeException(
+                    "Failed to begin exam. Status: "
+                            + conn.getResponseCode()
+                            + ". Response: "
+                            + responseBody
+            );
+
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
     public CreateCameraSessionResponse createCameraSession(
             Long attemptId,
             Long examId,
@@ -477,6 +516,11 @@ public class ExamApiService {
             conn.setRequestProperty("Accept", "application/json");
 
             int statusCode = conn.getResponseCode();
+
+            if (statusCode == 400 || statusCode == 404 || statusCode == 409) {
+                System.out.println("Phone camera session already ended or unavailable. HTTP " + statusCode);
+                return;
+            }
 
             if (statusCode < 200 || statusCode >= 300) {
                 throw new RuntimeException(
@@ -585,6 +629,46 @@ public class ExamApiService {
         } finally {
             if (conn != null) conn.disconnect();
         }
+    }
+
+    public ImageUploadResponse uploadViolationEvidence(File file) throws Exception {
+        String boundary = "----ExamGuardEvidenceBoundary" + System.currentTimeMillis();
+
+        URL url = new URL(BASE_URL + "/exams/evidence/upload");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+        conn.setRequestMethod("POST");
+        conn.setDoOutput(true);
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+        applyAuthHeaders(conn);
+
+        try (
+                OutputStream output = conn.getOutputStream();
+                PrintWriter writer = new PrintWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8), true)
+        ) {
+            writer.append("--").append(boundary).append("\r\n");
+            writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"")
+                    .append(file.getName())
+                    .append("\"\r\n");
+            writer.append("Content-Type: image/jpeg\r\n");
+            writer.append("\r\n").flush();
+
+            Files.copy(file.toPath(), output);
+            output.flush();
+
+            writer.append("\r\n").flush();
+            writer.append("--").append(boundary).append("--").append("\r\n").flush();
+        }
+
+        String responseBody = getResponseBody(conn);
+
+        if (!isSuccess(conn.getResponseCode())) {
+            throw new RuntimeException(responseBody);
+        }
+
+        return gson.fromJson(responseBody, ImageUploadResponse.class);
     }
 
     public void saveAnswer(
