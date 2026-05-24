@@ -39,11 +39,16 @@
                         <Region HBox.hgrow="ALWAYS" />
 
                         <TextField fx:id="searchField"
-                                   prefHeight="44.0"
+                                   prefHeight="48.0"
                                    promptText="Search exams"
                                    styleClass="search-field"
                                    HBox.hgrow="ALWAYS"
                                    maxWidth="Infinity"/>
+
+                        <ComboBox fx:id="termFilterComboBox"
+                                  promptText="All Terms"
+                                  prefWidth="300"
+                                  styleClass="workspace-filter-box"/>
                     </HBox>
 
                 </VBox>
@@ -118,11 +123,6 @@
                     <Button fx:id="studentsTabButton"
                             text="Students &amp; Reviews"
                             onAction="#showWorkspaceStudents"
-                            styleClass="workspace-tab-button"/>
-
-                    <Button fx:id="proctorTabButton"
-                            text="Proctor"
-                            onAction="#showWorkspaceProctor"
                             styleClass="workspace-tab-button"/>
 
                     <Button fx:id="activityLogTabButton"

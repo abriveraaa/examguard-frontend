@@ -100,10 +100,6 @@
     -fx-text-fill: #3F3A36;
 }
 
-.exam-card:hover {
-    -fx-border-color: rgba(128,0,0,0.22);
-}
-
 .exam-card-image {
     -fx-background-radius: 16 16 0 0;
     -fx-min-width: 300;

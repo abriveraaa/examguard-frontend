@@ -473,37 +473,6 @@
 
                 </HBox>
 
-                <VBox spacing="12" styleClass="violation-card">
-
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <VBox spacing="3" HBox.hgrow="ALWAYS">
-                            <Label text="Per-Question Overrides" styleClass="card-title" />
-                            <Label text="Prepared for future Level 2 and Level 3 rules. For now, all questions use exam-level defaults."
-                                   styleClass="card-subtitle" />
-                        </VBox>
-
-                        <CheckBox fx:id="enableQuestionOverrideCheck"
-                                  text="Enable overrides"
-                                  disable="true"
-                                  styleClass="modern-check" />
-                    </HBox>
-
-                    <Separator />
-
-                    <FlowPane hgap="10" vgap="10">
-                        <Label text="Question 1 • Exam Default" styleClass="selected-chip" />
-                        <Label text="Question 2 • Exam Default" styleClass="selected-chip" />
-                        <Label text="Question 3 • Exam Default" styleClass="selected-chip" />
-                        <Label text="Question 4 • Exam Default" styleClass="selected-chip" />
-                        <Label text="Question 5 • Exam Default" styleClass="selected-chip" />
-                    </FlowPane>
-
-                    <Label text="Later, this section can allow stricter rules for essay questions, image-based questions, or high-point questions."
-                           wrapText="true"
-                           styleClass="note-text" />
-
-                </VBox>
-
             </VBox>
 
             <!-- STEP 4 -->

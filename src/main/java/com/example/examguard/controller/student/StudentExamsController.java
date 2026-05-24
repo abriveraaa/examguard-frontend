@@ -56,7 +56,6 @@ public class StudentExamsController implements ShellAwareController {
     private final List<ExamCardVM> allExams = new ArrayList<>();
     private List<ExamCardVM> filteredExams = new ArrayList<>();
     private final Image defaultExamImage = new Image(getClass().getResourceAsStream("/images/exam-card-default.png"));
-    private final Image overlayImage = new Image(getClass().getResourceAsStream("/images/exam-card-overlay.png"));
 
     private final StudentApiService studentApiService = new StudentApiService();
 
@@ -328,12 +327,6 @@ public class StudentExamsController implements ShellAwareController {
 
         readabilityGradient.setMouseTransparent(true);
 
-        ImageView overlay = new ImageView(overlayImage);
-        overlay.setFitWidth(headerWidth);
-        overlay.setFitHeight(headerHeight);
-        overlay.setPreserveRatio(false);
-        overlay.setMouseTransparent(true);
-
         Label courseCodeLabel = new Label(courseCode);
         courseCodeLabel.getStyleClass().add("exam-card-course-code");
 
@@ -364,7 +357,6 @@ public class StudentExamsController implements ShellAwareController {
         imageBox.getChildren().addAll(
                 examImage,
                 readabilityGradient,
-                overlay,
                 courseTextBox,
                 arrowBadge
         );

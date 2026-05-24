@@ -494,11 +494,15 @@
 
 .workspace-filter-box {
     -fx-background-color: white;
-    -fx-background-radius: 10;
-    -fx-border-color: #DDD6D0;
-    -fx-border-radius: 10;
-    -fx-padding: 4 8;
-    -fx-font-size: 13px;
+    -fx-background-radius: 4;
+    -fx-border-color: #d8d8d8;
+    -fx-border-radius: 4;
+    -fx-padding: 0 10;
+    -fx-font-size: 14px;
+    -fx-pref-height: 48;
+    -fx-min-height: 48;
+    -fx-max-height: 48;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 5, 0, 0, 1);
 }
 
 .workspace-review-button {
@@ -1212,4 +1216,105 @@
     -fx-padding: 8 14;
     -fx-font-weight: 700;
     -fx-opacity: 1;
+}
+
+.evidence-frame-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.evidence-frame-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.evidence-frame-card {
+    -fx-background-color: rgba(255,255,255,0.08);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255,255,255,0.16);
+    -fx-border-radius: 14;
+    -fx-padding: 12;
+}
+
+.evidence-frame-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-fill: white;
+}
+
+.evidence-frame-image {
+    -fx-cursor: hand;
+}
+
+.evidence-frame-offset {
+    -fx-font-size: 11px;
+    -fx-text-fill: #D6D3D1;
+}
+
+.evidence-preview-root {
+    -fx-background-color: rgba(0,0,0,0.94);
+    -fx-padding: 24;
+}
+
+.evidence-preview-hint {
+    -fx-text-fill: #D6D3D1;
+    -fx-font-size: 12px;
+}
+
+.workspace-status-button:hover {
+    -fx-background-color: #DDD6D0;
+    -fx-text-fill: #302C29;
+    -fx-cursor: hand;
+}
+
+.timeline-log-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 14;
+    -fx-border-color: #E7E1DC;
+    -fx-border-radius: 14;
+    -fx-padding: 14;
+}
+
+.timeline-action-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #800000;
+}
+
+.timeline-meta-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: #7A6F68;
+}
+
+.timeline-status-text {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #302C29;
+}
+
+.timeline-score-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: #4B403A;
+}
+
+.timeline-notes-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6B625C;
+}
+
+.review-revise-button {
+    -fx-background-color: #D4AF37;
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 10;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+
+.review-revise-button:hover {
+    -fx-background-color: #C49B1E;
+}
+
+.review-revise-button:disabled {
+    -fx-opacity: 0.9;
 }

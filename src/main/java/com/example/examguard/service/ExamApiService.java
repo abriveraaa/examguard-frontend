@@ -22,6 +22,8 @@ import com.example.examguard.model.faculty.response.SimpleMessageResponse;
 import com.example.examguard.model.camera.CreateCameraSessionRequest;
 import com.example.examguard.model.camera.CreateCameraSessionResponse;
 import com.example.examguard.model.camera.CameraSessionStatusResponse;
+import com.example.examguard.model.exam.dto.AnswerReviewTimelineDTO;
+
 import com.google.gson.Gson;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -29,20 +31,12 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import com.example.examguard.utility.OffsetDateTimeAdapter;
 import com.example.examguard.utility.Session;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -886,6 +880,18 @@ public class ExamApiService {
                 "/exams/" + examId + "/workspace",
                 FacultyExamDetailResponse.class
         );
+    }
+
+    public List<AnswerReviewTimelineDTO> getAnswerReviewTimeline(
+            Long answerId
+    ) throws Exception {
+
+        AnswerReviewTimelineDTO[] result = get(
+                "/exams/review/answers/" + answerId + "/timeline",
+                AnswerReviewTimelineDTO[].class
+        );
+
+        return Arrays.asList(result);
     }
 
     public File downloadExamPortfolioReport(

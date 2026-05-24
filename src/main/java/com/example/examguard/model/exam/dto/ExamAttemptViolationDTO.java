@@ -1,5 +1,6 @@
 package com.example.examguard.model.exam.dto;
 
+import com.google.gson.JsonObject;
 import java.time.OffsetDateTime;
 
 public class ExamAttemptViolationDTO {
@@ -10,6 +11,7 @@ public class ExamAttemptViolationDTO {
     private String severity;
     private String violationMessage;
     private String evidenceUrl;
+    private JsonObject evidenceMetadata;
     private Integer attemptNumber;
     private OffsetDateTime occurredAt;
     private String reviewStatus;
@@ -22,6 +24,7 @@ public class ExamAttemptViolationDTO {
     public String getSeverity() { return severity; }
     public String getViolationMessage() { return violationMessage; }
     public String getEvidenceUrl() { return evidenceUrl; }
+    public JsonObject getEvidenceMetadata() { return evidenceMetadata; }
     public Integer getAttemptNumber() { return attemptNumber; }
     public OffsetDateTime getOccurredAt() { return occurredAt; }
     public String getReviewStatus() { return reviewStatus; }

@@ -117,11 +117,15 @@ public class DashboardShellController {
     }
 
     private void updateHeroVisibility(String fxmlPath) {
+
         boolean hideHero =
                 fxmlPath.contains("create-exam") ||
                         fxmlPath.contains("edit-exam") ||
                         fxmlPath.contains("question-editor") ||
-                        fxmlPath.contains("admin-monitoring");
+                        fxmlPath.contains("admin-monitoring") ||
+                        fxmlPath.contains("faculty-students") ||
+                        fxmlPath.contains("faculty-reports") ||
+                        fxmlPath.contains("workspace");
 
         heroPane.setVisible(!hideHero);
         heroPane.setManaged(!hideHero);
@@ -308,20 +312,16 @@ public class DashboardShellController {
             case "Exams":
                 setGreeting("My Exams", "View and manage your created examinations.");
                 setHeroCards(
-                        new HeroCardData("Drafts", "3"),
-                        new HeroCardData("Published", "8"),
-                        new HeroCardData("Completed", "15")
+                        new HeroCardData("Drafts", ""),
+                        new HeroCardData("Scheduled", ""),
+                        new HeroCardData("Completed", "")
                 );
                 loadContent("/fxml/exam/exam-management.fxml");
                 break;
 
             case "Students":
-                setGreeting("Student Monitoring", "Track student activity and performance during exams.");
-                setHeroCards(
-                        new HeroCardData("Assigned", "214"),
-                        new HeroCardData("Online", "38"),
-                        new HeroCardData("Flagged", "4")
-                );
+                setGreeting("Class Roster", "View enrolled students by academic period, course, and section.");
+                hideHeroCards();
                 loadContent("/fxml/faculty/faculty-students.fxml");
                 break;
 
@@ -333,16 +333,6 @@ public class DashboardShellController {
                         new HeroCardData("Pass Rate", "91%")
                 );
                 loadContent("/fxml/faculty/faculty-reports.fxml");
-                break;
-
-            case "Settings":
-                setGreeting("Settings", "Adjust your preferences and exam configurations.");
-                setHeroCards(
-                        new HeroCardData("Exam Rules", "5"),
-                        new HeroCardData("Templates", "4"),
-                        new HeroCardData("Preferences", "8")
-                );
-                loadContent("/fxml/faculty/faculty-settings.fxml");
                 break;
 
             default:
@@ -393,7 +383,6 @@ public class DashboardShellController {
                 pages.put("Exams", "");
                 pages.put("Students", "");
                 pages.put("Reports", "");
-                pages.put("Settings", "");
                 break;
 
             case "STUDENT":

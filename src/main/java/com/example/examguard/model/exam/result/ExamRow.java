@@ -10,6 +10,8 @@ public class ExamRow {
     private final StringProperty status = new SimpleStringProperty();
     private final StringProperty duration = new SimpleStringProperty();
     private final StringProperty assigned = new SimpleStringProperty();
+    private final StringProperty term = new SimpleStringProperty();
+    private final StringProperty academicYear = new SimpleStringProperty();
     private final StringProperty takers = new SimpleStringProperty();
     private final StringProperty validity = new SimpleStringProperty();
     private final StringProperty createdBy = new SimpleStringProperty();
@@ -21,6 +23,8 @@ public class ExamRow {
                    String status,
                    String duration,
                    String assigned,
+                   String term,
+                   String academicYear,
                    String takers,
                    String validity,
                    String createdBy,
@@ -31,6 +35,8 @@ public class ExamRow {
         this.status.set(status);
         this.duration.set(duration);
         this.assigned.set(assigned);
+        this.term.set(term);
+        this.academicYear.set(academicYear);
         this.takers.set(takers);
         this.validity.set(validity);
         this.createdBy.set(createdBy);
@@ -78,6 +84,14 @@ public class ExamRow {
     public String getAssigned() {
         return assigned.get();
     }
+
+    public String getTerm() { return term.get(); }
+
+    public StringProperty termProperty() { return term; }
+
+    public String getAcademicYear() { return academicYear.get(); }
+
+    public StringProperty academicYearProperty() { return academicYear; }
 
     public StringProperty assignedProperty() {
         return assigned;

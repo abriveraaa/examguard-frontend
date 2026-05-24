@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.examguard.controller.faculty.FacultyStudentsController"
+            stylesheets="@/styles/faculty-students.css"
+            styleClass="faculty-students-root">
+
+    <top>
+        <VBox spacing="18">
+
+            <!-- PAGE HEADER -->
+            <VBox styleClass="students-page-header">
+                <Label text="Class Roster"
+                       styleClass="students-page-title"/>
+
+                <Label text="View enrolled students by academic period, course, and section."
+                       styleClass="students-page-subtitle"/>
+            </VBox>
+
+            <!-- FILTER PANEL -->
+            <VBox styleClass="students-filter-panel">
+                <HBox styleClass="students-toolbar-row">
+
+                    <ComboBox fx:id="academicPeriodCombo"
+                              promptText="Academic Period"
+                              prefWidth="300"
+                              styleClass="students-combo"/>
+
+                    <ComboBox fx:id="courseCombo"
+                              promptText="Course"
+                              prefWidth="300"
+                              styleClass="students-combo"/>
+
+                    <ComboBox fx:id="sectionCombo"
+                              promptText="Section"
+                              prefWidth="170"
+                              styleClass="students-combo"/>
+
+                    <TextField fx:id="searchField"
+                               promptText="Search by name, student number, or email"
+                               HBox.hgrow="ALWAYS"
+                               styleClass="students-search-field"/>
+
+                    <Region HBox.hgrow="ALWAYS"/>
+
+                    <HBox spacing="6">
+                        <ToggleButton fx:id="listViewToggle"
+                                      text="☰ List"
+                                      styleClass="students-view-toggle"/>
+
+                        <ToggleButton fx:id="cardViewToggle"
+                                      text="▦ Cards"
+                                      styleClass="students-view-toggle"/>
+                    </HBox>
+
+                </HBox>
+            </VBox>
+
+            <!-- SUMMARY ROW -->
+            <HBox styleClass="students-summary-row" spacing="12">
+                <VBox spacing="2">
+                    <Label fx:id="totalStudentsLabel"
+                           text="0 students"
+                           styleClass="students-total-label"/>
+
+                    <Label fx:id="selectedContextLabel"
+                           text="No class selected"
+                           styleClass="students-context-label"/>
+                </VBox>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <MenuButton fx:id="exportMenuButton"
+                            text="Export"
+                            styleClass="students-export-button">
+                    <items>
+                        <MenuItem text="Export to Excel"
+                                  onAction="#handleExportExcel"/>
+
+                        <MenuItem text="Export to PDF"
+                                  onAction="#handleExportPdf"/>
+                    </items>
+                </MenuButton>
+            </HBox>
+
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="12"
+              styleClass="students-content-card">
+
+            <ScrollPane fx:id="studentsScrollPane"
+                        fitToWidth="true"
+                        hbarPolicy="NEVER"
+                        vbarPolicy="AS_NEEDED"
+                        styleClass="students-content-scroll"
+                        VBox.vgrow="ALWAYS">
+
+                <VBox fx:id="contentContainer"
+                      spacing="12"
+                      fillWidth="true"/>
+
+            </ScrollPane>
+
+            <HBox fx:id="paginationBox"
+                  alignment="CENTER_RIGHT"
+                  spacing="8"
+                  styleClass="exam-pagination-bar">
+
+                <Button text="‹"
+                        onAction="#previousPage"
+                        styleClass="pagination-button"/>
+
+                <Label fx:id="pageInfoLabel"
+                       text="Page 1"
+                       styleClass="pagination-label"/>
+
+                <Button text="›"
+                        onAction="#nextPage"
+                        styleClass="pagination-button"/>
+
+            </HBox>
+
+        </VBox>
+    </center>
+
+</BorderPane>

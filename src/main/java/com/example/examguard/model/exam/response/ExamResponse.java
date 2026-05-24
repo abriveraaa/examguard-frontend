@@ -15,6 +15,8 @@ public class ExamResponse {
     private String status;
     private String duration;
     private String assigned;
+    private String term;
+    private String academicYear;
     private String takers;
     private String startDateTime;
     private String endDateTime;
@@ -40,6 +42,8 @@ public class ExamResponse {
     public String getStatus() { return status; }
     public String getDuration() { return duration; }
     public String getAssigned() { return assigned; }
+    public String getTerm() { return term; }
+    public String getAcademicYear() { return academicYear; }
     public String getTakers() { return takers; }
     public String getStartDateTime() { return startDateTime; }
     public String getEndDateTime() { return endDateTime; }

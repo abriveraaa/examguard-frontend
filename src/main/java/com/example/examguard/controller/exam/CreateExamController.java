@@ -9,6 +9,7 @@ import com.example.examguard.model.exam.response.ImageUploadResponse;
 import com.example.examguard.model.exam.response.UploadExamTemplateResponse;
 import com.example.examguard.model.exam.result.ExamResult;
 import com.example.examguard.service.ExamApiService;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -38,8 +39,7 @@ import java.io.FileOutputStream;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import javafx.collections.transformation.FilteredList;
@@ -168,6 +168,7 @@ public class CreateExamController implements ShellAwareController {
 
     private final ObservableList<QuestionDraftRow> questionRows = FXCollections.observableArrayList();
     private final ObservableList<ClassOffering> classOfferingRows = FXCollections.observableArrayList();
+    private final Set<String> selectedClassOfferingIds = new HashSet<>();
 
     private QuestionDraftRow selectedQuestion;
     private boolean updatingEditor = false;
@@ -241,6 +242,7 @@ public class CreateExamController implements ShellAwareController {
         this.wizardMode = WizardMode.EDIT;
         this.editingExamId = examId;
 
+        setWizardLoading(true, "Loading exam details...");
         loadExamIntoWizard(examId, false);
     }
 
@@ -251,19 +253,33 @@ public class CreateExamController implements ShellAwareController {
             if (wizardRoot.lookup("#wizard-loading-overlay") != null) return;
 
             ProgressIndicator spinner = new ProgressIndicator();
-            spinner.setMaxSize(60, 60);
+            spinner.setMaxSize(54, 54);
 
             Label label = new Label(message == null ? "Loading..." : message);
-            label.setStyle("-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;");
+            label.setStyle("""
+                -fx-text-fill: white;
+                -fx-font-size: 14px;
+                -fx-font-weight: 700;
+                """);
 
-            VBox box = new VBox(12, spinner, label);
+            VBox box = new VBox(14, spinner, label);
             box.setAlignment(Pos.CENTER);
+            box.setMaxWidth(320);
+            box.setMaxHeight(160);
+            box.setStyle("""
+                -fx-background-color: rgba(48, 44, 41, 0.92);
+                -fx-background-radius: 18;
+                -fx-padding: 28;
+                -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.28), 24, 0, 0, 8);
+                """);
 
             StackPane overlay = new StackPane(box);
             overlay.setId("wizard-loading-overlay");
-            overlay.setStyle("-fx-background-color: rgba(0,0,0,0.35);");
+            overlay.setStyle("-fx-background-color: rgba(255,255,255,0.58);");
+            overlay.setMouseTransparent(false);
 
             wizardRoot.getChildren().add(overlay);
+
         } else {
             wizardRoot.getChildren().removeIf(node ->
                     "wizard-loading-overlay".equals(node.getId())
@@ -280,8 +296,6 @@ public class CreateExamController implements ShellAwareController {
         };
 
         task.setOnSucceeded(e -> {
-            setWizardLoading(false, null);
-
             ExamResponse exam = task.getValue();
 
             populateWizardFromExam(exam);
@@ -298,6 +312,7 @@ public class CreateExamController implements ShellAwareController {
             }
 
             updateFooterButtons();
+            setWizardLoading(false, null);
         });
 
         task.setOnFailed(e -> {
@@ -374,6 +389,9 @@ public class CreateExamController implements ShellAwareController {
 
     private void selectClassOfferingsById(List<String> classOfferingIds) {
         if (classOfferingIds == null || classOfferingIds.isEmpty()) return;
+
+        selectedClassOfferingIds.clear();
+        selectedClassOfferingIds.addAll(classOfferingIds);
 
         updatingClassSelection = true;
 
@@ -580,21 +598,21 @@ public class CreateExamController implements ShellAwareController {
                 if (keyword.isEmpty()) return true;
                 return item.getDisplayName().toLowerCase().contains(keyword);
             });
+
+            restoreVisibleClassOfferingSelections();
         });
 
         SortedList<ClassOffering> sortedList = new SortedList<>(filteredList);
 
         classOfferingListView.setItems(sortedList);
+        classOfferingListView.setOnMouseClicked(event -> {
+            Platform.runLater(() -> {
+                syncSelectedClassOfferingsFromListView();
+                validateSelectedClassOfferings();
+                updateSelectedClassOfferingLabel();
+            });
+        });
         classOfferingListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-
-        classOfferingListView.getSelectionModel()
-                .getSelectedItems()
-                .addListener((ListChangeListener<ClassOffering>) change -> {
-                    if (updatingClassSelection) return;
-
-                    validateSelectedClassOfferings();
-                    updateSelectedClassOfferingLabel();
-                });
 
         Task<List<ClassOffering>> task = new Task<>() {
             @Override
@@ -618,66 +636,118 @@ public class CreateExamController implements ShellAwareController {
         thread.start();
     }
 
-    private void validateSelectedClassOfferings() {
-        ObservableList<ClassOffering> selectedItems =
-                classOfferingListView.getSelectionModel().getSelectedItems();
+    private void syncSelectedClassOfferingsFromListView() {
+        selectedClassOfferingIds.clear();
 
-        if (selectedItems == null || selectedItems.isEmpty()) {
+        ObservableList<Integer> selectedIndices =
+                classOfferingListView.getSelectionModel().getSelectedIndices();
+
+        if (selectedIndices == null || selectedIndices.isEmpty()) {
             selectedCourseCode = null;
             clearError(classOfferingListView, classErrorLabel);
             return;
         }
 
-        selectedCourseCode = selectedItems.get(0).getCourseCode();
+        String allowedCourseCode = null;
+        List<Integer> invalidIndices = new ArrayList<>();
 
-        List<ClassOffering> invalidItems = new ArrayList<>();
-
-        for (ClassOffering item : selectedItems) {
-            if (item.getCourseCode() == null ||
-                    !item.getCourseCode().equalsIgnoreCase(selectedCourseCode)) {
-                invalidItems.add(item);
+        for (Integer index : new ArrayList<>(selectedIndices)) {
+            if (index == null || index < 0 || index >= classOfferingListView.getItems().size()) {
+                continue;
             }
+
+            ClassOffering item = classOfferingListView.getItems().get(index);
+
+            if (item == null || item.getClassOfferingId() == null) {
+                continue;
+            }
+
+            if (allowedCourseCode == null) {
+                allowedCourseCode = item.getCourseCode();
+                selectedCourseCode = allowedCourseCode;
+            }
+
+            if (item.getCourseCode() == null
+                    || !item.getCourseCode().equalsIgnoreCase(allowedCourseCode)) {
+                invalidIndices.add(index);
+                continue;
+            }
+
+            selectedClassOfferingIds.add(item.getClassOfferingId());
         }
 
-        if (!invalidItems.isEmpty()) {
-            updatingClassSelection = true;
+        if (!invalidIndices.isEmpty()) {
+            Platform.runLater(() -> {
+                for (Integer index : invalidIndices) {
+                    if (index != null && index >= 0 && index < classOfferingListView.getItems().size()) {
+                        classOfferingListView.getSelectionModel().clearSelection(index);
+                    }
+                }
 
-            for (ClassOffering invalid : invalidItems) {
-                classOfferingListView.getSelectionModel().clearSelection(
-                        classOfferingListView.getItems().indexOf(invalid)
+                setError(
+                        classOfferingListView,
+                        classErrorLabel,
+                        "You can only select class offerings with the same course code: " + selectedCourseCode
                 );
-            }
 
-            updatingClassSelection = false;
-
-            setError(
-                    classOfferingListView,
-                    classErrorLabel,
-                    "You can only select class offerings with the same course code: " + selectedCourseCode
-            );
+                updateSelectedClassOfferingLabel();
+            });
         } else {
             clearError(classOfferingListView, classErrorLabel);
         }
     }
 
+    private void restoreVisibleClassOfferingSelections() {
+        Platform.runLater(() -> {
+            updatingClassSelection = true;
+
+            classOfferingListView.getSelectionModel().clearSelection();
+
+            for (int i = 0; i < classOfferingListView.getItems().size(); i++) {
+                ClassOffering item = classOfferingListView.getItems().get(i);
+
+                if (item != null
+                        && item.getClassOfferingId() != null
+                        && selectedClassOfferingIds.contains(item.getClassOfferingId())) {
+                    classOfferingListView.getSelectionModel().select(i);
+                }
+            }
+
+            updatingClassSelection = false;
+            updateSelectedClassOfferingLabel();
+        });
+    }
+
+    private void validateSelectedClassOfferings() {
+
+        if (selectedClassOfferingIds.isEmpty()) {
+            selectedCourseCode = null;
+            clearError(classOfferingListView, classErrorLabel);
+            return;
+        }
+
+        clearError(classOfferingListView, classErrorLabel);
+    }
+
     private void updateSelectedClassOfferingLabel() {
-        int count = classOfferingListView.getSelectionModel()
-                .getSelectedItems()
-                .size();
+        int count = selectedClassOfferingIds.size();
 
         if (count == 0) {
             selectedClassOfferingLabel.setText("No class selected");
             clearError(classOfferingListView, classErrorLabel);
-        } else {
-            String courseCode = classOfferingListView.getSelectionModel()
-                    .getSelectedItems()
-                    .get(0)
-                    .getCourseCode();
-
-            selectedClassOfferingLabel.setText(
-                    count + " class(es) selected • " + courseCode
-            );
+            return;
         }
+
+        String courseCode = classOfferingRows.stream()
+                .filter(item -> selectedClassOfferingIds.contains(item.getClassOfferingId()))
+                .map(ClassOffering::getCourseCode)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("");
+
+        selectedClassOfferingLabel.setText(
+                count + " class(es) selected • " + courseCode
+        );
     }
 
     private void setupQuestionBuilder() {
@@ -830,11 +900,7 @@ public class CreateExamController implements ShellAwareController {
 
         request.setExamMode(asyncModeRadio.isSelected() ? "ASYNCHRONOUS" : "SYNCHRONOUS");
 
-        List<String> selectedIds = classOfferingListView.getSelectionModel()
-                .getSelectedItems()
-                .stream()
-                .map(ClassOffering::getClassOfferingId)
-                .toList();
+        List<String> selectedIds = new ArrayList<>(selectedClassOfferingIds);
 
         request.setClassOfferingIds(selectedIds);
 
@@ -878,22 +944,18 @@ public class CreateExamController implements ShellAwareController {
                 if (!isQuestionComplete(question)) {
                     questionListView.getSelectionModel().select(question);
 
-                    if ("ESSAY".equals(question.getQuestionType())
-                            && !isEssayRubricValidOrBlank(question)) {
+                    String rubricError = getEssayRubricError(question);
 
-                        validationLabel.setText(
-                                "Essay rubric for Question "
-                                        + question.getQuestionNo()
-                                        + " must total exactly 100%."
-                        );
-
-                    } else {
-                        validationLabel.setText(
-                                "Please complete Question "
-                                        + question.getQuestionNo()
-                                        + " before continuing."
-                        );
-                    }
+                    validationLabel.setText(
+                            rubricError == null
+                                    ? "Please complete Question "
+                                      + question.getQuestionNo()
+                                      + " before continuing."
+                                    : "Question "
+                                      + question.getQuestionNo()
+                                      + ": "
+                                      + rubricError
+                    );
 
                     return;
                 }
@@ -935,6 +997,10 @@ public class CreateExamController implements ShellAwareController {
 
     @FXML
     private void handleSaveDraft() {
+
+        if (!validateAllQuestionsBeforeSubmit()) {
+            return;
+        }
 
         setLoading(draftButton, true, "Saving...", "Save as Draft");
 
@@ -997,6 +1063,10 @@ public class CreateExamController implements ShellAwareController {
 
     @FXML
     private void handlePublish() {
+
+        if (!validateAllQuestionsBeforeSubmit()) {
+            return;
+        }
 
         setLoading(publishButton, true, "Publishing...", "Publish");
 
@@ -1377,7 +1447,7 @@ public class CreateExamController implements ShellAwareController {
         }
 
         if (question.getRubrics() == null || question.getRubrics().isEmpty()) {
-            return null;
+            return "Essay question must have at least one rubric criteria.";
         }
 
         java.math.BigDecimal total = java.math.BigDecimal.ZERO;
@@ -1387,13 +1457,13 @@ public class CreateExamController implements ShellAwareController {
             String name = rubric.getCriterionName();
 
             if (isBlank(name)) {
-                return "Essay rubric criterion name cannot be blank.";
+                return "Essay rubric criteria name cannot be blank.";
             }
 
             String normalizedName = name.trim().toLowerCase().replaceAll("\\s+", " ");
 
             if (!names.add(normalizedName)) {
-                return "Essay rubric has duplicate criterion: " + name;
+                return "Essay rubric has duplicate criteria: " + name;
             }
 
             if (rubric.getWeightPercentage() == null ||
@@ -1405,7 +1475,8 @@ public class CreateExamController implements ShellAwareController {
         }
 
         if (total.compareTo(new java.math.BigDecimal("100")) != 0) {
-            return "Essay rubric total must be exactly 100%. Current total: " + total + "%.";
+            return "Essay rubric total must be exactly 100%. Current total: "
+                    + total.stripTrailingZeros().toPlainString() + "%.";
         }
 
         return null;
@@ -1631,7 +1702,7 @@ public class CreateExamController implements ShellAwareController {
 
         rubricRowsBox = new VBox(6);
 
-        Button addButton = new Button("+ Add Criterion");
+        Button addButton = new Button("+ Add Criteria");
         addButton.getStyleClass().add("outline-small-button");
 
         rubricTotalLabel = new Label("Total: 0%");
@@ -1651,7 +1722,7 @@ public class CreateExamController implements ShellAwareController {
         row.setAlignment(Pos.CENTER_LEFT);
 
         TextField criterionField = new TextField(criterion);
-        criterionField.setPromptText("Criterion, e.g. Grammar");
+        criterionField.setPromptText("Criteria, e.g. Grammar");
         criterionField.getStyleClass().add("modern-input");
         HBox.setHgrow(criterionField, Priority.ALWAYS);
 
@@ -2235,13 +2306,13 @@ public class CreateExamController implements ShellAwareController {
         }
 
         if ("ESSAY".equals(type)) {
-            return isEssayRubricValidOrBlank(question);
+            return isEssayRubricValid(question);
         }
 
         return false;
     }
 
-    private boolean isEssayRubricValidOrBlank(QuestionDraftRow question) {
+    private boolean isEssayRubricValid(QuestionDraftRow question) {
         return getEssayRubricError(question) == null;
     }
 
@@ -2350,7 +2421,7 @@ public class CreateExamController implements ShellAwareController {
             }
         }
 
-        if (classOfferingListView.getSelectionModel().getSelectedItem() == null) {
+        if (selectedClassOfferingIds.isEmpty()) {
             setError(classOfferingListView, classErrorLabel, "Please select a class offering.");
             valid = false;
         }
@@ -2706,6 +2777,35 @@ public class CreateExamController implements ShellAwareController {
         }
 
         comboBox.setItems(FXCollections.observableArrayList(times));
+    }
+
+    private boolean validateAllQuestionsBeforeSubmit() {
+        saveEditorToSelectedQuestion(false);
+
+        if (questionRows.isEmpty()) {
+            validationLabel.setText("Please add at least one question.");
+            return false;
+        }
+
+        for (QuestionDraftRow question : questionRows) {
+            if (!isQuestionComplete(question)) {
+                questionListView.getSelectionModel().select(question);
+
+                String rubricError = getEssayRubricError(question);
+
+                validationLabel.setText(
+                        rubricError == null
+                                ? "Please complete Question " + question.getQuestionNo() + "."
+                                : "Question " + question.getQuestionNo() + ": " + rubricError
+                );
+
+                updateQuestionStatus();
+                questionListView.refresh();
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void clearAllErrors() {

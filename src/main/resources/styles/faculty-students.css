@@ -1,0 +1,564 @@
+.faculty-students-root {
+    -fx-background-color: #F7F6F3;
+    -fx-padding: 26 30 30 30;
+}
+
+.faculty-students-scroll,
+.faculty-students-scroll .viewport {
+    -fx-background-color: #F7F6F3;
+    -fx-background: #F7F6F3;
+}
+
+.students-page-header {
+    -fx-spacing: 4;
+    -fx-padding: 0 0 18 0;
+}
+
+.students-page-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #2F2A26;
+}
+
+.students-page-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #756F68;
+}
+
+.students-filter-panel {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 18;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(30, 25, 20, 0.08), 18, 0.18, 0, 4);
+}
+
+.students-toolbar-row {
+    -fx-spacing: 12;
+    -fx-alignment: center-left;
+}
+
+.students-combo {
+    -fx-background-color: #FAFAF8;
+    -fx-background-radius: 12;
+    -fx-border-color: #E2DDD6;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 2 8 2 8;
+    -fx-pref-height: 42;
+    -fx-font-size: 13px;
+}
+
+.students-combo:hover {
+    -fx-border-color: #C8B06A;
+}
+
+.students-search-field {
+    -fx-background-color: #FAFAF8;
+    -fx-background-radius: 12;
+    -fx-border-color: #E2DDD6;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 0 14 0 14;
+    -fx-pref-height: 42;
+    -fx-font-size: 13px;
+}
+
+.students-search-field:focused {
+    -fx-border-color: #800000;
+    -fx-background-color: #FFFFFF;
+}
+
+.students-summary-row {
+    -fx-padding: 16 2 10 2;
+    -fx-alignment: center-left;
+}
+
+.students-total-label {
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #2F2A26;
+}
+
+.students-context-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #756F68;
+}
+
+.students-view-toggle {
+    -fx-background-color: #F1EEE9;
+    -fx-background-radius: 12;
+    -fx-border-color: transparent;
+    -fx-padding: 8 14 8 14;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #5F5750;
+    -fx-cursor: hand;
+}
+
+.students-view-toggle:selected {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+}
+
+.students-view-toggle:hover {
+    -fx-background-color: #E6DFD5;
+}
+
+.students-view-toggle:selected:hover {
+    -fx-background-color: #6F0000;
+}
+
+.students-content-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 18;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(30, 25, 20, 0.07), 16, 0.16, 0, 4);
+}
+
+.students-empty-state {
+    -fx-min-height: 320;
+    -fx-padding: 40;
+}
+
+.students-empty-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #3B332E;
+}
+
+.students-empty-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #8A8178;
+}
+
+/* LIST VIEW */
+
+.students-table {
+    -fx-background-color: transparent;
+    -fx-spacing: 0;
+}
+
+.students-table-header {
+    -fx-background-color: #F3F0EA;
+    -fx-background-radius: 12 12 0 0;
+    -fx-padding: 12 14 12 14;
+    -fx-spacing: 10;
+}
+
+.students-table-header-cell {
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #6F665E;
+}
+
+.students-table-row {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: transparent transparent #EEE9E3 transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 13 14 13 14;
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+}
+
+.students-table-row:hover {
+    -fx-background-color: #FBF8F4;
+}
+
+.student-avatar-small {
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-max-width: 38;
+    -fx-max-height: 38;
+    -fx-background-color: linear-gradient(to bottom right, #800000, #B8860B);
+    -fx-background-radius: 50;
+    -fx-alignment: center;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+}
+
+.student-name {
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #2F2A26;
+}
+
+.student-subtitle {
+    -fx-font-size: 11px;
+    -fx-text-fill: #817970;
+}
+
+.student-action-button {
+    -fx-background-color: #F5F1EA;
+    -fx-background-radius: 10;
+    -fx-border-color: transparent;
+    -fx-padding: 7 12 7 12;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #5C5048;
+    -fx-cursor: hand;
+}
+
+.student-action-button:hover {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+}
+
+/* CARD VIEW */
+
+.student-card-grid {
+    -fx-padding: 6 2 10 2;
+}
+
+.student-id-card {
+    -fx-background-color: white;
+    -fx-background-radius: 18;
+    -fx-border-color: #E5E0D8;
+    -fx-border-radius: 18;
+    -fx-border-width: 1;
+    -fx-padding: 14 5 16 5;
+    -fx-pref-width: 230;
+    -fx-min-height: 330;
+    -fx-alignment: top-center;
+    -fx-spacing: 4;
+    -fx-effect: dropshadow(gaussian, rgba(30, 25, 20, 0.10), 16, 0.15, 0, 4);
+}
+
+.student-id-card:hover {
+    -fx-border-color: #D4AF37;
+    -fx-translate-y: -2;
+    -fx-effect: dropshadow(gaussian, rgba(30, 25, 20, 0.18), 24, 0.22, 0, 6);
+}
+
+/* Compact school header */
+
+.student-card-logo {
+    -fx-opacity: 0.85;
+    -fx-background-color: #800000;
+    -fx-background-radius: 50;
+    -fx-alignment: center;
+    -fx-text-fill: #D4AF37;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+}
+
+.student-card-school-word-row {
+    -fx-pref-width: 80;
+    -fx-min-width: 80;
+    -fx-max-width: 80;
+    -fx-padding: 0;
+}
+
+.student-card-school-letter {
+    -fx-font-family: "Georgia";
+    -fx-font-size: 10px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #302C29;
+    -fx-opacity: 0.72;
+    -fx-padding: 0;
+}
+
+.student-card-school-word {
+    -fx-font-family: "Georgia";
+    -fx-font-size: 10px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #302C29;
+    -fx-opacity: 0.68;
+    -fx-padding: 0;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+}
+
+.student-card-of-the {
+    -fx-font-family: "Georgia";
+    -fx-font-size: 7px;
+    -fx-font-style: italic;
+    -fx-text-fill: #3B332E;
+    -fx-opacity: 0.60;
+    -fx-padding: 0;
+}
+
+.student-card-school-line {
+    -fx-pref-height: 1;
+    -fx-max-height: 1;
+    -fx-background-color: #3B332E;
+    -fx-opacity: 0.35;
+}
+
+/* Student identity */
+
+.student-card-tagline {
+    -fx-font-family: "Georgia";
+    -fx-font-size: 8px;
+    -fx-font-style: italic;
+    -fx-text-fill: #5C5149;
+    -fx-opacity: 0.80;
+}
+
+.student-card-photo {
+    -fx-min-width: 96;
+    -fx-min-height: 96;
+    -fx-max-width: 96;
+    -fx-max-height: 96;
+    -fx-background-color: #F1EEE9;
+    -fx-border-color: #DDD6CE;
+    -fx-border-width: 1;
+    -fx-alignment: center;
+    -fx-text-fill: #800000;
+    -fx-font-size: 24px;
+    -fx-font-weight: 900;
+    -fx-padding: 0;
+}
+
+.student-card-firstname {
+    -fx-font-family: "Arial";
+    -fx-font-size: 10px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #302C29;
+}
+
+.student-card-surname {
+    -fx-font-family: "Arial Black";
+    -fx-font-size: 16px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #101010;
+}
+
+.student-card-studentno {
+    -fx-font-family: "Arial";
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #202020;
+}
+
+.student-card-divider {
+    -fx-min-height: 1;
+    -fx-max-height: 1;
+
+    -fx-background-color: #202020;
+
+    -fx-opacity: 0.85;
+}
+
+.student-card-program {
+    -fx-font-family: "Arial";
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #101010;
+
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+
+    -fx-max-width: Infinity;
+    -fx-pref-width: 100%;
+}
+
+.student-card-section-small {
+    -fx-background-color: #F4EFE6;
+    -fx-background-radius: 100;
+
+    -fx-padding: 3 12 3 12;
+
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
+
+    -fx-text-fill: #800000;
+
+    -fx-border-color: rgba(128,0,0,0.10);
+    -fx-border-radius: 100;
+
+    -fx-opacity: 0.95;
+}
+
+.student-card-grid {
+    -fx-padding: 6 4 10 4;
+    -fx-alignment: top-center;
+}
+
+.students-pagination {
+    -fx-padding: 18 0 4 0;
+}
+
+
+.students-pagination {
+    -fx-padding: 18 0 4 0;
+    -fx-alignment: center;
+}
+
+.students-pagination-link {
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+
+    -fx-text-fill: #800000;
+
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+
+    -fx-padding: 0 4 0 4;
+}
+
+.students-pagination-link:hover {
+    -fx-text-fill: #B8860B;
+}
+
+.students-pagination-link:disabled {
+    -fx-opacity: 0.30;
+}
+
+.students-page-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #756F68;
+}
+
+.students-page-button:hover {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+}
+
+.students-page-button:disabled {
+    -fx-opacity: 0.35;
+    -fx-cursor: default;
+}
+
+.students-page-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #756F68;
+    -fx-padding: 0 8 0 8;
+}
+
+.students-content-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 18;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(30, 25, 20, 0.07), 16, 0.16, 0, 4);
+}
+
+.students-content-scroll,
+.students-content-scroll .viewport {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.exam-pagination-bar {
+    -fx-padding: 12 4 0 0;
+    -fx-background-color: transparent;
+}
+
+.pagination-button {
+    -fx-background-color: white;
+    -fx-border-color: rgba(0,0,0,0.12);
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 7 12;
+    -fx-cursor: hand;
+}
+
+.pagination-button:hover {
+    -fx-background-color: #F5F1EA;
+}
+
+.pagination-button:disabled {
+    -fx-opacity: 0.35;
+    -fx-cursor: default;
+}
+
+.pagination-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #756F68;
+    -fx-padding: 0 8 0 8;
+}
+
+.students-content-card Label,
+.students-table-row Label,
+.students-table-header Label,
+.student-id-card Label {
+    -fx-text-fill: #302C29;
+}
+
+.students-table-header-cell {
+    -fx-text-fill: #6F665E;
+}
+
+.student-avatar-small {
+    -fx-text-fill: white;
+}
+
+.student-card-photo {
+    -fx-text-fill: #800000;
+}
+
+.pagination-label {
+    -fx-text-fill: #756F68;
+}
+
+.pagination-button {
+    -fx-text-fill: #302C29;
+}
+
+.students-export-button {
+    -fx-background-color: #800000;
+    -fx-background-radius: 12;
+    -fx-border-color: transparent;
+    -fx-padding: 9 16 9 16;
+
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-fill: white;
+
+    -fx-cursor: hand;
+}
+
+.students-export-button:hover {
+    -fx-background-color: #6F0000;
+}
+
+.students-export-button .label {
+    -fx-text-fill: white;
+}
+
+.students-loading-overlay {
+    -fx-background-color: rgba(255, 255, 255, 0.78);
+    -fx-alignment: center;
+    -fx-padding: 40;
+}
+
+.students-loading-box {
+    -fx-background-color: white;
+    -fx-background-radius: 18;
+    -fx-padding: 22 28;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.16), 18, 0.18, 0, 6);
+}
+
+.students-loading-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #302C29;
+}
+
+.menu-item .label {
+    -fx-text-fill: #302C29;
+}
+
+.context-menu {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-padding: 4;
+}
+
+.menu-item {
+    -fx-background-color: transparent;
+}
+
+.menu-item:focused,
+.menu-item:hover {
+    -fx-background-color: #F4F4F4;
+}
+
+.menu-item:focused .label,
+.menu-item:hover .label {
+    -fx-text-fill: #302C29;
+}

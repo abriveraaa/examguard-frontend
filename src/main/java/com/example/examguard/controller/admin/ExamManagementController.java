@@ -11,6 +11,7 @@ import com.example.examguard.model.exam.request.EssayReviewRequest;
 import com.example.examguard.model.exam.request.EssayRubricRequest;
 import com.example.examguard.model.exam.request.EssayRubricScoreRequest;
 import com.example.examguard.model.exam.response.EssayRubricScoreResponse;
+import com.example.examguard.model.exam.dto.AnswerReviewTimelineDTO;
 import com.example.examguard.model.faculty.dto.FacultyClassDTO;
 import com.example.examguard.model.faculty.dto.FacultyExamStudentDTO;
 import com.example.examguard.model.faculty.response.FacultyAttemptReviewResponse;
@@ -18,9 +19,11 @@ import com.example.examguard.model.faculty.response.FacultyExamDetailResponse;
 import com.example.examguard.model.faculty.response.SimpleMessageResponse;
 import com.example.examguard.service.FacultyApiService;
 
+import java.awt.*;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Files;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import com.example.examguard.model.exam.response.ExamResponse;
@@ -40,19 +43,27 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.beans.property.SimpleStringProperty;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.util.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
@@ -70,6 +81,7 @@ public class ExamManagementController implements ShellAwareController {
     @FXML private TableColumn<ExamRow, String> createdByColumn;
     @FXML private TableColumn<ExamRow, String> updatedByColumn;
     @FXML private TableColumn<ExamRow, Void> actionsColumn;
+    @FXML private ComboBox<String> termFilterComboBox;
     @FXML private BorderPane listModeContainer;
     @FXML private BorderPane workspaceModeContainer;
     @FXML private StackPane workspaceContent;
@@ -83,13 +95,11 @@ public class ExamManagementController implements ShellAwareController {
     @FXML private StackPane loadingOverlay;
     @FXML private Button overviewTabButton;
     @FXML private Button studentsTabButton;
-    @FXML private Button proctorTabButton;
     @FXML private Button activityLogTabButton;
     @FXML private Button leaderboardTabButton;
 
     private final ExamApiService examApiService = new ExamApiService();
     private final FacultyApiService facultyApiService = new FacultyApiService();
-
     private final PauseTransition searchDebounce = new PauseTransition(Duration.millis(250));
     private final ObservableList<ExamRow> examRows = FXCollections.observableArrayList();
     private FacultyExamStudentDTO currentReviewStudent;
@@ -102,6 +112,12 @@ public class ExamManagementController implements ShellAwareController {
     private boolean loading = false;
     private Long selectedWorkspaceExamId;
 
+
+    private record EvidenceFrame(
+            String url,
+            String label,
+            Integer offsetMs
+    ) {}
 
     @FXML
     public void initialize() {
@@ -121,6 +137,13 @@ public class ExamManagementController implements ShellAwareController {
         examTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         loadExamsFromBackend();
+
+        termFilterComboBox.valueProperty().addListener((
+                obs, oldVal, newVal) -> applyFilters());
+
+        reportsTabButton.setOnAction(
+                e -> showWorkspaceReports()
+        );
     }
 
     @FXML
@@ -279,6 +302,7 @@ public class ExamManagementController implements ShellAwareController {
             empty.getStyleClass().add("overview-detail-row");
             content.getChildren().add(empty);
         } else {
+
             for (FacultyClassDTO item : classes) {
                 Label row = new Label(
                         safe(item.getCourseCode()) +
@@ -1173,6 +1197,15 @@ public class ExamManagementController implements ShellAwareController {
         actionBar.setAlignment(Pos.CENTER_RIGHT);
         actionBar.setFocusTraversable(true);
 
+        Button timelineButton = new Button("Review Timeline");
+        timelineButton.getStyleClass().add("outline-button");
+
+        timelineButton.setOnAction(e ->
+                openAnswerReviewTimelineModal(answer)
+        );
+
+        actionBar.getChildren().add(timelineButton);
+
         boolean identificationQuestion =
                 "IDENTIFICATION".equalsIgnoreCase(
                         safe(answer.getQuestionType())
@@ -1345,6 +1378,159 @@ public class ExamManagementController implements ShellAwareController {
         return card;
     }
 
+    private void openAnswerReviewTimelineModal(
+            ExamAttemptAnswerReviewDTO answer
+    ) {
+        if (answer == null || answer.getAnswerId() == null) {
+            showError("Answer ID not found.");
+            return;
+        }
+
+        Stage stage = new Stage();
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setTitle("Review Timeline");
+
+        Label title = new Label(
+                "Question " + defaultInt(answer.getQuestionNumber()) +
+                        " • Review Timeline"
+        );
+        title.getStyleClass().add("workspace-page-title");
+
+        Label subtitle = new Label(
+                "Historical changes for scores, violation decisions, and review actions."
+        );
+        subtitle.getStyleClass().add("workspace-page-subtitle");
+
+        VBox timelineBox = new VBox(12);
+        timelineBox.getChildren().add(createLoadingBox("Loading timeline..."));
+
+        VBox root = new VBox(16, title, subtitle, timelineBox);
+        root.getStyleClass().add("workspace-card");
+        root.setPadding(new Insets(24));
+        root.setPrefWidth(780);
+        root.setPrefHeight(620);
+
+        ScrollPane scrollPane = new ScrollPane(root);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(false);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.getStyleClass().add("workspace-scroll");
+
+        Scene scene = new Scene(scrollPane);
+        scene.getStylesheets().add(
+                Objects.requireNonNull(
+                        getClass().getResource("/styles/exam-management.css")
+                ).toExternalForm()
+        );
+        stage.setScene(scene);
+        stage.show();
+
+        Task<List<AnswerReviewTimelineDTO>> task = new Task<>() {
+            @Override
+            protected List<AnswerReviewTimelineDTO> call() throws Exception {
+                return examApiService.getAnswerReviewTimeline(
+                        answer.getAnswerId()
+                );
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            List<AnswerReviewTimelineDTO> logs = task.getValue();
+
+            timelineBox.getChildren().clear();
+
+            if (logs == null || logs.isEmpty()) {
+                Label empty = new Label("No review timeline yet.");
+                empty.getStyleClass().add("workspace-section-subtitle");
+                timelineBox.getChildren().add(empty);
+                return;
+            }
+
+            for (AnswerReviewTimelineDTO log : logs) {
+                timelineBox.getChildren().add(
+                        createTimelineLogCard(log)
+                );
+            }
+        });
+
+        task.setOnFailed(event -> {
+            Throwable ex = task.getException();
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+
+            timelineBox.getChildren().clear();
+
+            Label error = new Label("Unable to load review timeline.");
+            error.getStyleClass().add("workspace-section-subtitle");
+            timelineBox.getChildren().add(error);
+        });
+
+        Thread thread = new Thread(task, "load-answer-review-timeline");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private VBox createTimelineLogCard(AnswerReviewTimelineDTO log) {
+
+        Label actionLabel = new Label(formatTimelineAction(log.getActionType()));
+        actionLabel.getStyleClass().add("timeline-action-title");
+
+        Label timeLabel = new Label(
+                formatDateTime(log.getCreatedAt()) +
+                        " • " +
+                        safe(log.getCreatedBy()) +
+                        " (" +
+                        safe(log.getCreatedByRole()) +
+                        ")"
+        );
+        timeLabel.getStyleClass().add("timeline-meta-text");
+
+        String scoreText =
+                "Score: " +
+                        formatPoints(log.getScoreBefore()) +
+                        " → " +
+                        formatPoints(log.getScoreAfter());
+
+        if (log.getDeduction() != null
+                && log.getDeduction().compareTo(BigDecimal.ZERO) > 0) {
+            scoreText += " • Deduction: " + formatPoints(log.getDeduction());
+        }
+
+        Label scoreLabel = new Label(scoreText);
+        scoreLabel.getStyleClass().add("timeline-score-text");
+
+        Label statusLabel = new Label(
+                "Status: " +
+                        safe(log.getPreviousValue()) +
+                        " → " +
+                        safe(log.getNewValue())
+        );
+        statusLabel.getStyleClass().add("timeline-status-text");
+
+        Label notesLabel = new Label(
+                log.getNotes() == null || log.getNotes().isBlank()
+                        ? "No notes provided."
+                        : log.getNotes()
+        );
+        notesLabel.setWrapText(true);
+        notesLabel.getStyleClass().add("timeline-notes-text");
+
+        VBox card = new VBox(
+                6,
+                actionLabel,
+                timeLabel,
+                statusLabel,
+                scoreLabel,
+                notesLabel
+        );
+
+        card.getStyleClass().add("timeline-log-card");
+        card.setMaxWidth(Double.MAX_VALUE);
+
+        return card;
+    }
+
     private VBox createAnswerBlock(String label, String value, String valueStyleClass) {
         Label title = new Label(label);
         title.getStyleClass().add("review-answer-label");
@@ -1464,14 +1650,15 @@ public class ExamManagementController implements ShellAwareController {
 
         if (reviewed) {
             String label = switch (reviewStatus.toUpperCase()) {
-                case "IGNORED" -> "Ignored";
-                case "PENALIZED" -> "Penalized";
-                default -> "Reviewed";
+                case "IGNORED" -> "View Evidence • Ignored";
+                case "PENALIZED" -> "View Evidence • Penalized";
+                default -> "View Evidence • Reviewed";
             };
 
             reviewButton.setText(label);
-            reviewButton.setDisable(true);
+            reviewButton.setDisable(false);
             reviewButton.getStyleClass().add("workspace-status-button");
+            reviewButton.setOnAction(e -> openViolationReviewModal(answer));
 
         } else {
             reviewButton.setText("Review Evidence");
@@ -1509,6 +1696,9 @@ public class ExamManagementController implements ShellAwareController {
         );
         title.getStyleClass().add("workspace-page-title");
 
+        Button reviseButton = new Button("Revise Decision");
+        reviseButton.getStyleClass().add("review-revise-button");
+
         StackPane previewPane = new StackPane();
         previewPane.getStyleClass().add("violation-preview-pane");
         VBox.setVgrow(previewPane, Priority.ALWAYS);
@@ -1533,9 +1723,82 @@ public class ExamManagementController implements ShellAwareController {
 
             previewPane.getChildren().clear();
 
-            Label placeholder = new Label("Screenshot / camera evidence preview");
-            placeholder.getStyleClass().add("workspace-empty-text");
-            previewPane.getChildren().add(placeholder);
+            List<EvidenceFrame> frames = getEvidenceFrames(violation);
+
+            if (frames.isEmpty()) {
+
+                Label placeholder = new Label("No evidence image available.");
+                placeholder.getStyleClass().add("workspace-empty-text");
+                previewPane.getChildren().add(placeholder);
+
+            } else {
+
+                HBox frameRow = new HBox(14);
+                frameRow.setAlignment(Pos.CENTER);
+                frameRow.setFillHeight(true);
+
+                for (int i = 0; i < frames.size(); i++) {
+                    final int frameIndex = i;
+                    EvidenceFrame frame = frames.get(i);
+
+                    VBox frameCard = new VBox(8);
+                    frameCard.setAlignment(Pos.CENTER);
+                    frameCard.getStyleClass().add("evidence-frame-card");
+
+                    Label frameLabel = new Label(
+                            formatEvidenceLabel(frame.label(), i)
+                    );
+                    frameLabel.getStyleClass().add("evidence-frame-label");
+
+                    ImageView imageView = new ImageView(
+                            new Image(buildImageUrl(frame.url()), true)
+                    );
+
+                    imageView.setPreserveRatio(true);
+                    imageView.setSmooth(true);
+
+                    if (frames.size() == 1) {
+                        imageView.setFitWidth(760);
+                        imageView.setFitHeight(360);
+                    } else {
+                        imageView.setFitWidth(250);
+                        imageView.setFitHeight(190);
+                    }
+
+                    imageView.getStyleClass().add("evidence-frame-image");
+
+                    imageView.setOnMouseClicked(e ->
+                            openEvidenceImagePreview(
+                                    buildImageUrl(frame.url()),
+                                    formatEvidenceLabel(frame.label(), frameIndex)
+                            )
+                    );
+
+                    Label offsetLabel = new Label(
+                            frame.offsetMs() == null
+                                    ? ""
+                                    : frame.offsetMs() + " ms"
+                    );
+                    offsetLabel.getStyleClass().add("evidence-frame-offset");
+
+                    frameCard.getChildren().addAll(
+                            frameLabel,
+                            imageView,
+                            offsetLabel
+                    );
+
+                    frameRow.getChildren().add(frameCard);
+                }
+
+                ScrollPane frameScroll = new ScrollPane(frameRow);
+                frameScroll.setFitToHeight(true);
+                frameScroll.setFitToWidth(true);
+                frameScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+                frameScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+                frameScroll.getStyleClass().add("evidence-frame-scroll");
+
+                previewPane.getChildren().add(frameScroll);
+            }
 
             metadataLabel.setText(
                     safe(violation.getSeverity()) +
@@ -1713,6 +1976,40 @@ public class ExamManagementController implements ShellAwareController {
             }
         });
 
+        reviseButton.setOnAction(e -> {
+
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+
+            confirm.setTitle("Revise Decision");
+
+            confirm.setHeaderText(
+                    "Allow changing this violation decision?"
+            );
+
+            confirm.setContentText(
+                    "The previous deduction will be recalculated automatically."
+            );
+
+            Optional<ButtonType> result =
+                    confirm.showAndWait();
+
+            if (result.isEmpty()
+                    || result.get() != ButtonType.OK) {
+                return;
+            }
+
+            feedbackArea.setEditable(true);
+            feedbackArea.requestFocus();
+
+            deductionField.setDisable(false);
+
+            ignoreButton.setDisable(false);
+            applyButton.setDisable(false);
+
+            reviseButton.setDisable(true);
+            reviseButton.setText("Revision Mode");
+        });
+
         HBox decisionButtons = new HBox(10, ignoreButton, applyButton);
         decisionButtons.setAlignment(Pos.CENTER_RIGHT);
 
@@ -1729,9 +2026,41 @@ public class ExamManagementController implements ShellAwareController {
         );
         decisionBox.getStyleClass().add("violation-decision-box");
 
-        VBox root = new VBox(
-                14,
+        boolean alreadyFinalized = violations.stream()
+                .anyMatch(this::isViolationFinalized);
+
+        reviseButton.setVisible(alreadyFinalized);
+        reviseButton.setManaged(alreadyFinalized);
+
+        if (alreadyFinalized) {
+            feedbackArea.setEditable(false);
+            deductionField.setDisable(true);
+            ignoreButton.setDisable(true);
+            applyButton.setDisable(true);
+
+            reviseButton.setVisible(true);
+            reviseButton.setManaged(true);
+
+        } else {
+            reviseButton.setVisible(false);
+            reviseButton.setManaged(false);
+        }
+
+        Region titleSpacer = new Region();
+        HBox.setHgrow(titleSpacer, Priority.ALWAYS);
+
+        HBox headerRow = new HBox(
+                12,
                 title,
+                titleSpacer,
+                reviseButton
+        );
+
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox root = new VBox(
+                16,
+                headerRow,
                 previewPane,
                 metadataLabel,
                 navigation,
@@ -1764,209 +2093,6 @@ public class ExamManagementController implements ShellAwareController {
 
         stage.show();
     }
-
-    @FXML
-    private void showWorkspaceProctor() {
-        setActiveWorkspaceTab(proctorTabButton);
-        renderWorkspaceProctor();
-    }
-
-    private void renderWorkspaceProctor() {
-
-        VBox root = new VBox(16);
-        root.getStyleClass().add("workspace-overview-root");
-
-        Label pageTitle = new Label("Live Proctoring");
-        pageTitle.getStyleClass().add("workspace-page-title");
-
-        Label pageSubtitle = new Label(
-                "Zoom-style monitoring wall for active takers, live camera streams, and risk indicators."
-        );
-        pageSubtitle.getStyleClass().add("workspace-page-subtitle");
-
-        VBox pageHeader = new VBox(3, pageTitle, pageSubtitle);
-
-        TextField searchField = new TextField();
-        searchField.setPromptText("Search student, ID, section...");
-        searchField.getStyleClass().add("workspace-search-field");
-        searchField.setPrefWidth(320);
-
-        ComboBox<String> statusFilter = new ComboBox<>();
-        statusFilter.getItems().addAll("All Status", "Live", "Warning", "Critical", "Disconnected", "Submitted");
-        statusFilter.setValue("All Status");
-        statusFilter.getStyleClass().add("workspace-filter-box");
-
-        ComboBox<String> sortFilter = new ComboBox<>();
-        sortFilter.getItems().addAll("Sort by Risk", "Sort by Name", "Sort by Latest Activity");
-        sortFilter.setValue("Sort by Risk");
-        sortFilter.getStyleClass().add("workspace-filter-box");
-
-        HBox filterBar = new HBox(10, searchField, statusFilter, sortFilter);
-        filterBar.setAlignment(Pos.CENTER_LEFT);
-
-        TilePane streamGrid = new TilePane();
-
-        streamGrid.setPrefColumns(4);
-
-        streamGrid.setHgap(14);
-        streamGrid.setVgap(14);
-
-        streamGrid.setTileAlignment(Pos.TOP_CENTER);
-        streamGrid.setAlignment(Pos.TOP_CENTER);
-
-        streamGrid.getStyleClass().add("proctor-stream-grid");
-
-        streamGrid.getChildren().addAll(
-                createProctorStreamTile(
-                        "Juan Dela Cruz",
-                        "2024-14887-MN-0",
-                        "BSITOUMN 2-2",
-                        "Q5",
-                        "42:18",
-                        "Connected",
-                        "Look Away • Minor",
-                        "WARNING"
-                ),
-                createProctorStreamTile(
-                        "Maria Santos",
-                        "2024-20491-MN-0",
-                        "BSITOUMN 2-2",
-                        "Q3",
-                        "45:09",
-                        "Connected",
-                        "No recent violations",
-                        "NORMAL"
-                ),
-                createProctorStreamTile(
-                        "Carlo Reyes",
-                        "2024-11220-MN-0",
-                        "BSITOUMN 2-3",
-                        "Q7",
-                        "31:44",
-                        "Disconnected",
-                        "Camera disconnected",
-                        "CRITICAL"
-                ),
-                createProctorStreamTile(
-                        "Ana Lopez",
-                        "2024-11920-MN-0",
-                        "BSITOUMN 2-3",
-                        "Done",
-                        "00:00",
-                        "Connected",
-                        "Submitted",
-                        "SUBMITTED"
-                )
-        );
-
-        VBox card = new VBox(14, pageHeader, filterBar, streamGrid);
-        card.getStyleClass().add("workspace-card");
-
-        root.getChildren().add(card);
-
-        ScrollPane scrollPane = new ScrollPane(root);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.getStyleClass().add("workspace-scroll");
-
-        workspaceContent.getChildren().setAll(scrollPane);
-    }
-
-    private VBox createProctorStreamTile(
-            String studentName,
-            String studentId,
-            String section,
-            String currentQuestion,
-            String timeRemaining,
-            String cameraStatus,
-            String latestViolation,
-            String riskLevel
-    ) {
-        Label nameLabel = new Label(studentName);
-        nameLabel.getStyleClass().add("proctor-header-name");
-
-        Label metaLabel = new Label(studentId + " • " + section);
-        metaLabel.getStyleClass().add("proctor-header-meta");
-
-        VBox studentInfo = new VBox(2, nameLabel, metaLabel);
-
-        Label riskBadge = new Label(formatStatus(riskLevel));
-        riskBadge.getStyleClass().add(getProctorRiskClass(riskLevel));
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        HBox header = new HBox(10, studentInfo, spacer, riskBadge);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.getStyleClass().add("proctor-tile-header");
-
-        StackPane videoPane = new StackPane();
-        videoPane.getStyleClass().add("proctor-video-area");
-        videoPane.setPrefHeight(165);
-
-        Label liveBadge = new Label(
-                "Disconnected".equalsIgnoreCase(cameraStatus) ? "OFFLINE" : "LIVE"
-        );
-        liveBadge.getStyleClass().add(
-                "Disconnected".equalsIgnoreCase(cameraStatus)
-                        ? "proctor-offline-badge"
-                        : "proctor-live-badge"
-        );
-
-        Label videoText = new Label("Student camera stream");
-        videoText.getStyleClass().add("proctor-stream-placeholder");
-
-        StackPane.setAlignment(liveBadge, Pos.TOP_LEFT);
-        StackPane.setMargin(liveBadge, new Insets(10));
-
-        videoPane.getChildren().addAll(videoText, liveBadge);
-
-        Label statusLabel = new Label(
-                "Camera " + cameraStatus + " • " + latestViolation
-        );
-        statusLabel.setWrapText(true);
-        statusLabel.getStyleClass().add("proctor-tile-footer");
-
-        VBox tile = new VBox(0, header, videoPane, statusLabel);
-        tile.getStyleClass().addAll("proctor-stream-tile", getProctorStreamTileClass(riskLevel));
-        tile.setPrefWidth(330);
-        tile.setMaxWidth(320);
-
-        return tile;
-    }
-
-    private String getProctorStreamTileClass(String riskLevel) {
-        if ("CRITICAL".equalsIgnoreCase(riskLevel)) {
-            return "proctor-stream-critical";
-        }
-
-        if ("WARNING".equalsIgnoreCase(riskLevel)) {
-            return "proctor-stream-warning";
-        }
-
-        if ("SUBMITTED".equalsIgnoreCase(riskLevel)) {
-            return "proctor-stream-submitted";
-        }
-
-        return "proctor-stream-normal";
-    }
-
-    private String getProctorRiskClass(String riskLevel) {
-        if ("CRITICAL".equalsIgnoreCase(riskLevel)) {
-            return "proctor-risk-critical";
-        }
-
-        if ("WARNING".equalsIgnoreCase(riskLevel)) {
-            return "proctor-risk-warning";
-        }
-
-        if ("SUBMITTED".equalsIgnoreCase(riskLevel)) {
-            return "proctor-risk-submitted";
-        }
-
-        return "proctor-risk-normal";
-    }
-
 
     @FXML
     private void showWorkspaceActivityLog() {
@@ -2219,58 +2345,6 @@ public class ExamManagementController implements ShellAwareController {
         workspaceContent.getChildren().setAll(root);
     }
 
-    private HBox createActivityLogRow(ExamActivityLogDTO log) {
-        Label time = new Label(formatDateTime(log.getOccurredAt()));
-        time.getStyleClass().add("activity-log-time");
-
-        Label type = new Label(safe(log.getLogType()));
-        type.getStyleClass().add(
-                "VIOLATION".equalsIgnoreCase(safe(log.getLogType()))
-                        ? "activity-type-violation"
-                        : "activity-type-normal"
-        );
-
-        String questionText = log.getQuestionNumber() == null
-                ? "General"
-                : "Question " + log.getQuestionNumber();
-
-        Label title = new Label(
-                questionText + " • " + formatStatus(safe(log.getAction()))
-        );
-        title.getStyleClass().add("activity-log-title");
-
-        String subtitleText =
-                safe(log.getStudentName()).isBlank()
-                        ? safe(log.getMessage())
-                        : safe(log.getStudentName()) + " • " + safe(log.getMessage());
-
-        Label subtitle = new Label(subtitleText);
-        subtitle.setWrapText(true);
-        subtitle.getStyleClass().add("activity-log-subtitle");
-
-        VBox info = new VBox(4, title, subtitle);
-        HBox.setHgrow(info, Priority.ALWAYS);
-
-        Label severity = new Label(
-                log.getSeverity() == null || log.getSeverity().isBlank()
-                        ? ""
-                        : safe(log.getSeverity())
-        );
-
-        if (!severity.getText().isBlank()) {
-            severity.getStyleClass().add("activity-severity-pill");
-        }
-
-        VBox left = new VBox(4, time, type);
-        left.setMinWidth(150);
-
-        HBox row = new HBox(14, left, info, severity);
-        row.setAlignment(Pos.TOP_LEFT);
-        row.getStyleClass().add("activity-log-row");
-
-        return row;
-    }
-
     @FXML
     private void showWorkspaceLeaderboard() {
 
@@ -2453,243 +2527,443 @@ public class ExamManagementController implements ShellAwareController {
 
     @FXML
     private void showWorkspaceReports() {
+
         setActiveWorkspaceTab(reportsTabButton);
 
-        if (selectedWorkspaceExamId == null) {
-            return;
-        }
+        renderWorkspaceReports();
+    }
+
+    private void renderWorkspaceReports() {
 
         VBox root = new VBox(16);
-        root.getStyleClass().add("workspace-overview-root");
 
-        Label pageTitle = new Label("Reports");
-        pageTitle.getStyleClass().add("workspace-page-title");
+        root.getStyleClass().add(
+                "workspace-overview-root"
+        );
 
-        Label pageSubtitle = new Label("Generate printable PDF reports for this exam.");
-        pageSubtitle.getStyleClass().add("workspace-page-subtitle");
+        Label pageTitle =
+                new Label(
+                        "Reports"
+                );
 
-        VBox pageHeader = new VBox(3, pageTitle, pageSubtitle);
+        pageTitle.getStyleClass().add(
+                "workspace-page-title"
+        );
 
-        GridPane grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(16);
-        grid.setMaxWidth(Double.MAX_VALUE);
+        Label pageSubtitle =
+                new Label(
+                        "Generate exam reports and analytics."
+                );
 
-        grid.add(createReportCard(
-                "Exam Portfolio Report",
-                "Complete printable portfolio containing exam overview, assigned classes, submissions, student answer sheets, violations, leaderboard, and review summaries.",
-                "Generate Portfolio",
-                true,
-                mode -> {
-                    try {
-                        return examApiService.downloadExamPortfolioReport(
-                                selectedWorkspaceExamId,
-                                mode
-                        );
-                    } catch (Exception ex) {
-                        throw new RuntimeException(ex);
-                    }
-                }
-        ), 0, 0);
+        pageSubtitle.getStyleClass().add(
+                "workspace-page-subtitle"
+        );
 
-        ColumnConstraints c1 = new ColumnConstraints();
-        c1.setPercentWidth(50);
-        ColumnConstraints c2 = new ColumnConstraints();
-        c2.setPercentWidth(50);
-        grid.getColumnConstraints().addAll(c1, c2);
+        VBox pageHeader =
+                new VBox(
+                        3,
+                        pageTitle,
+                        pageSubtitle
+                );
 
-        root.getChildren().addAll(pageHeader, grid);
+        VBox portfolioCard =
+                createReportCard(
+                        "Exam Portfolio",
+                        "Questions, answers, summaries and exam content.",
+                        "Export PDF",
+                        e -> handleExportPortfolio()
+                );
+
+        VBox summaryCard =
+                createReportCard(
+                        "Exam Result Summary",
+                        "Performance analytics, score distribution, question analysis and violations.",
+                        "Export PDF",
+                        e -> handleExportExamResultSummary()
+                );
+
+        HBox reportRow = new HBox(16);
+
+        reportRow.setAlignment(Pos.TOP_LEFT);
+
+        HBox.setHgrow(portfolioCard,Priority.ALWAYS);
+        HBox.setHgrow(summaryCard,Priority.ALWAYS);
+        portfolioCard.setMaxWidth(Double.MAX_VALUE);
+        summaryCard.setMaxWidth(Double.MAX_VALUE);
+        reportRow.getChildren().addAll(portfolioCard,summaryCard);
+        root.getChildren().addAll(pageHeader,reportRow);
 
         ScrollPane scrollPane = new ScrollPane(root);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.getStyleClass().add("workspace-scroll");
-
         workspaceContent.getChildren().setAll(scrollPane);
-    }
-
-    private File generatePortfolioReport() throws Exception {
-
-        if (selectedWorkspaceExamId == null) {
-            throw new RuntimeException("No exam selected.");
-        }
-
-        int assignedClassCount =
-                currentWorkspaceDetail == null ||
-                        currentWorkspaceDetail.getAssignedClasses() == null
-                        ? 0
-                        : currentWorkspaceDetail.getAssignedClasses().size();
-
-        if (assignedClassCount <= 1) {
-            return examApiService.downloadExamPortfolioReport(
-                    selectedWorkspaceExamId,
-                    "MERGE"
-            );
-        }
-
-        final String[] selectedMode = {"MERGE"};
-
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Generate Portfolio Report");
-            alert.setHeaderText("This exam has multiple assigned classes.");
-            alert.setContentText("How do you want to generate the portfolio report?");
-
-            ButtonType mergeButton = new ButtonType("Merge into one PDF");
-            ButtonType separateButton = new ButtonType("Separate by class");
-            ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-            alert.getButtonTypes().setAll(
-                    mergeButton,
-                    separateButton,
-                    cancelButton
-            );
-
-            Optional<ButtonType> result = alert.showAndWait();
-
-            if (result.isEmpty() || result.get() == cancelButton) {
-                selectedMode[0] = null;
-                return;
-            }
-
-            selectedMode[0] =
-                    result.get() == separateButton
-                            ? "SEPARATE"
-                            : "MERGE";
-        });
-
-        // Simpler alternative: avoid prompt here and use MERGE for now.
-        if (selectedMode[0] == null) {
-            throw new RuntimeException("Report generation cancelled.");
-        }
-
-        return examApiService.downloadExamPortfolioReport(
-                selectedWorkspaceExamId,
-                selectedMode[0]
-        );
-    }
-
-    private void downloadPortfolioReport(String mode) {
-
-        try {
-
-            File file =
-                    examApiService.downloadExamPortfolioReport(
-                            selectedWorkspaceExamId,
-                            mode
-                    );
-
-            showSuccess(
-                    "Report saved to:\n" +
-                            file.getAbsolutePath()
-            );
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showError("Unable to generate portfolio report.");
-        }
     }
 
     private VBox createReportCard(
             String title,
             String description,
             String buttonText,
-            boolean askPortfolioMode,
-            java.util.function.Function<String, File> action
+            javafx.event.EventHandler<javafx.event.ActionEvent> action
     ) {
+
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("workspace-section-title");
-
-        Label descriptionLabel = new Label(description);
-        descriptionLabel.setWrapText(true);
-        descriptionLabel.getStyleClass().add("overview-detail-row");
+        Label descLabel = new Label(description);
+        descLabel.setWrapText(true);
+        descLabel.getStyleClass().add("workspace-page-subtitle");
 
         Button button = new Button(buttonText);
         button.getStyleClass().add("workspace-review-button");
+        button.setOnAction(action);
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        button.setOnAction(e -> {
+        VBox card = new VBox(14, titleLabel, descLabel, spacer, button);
 
-            String mode = null;
-
-            if (askPortfolioMode) {
-
-                mode = askPortfolioMode();
-
-                if (mode == null) {
-                    return;
-                }
-            }
-
-            final String finalMode = mode;
-
-            LoadingSpinner.setLoading(
-                    button,
-                    true,
-                    "Generating...",
-                    buttonText
-            );
-
-            Task<File> task = new Task<>() {
-                @Override
-                protected File call() throws Exception {
-                    return action.apply(finalMode);
-                }
-            };
-
-            task.setOnSucceeded(event -> {
-
-                LoadingSpinner.setLoading(
-                        button,
-                        false,
-                        "Generating...",
-                        buttonText
-                );
-
-                File file = task.getValue();
-
-                showSuccess(
-                        "Report saved to:\n" +
-                                file.getAbsolutePath()
-                );
-            });
-
-            task.setOnFailed(event -> {
-
-                LoadingSpinner.setLoading(
-                        button,
-                        false,
-                        "Generating...",
-                        buttonText
-                );
-
-                Throwable ex = task.getException();
-
-                if (ex != null) {
-                    ex.printStackTrace();
-                }
-
-                showError("Unable to generate report.");
-            });
-
-            Thread thread = new Thread(task, "generate-report-thread");
-            thread.setDaemon(true);
-            thread.start();
-        });
-
-        VBox card = new VBox(14, titleLabel, descriptionLabel, button);
-        card.getStyleClass().add("workspace-card");
+        card.setMinHeight(180);
+        card.setPrefWidth(420);
         card.setMaxWidth(Double.MAX_VALUE);
+        card.getStyleClass().add("workspace-card");
 
         return card;
     }
 
-    private void generateReport(String reportType) {
+    private void handleExportPortfolio() {
+
         if (selectedWorkspaceExamId == null) {
             showError("No exam selected.");
             return;
         }
 
-        showSuccess("Report generation for " + reportType + " will be connected to the PDF endpoint.");
+        Task<FacultyExamDetailResponse> task = new Task<>() {
+            @Override
+            protected FacultyExamDetailResponse call() throws Exception {
+                return examApiService.getExamDetail(selectedWorkspaceExamId);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            FacultyExamDetailResponse detail = task.getValue();
+
+            if (detail == null) {
+                showError("Exam not found.");
+                return;
+            }
+
+            List<FacultyClassDTO> classes = detail.getAssignedClasses();
+
+            if (classes == null || classes.isEmpty()) {
+                showError("No assigned classes found.");
+                return;
+            }
+
+            showPortfolioModePicker(classes);
+        });
+
+        task.setOnFailed(event -> showError("Unable to load exam details."));
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void showPortfolioModePicker(List<FacultyClassDTO> classes) {
+
+        ChoiceDialog<String> dialog =
+                new ChoiceDialog<>(
+                        "MERGED",
+                        "MERGED",
+                        "SEPARATE"
+                );
+
+        dialog.setTitle("Export Exam Portfolio");
+        dialog.setHeaderText("Select export mode");
+        dialog.setContentText("Mode:");
+
+        dialog.showAndWait().ifPresent(mode -> {
+
+            if ("MERGED".equalsIgnoreCase(mode)) {
+                exportWorkspaceExamPortfolio("MERGED", null);
+                return;
+            }
+
+            showPortfolioSectionPicker(classes);
+        });
+    }
+    private void showPortfolioSectionPicker(List<FacultyClassDTO> classes) {
+
+        List<String> sectionOptions = classes.stream()
+                .map(this::formatClassOption)
+                .toList();
+
+        ChoiceDialog<String> dialog =
+                new ChoiceDialog<>(
+                        sectionOptions.get(0),
+                        sectionOptions
+                );
+
+        dialog.setTitle("Export Exam Portfolio");
+        dialog.setHeaderText("Choose section");
+        dialog.setContentText("Section:");
+
+        dialog.showAndWait().ifPresent(selectedLabel -> {
+
+            FacultyClassDTO selectedClass =
+                    classes.stream()
+                            .filter(c -> formatClassOption(c).equals(selectedLabel))
+                            .findFirst()
+                            .orElse(null);
+
+            if (selectedClass == null) {
+                showError("Selected class not found.");
+                return;
+            }
+
+            exportWorkspaceExamPortfolio(
+                    "SEPARATE",
+                    selectedClass.getClassOfferingId()
+            );
+        });
+    }
+
+    private void exportWorkspaceExamPortfolio(
+            String mode,
+            String classOfferingId
+    ) {
+
+        try {
+            byte[] bytes =
+                    facultyApiService.exportExamPortfolio(
+                            selectedWorkspaceExamId,
+                            mode,
+                            classOfferingId
+                    );
+
+            boolean saved =
+                    saveBytesToFile(
+                            bytes,
+                            "exam-portfolio.pdf",
+                            "PDF Files",
+                            "*.pdf"
+                    );
+
+            if (!saved) {
+                return;
+            }
+
+            showInfo("Export Successful", "Exam portfolio exported successfully.");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Unable to export exam portfolio.");
+        }
+    }
+
+    private void handleExportExamResultSummary() {
+
+        if (selectedWorkspaceExamId == null) {
+            showError("No exam selected.");
+            return;
+        }
+
+        Task<FacultyExamDetailResponse> task =
+                new Task<>() {
+
+                    @Override
+                    protected FacultyExamDetailResponse call()
+                            throws Exception {
+
+                        return examApiService.getExamDetail(
+                                selectedWorkspaceExamId
+                        );
+                    }
+                };
+
+        task.setOnSucceeded(event -> {
+
+            FacultyExamDetailResponse detail =
+                    task.getValue();
+
+            if (detail == null) {
+                showError("Exam not found.");
+                return;
+            }
+
+            List<FacultyClassDTO> classes =
+                    detail.getAssignedClasses();
+
+            if (classes == null || classes.isEmpty()) {
+                showError("No assigned classes found.");
+                return;
+            }
+
+            System.out.println("RESULT SUMMARY CLASS COUNT = " + classes.size());
+
+            for (FacultyClassDTO c : classes) {
+                System.out.println(
+                        c.getClassOfferingId() + " | " +
+                                c.getCourseCode() + " | " +
+                                c.getProgramCode() + " " +
+                                c.getYearLevel() + "-" + c.getSectionName()
+                );
+            }
+
+            if (classes.size() == 1) {
+
+                exportWorkspaceExamResultSummary(
+                        null
+                );
+
+                return;
+            }
+
+            showSummaryModePicker(classes);
+
+        });
+
+        task.setOnFailed(event -> {
+            showError(
+                    "Unable to load exam details."
+            );
+        });
+
+        Thread thread =
+                new Thread(task);
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void showSummaryModePicker(
+            List<FacultyClassDTO> classes
+    ) {
+
+        ChoiceDialog<String> dialog =
+                new ChoiceDialog<>(
+                        "MERGED",
+                        "MERGED",
+                        "SEPARATE"
+                );
+
+        dialog.setTitle(
+                "Export Exam Result Summary"
+        );
+
+        dialog.setHeaderText(
+                "Select export mode"
+        );
+
+        dialog.setContentText(
+                "Mode:"
+        );
+
+        dialog.showAndWait()
+                .ifPresent(mode -> {
+
+                    if ("MERGED".equals(mode)) {
+
+                        exportWorkspaceExamResultSummary(
+                                null
+                        );
+
+                        return;
+                    }
+
+                    showSectionPicker(classes);
+
+                });
+    }
+
+    private void showSectionPicker(
+            List<FacultyClassDTO> classes
+    ) {
+        List<String> sectionOptions = classes.stream()
+                .map(this::formatClassOption)
+                .toList();
+
+        ChoiceDialog<String> dialog =
+                new ChoiceDialog<>(
+                        sectionOptions.get(0),
+                        sectionOptions
+                );
+
+        dialog.setTitle("Select Class");
+        dialog.setHeaderText("Choose section");
+        dialog.setContentText("Section:");
+
+        dialog.showAndWait()
+                .ifPresent(selectedLabel -> {
+
+                    FacultyClassDTO selectedClass =
+                            classes.stream()
+                                    .filter(c -> formatClassOption(c).equals(selectedLabel))
+                                    .findFirst()
+                                    .orElse(null);
+
+                    if (selectedClass == null) {
+                        showError("Selected class not found.");
+                        return;
+                    }
+
+                    exportWorkspaceExamResultSummary(
+                            selectedClass.getClassOfferingId()
+                    );
+                });
+    }
+
+    private String formatClassOption(FacultyClassDTO item) {
+        if (item == null) {
+            return "Unknown Section";
+        }
+
+        return safe(item.getCourseCode()) +
+                " • " +
+                safe(item.getProgramCode()) +
+                " " +
+                item.getYearLevel() +
+                "-" +
+                safe(item.getSectionName());
+    }
+
+    private void exportWorkspaceExamResultSummary(
+            String classOfferingId
+    ) {
+
+        try {
+
+            byte[] bytes =
+                    facultyApiService
+                            .exportExamResultSummary(
+                                    selectedWorkspaceExamId,
+                                    classOfferingId
+                            );
+
+            boolean saved =
+                    saveBytesToFile(
+                            bytes,
+                            "exam-result-summary.pdf",
+                            "PDF Files",
+                            "*.pdf"
+                    );
+
+            if (!saved) {
+                return;
+            }
+
+            showInfo(
+                    "Export Successful",
+                    "Exam result summary exported."
+            );
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            showError(
+                    "Unable to export report."
+            );
+        }
     }
 
 
@@ -2969,14 +3243,16 @@ public class ExamManagementController implements ShellAwareController {
 
         actionsColumn.setCellFactory(col -> new TableCell<>() {
 
-            private final Button viewBtn = new Button("View");
+            private final Button workspaceBtn = new Button("Workspace");
+            private final Button editBtn = new Button("Edit");
             private final Button publishBtn = new Button("Publish");
             private final Button cancelBtn = new Button("Cancel");
             private final Button restoreBtn = new Button("Restore");
 
             private final HBox actionBox = new HBox(
                     8,
-                    viewBtn,
+                    workspaceBtn,
+                    editBtn,
                     publishBtn,
                     cancelBtn,
                     restoreBtn
@@ -2985,26 +3261,47 @@ public class ExamManagementController implements ShellAwareController {
             {
                 actionBox.setAlignment(Pos.CENTER);
 
-                styleButton(viewBtn, "#302C29", "white");
+                styleButton(workspaceBtn, "#302C29", "white");
+                styleButton(editBtn, "#800000", "white");
                 styleButton(publishBtn, "#15803D", "white");
                 styleButton(cancelBtn, "#B91C1C", "white");
-                styleButton(restoreBtn, "#1D4ED8", "white");
+                styleButton(restoreBtn, "#D4AF37", "white");
 
-                viewBtn.setOnAction(event -> {
+                workspaceBtn.setOnAction(event -> {
                     ExamRow row = getRowData();
                     if (row == null) return;
 
-                    if ("DRAFT".equalsIgnoreCase(row.getStatus())){
-                        openExamWizard(row.getExamId(), true);
-                    }else{
-                        openExamWorkspace(row.getExamId(), row.getTitle(), row.getStatus());
-                    }
+                    openExamWorkspace(
+                            row.getExamId(),
+                            row.getTitle(),
+                            row.getStatus()
+                    );
+                });
 
+                editBtn.setOnAction(event -> {
+                    ExamRow row = getRowData();
+                    if (row == null) return;
+
+                    openExamWizard(row.getExamId(), false);
                 });
 
                 publishBtn.setOnAction(event -> {
                     ExamRow row = getRowData();
                     if (row == null) return;
+
+                    Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                    confirm.setTitle("Publish Exam");
+                    confirm.setHeaderText("Publish this exam?");
+                    confirm.setContentText(
+                            "Students assigned to this exam will be able to see it.\n\n" +
+                                    row.getTitle()
+                    );
+
+                    Optional<ButtonType> result = confirm.showAndWait();
+
+                    if (result.isEmpty() || result.get() != ButtonType.OK) {
+                        return;
+                    }
 
                     try {
                         runExamActionAsync("publish-exam-thread", () -> {
@@ -3016,6 +3313,7 @@ public class ExamManagementController implements ShellAwareController {
                         });
                     } catch (Exception e) {
                         e.printStackTrace();
+                        showError("Unable to publish exam.");
                     }
                 });
 
@@ -3024,11 +3322,15 @@ public class ExamManagementController implements ShellAwareController {
                     if (row == null) return;
 
                     ButtonType yesBtn = new ButtonType("Yes, Cancel");
-                    ButtonType noBtn = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
+                    ButtonType noBtn = new ButtonType(
+                            "No",
+                            ButtonBar.ButtonData.CANCEL_CLOSE
+                    );
 
                     Alert alert = new Alert(
                             Alert.AlertType.CONFIRMATION,
-                            "Are you sure you want to cancel this exam?\n\nExam: " + row.getTitle(),
+                            "Are you sure you want to cancel this exam?\n\nExam: " +
+                                    row.getTitle(),
                             yesBtn,
                             noBtn
                     );
@@ -3038,18 +3340,21 @@ public class ExamManagementController implements ShellAwareController {
 
                     Optional<ButtonType> result = alert.showAndWait();
 
-                    if (result.isPresent() && result.get() == yesBtn) {
-                        try {
-                            runExamActionAsync("cancel-exam-thread", () -> {
-                                try {
-                                    examApiService.cancelExam(row.getExamId());
-                                } catch (Exception e) {
-                                    throw new RuntimeException(e);
-                                }
-                            });
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                    if (result.isEmpty() || result.get() != yesBtn) {
+                        return;
+                    }
+
+                    try {
+                        runExamActionAsync("cancel-exam-thread", () -> {
+                            try {
+                                examApiService.cancelExam(row.getExamId());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        showError("Unable to cancel exam.");
                     }
                 });
 
@@ -3059,23 +3364,29 @@ public class ExamManagementController implements ShellAwareController {
 
                     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
                     confirm.setTitle("Restore Exam");
-                    confirm.setHeaderText("Restore Cancelled Exam");
-                    confirm.setContentText("Restore this exam back to DRAFT?\n\n" + row.getTitle());
+                    confirm.setHeaderText("Restore cancelled exam?");
+                    confirm.setContentText(
+                            "This will restore the exam back to draft.\n\n" +
+                                    row.getTitle()
+                    );
 
                     Optional<ButtonType> result = confirm.showAndWait();
 
-                    if (result.isPresent() && result.get() == ButtonType.OK) {
-                        try {
-                            runExamActionAsync("restore-exam-thread", () -> {
-                                try {
-                                    examApiService.restoreExam(row.getExamId());
-                                } catch (Exception e) {
-                                    throw new RuntimeException(e);
-                                }
-                            });
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                    if (result.isEmpty() || result.get() != ButtonType.OK) {
+                        return;
+                    }
+
+                    try {
+                        runExamActionAsync("restore-exam-thread", () -> {
+                            try {
+                                examApiService.restoreExam(row.getExamId());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        showError("Unable to restore exam.");
                     }
                 });
             }
@@ -3126,7 +3437,8 @@ public class ExamManagementController implements ShellAwareController {
             }
 
             private ExamRow getRowData() {
-                if (getIndex() < 0 || getIndex() >= getTableView().getItems().size()) {
+                if (getIndex() < 0 ||
+                        getIndex() >= getTableView().getItems().size()) {
                     return null;
                 }
 
@@ -3135,17 +3447,38 @@ public class ExamManagementController implements ShellAwareController {
 
             private void updateButtonVisibility(String status) {
 
-                boolean isDraft = "DRAFT".equalsIgnoreCase(status);
-                boolean isScheduled = "SCHEDULED".equalsIgnoreCase(status);
-                boolean isOngoing = "ONGOING".equalsIgnoreCase(status);
-                boolean isCompleted = "COMPLETED".equalsIgnoreCase(status);
-                boolean isCancelled = "CANCELLED".equalsIgnoreCase(status);
+                String normalized = safe(status).toUpperCase();
 
-                setButtonVisible(viewBtn, !isCancelled);
+                boolean isDraft = "DRAFT".equals(normalized);
+                boolean isScheduled = "SCHEDULED".equals(normalized);
+                boolean isAssigned = "ASSIGNED".equals(normalized);
+                boolean isPublished = "PUBLISHED".equals(normalized);
+                boolean isOngoing = "ONGOING".equals(normalized);
+                boolean isExpired = "EXPIRED".equals(normalized);
+                boolean isCompleted = "COMPLETED".equals(normalized);
+                boolean isCancelled = "CANCELLED".equals(normalized);
+
+                setButtonVisible(editBtn, isDraft);
                 setButtonVisible(publishBtn, isDraft);
-                setButtonVisible(cancelBtn, isDraft || isScheduled);
+
+                setButtonVisible(
+                        workspaceBtn,
+                        isScheduled ||
+                                isAssigned ||
+                                isPublished ||
+                                isOngoing ||
+                                isExpired ||
+                                isCompleted
+                );
+
+                setButtonVisible(
+                        cancelBtn,
+                        isScheduled ||
+                                isAssigned ||
+                                isPublished
+                );
+
                 setButtonVisible(restoreBtn, isCancelled);
-                viewBtn.setText(isOngoing || isCompleted ? "View" : "Edit");
             }
 
             private void setButtonVisible(Button button, boolean visible) {
@@ -3215,6 +3548,7 @@ public class ExamManagementController implements ShellAwareController {
             @Override
             protected List<ExamRow> call() throws Exception {
                 List<ExamResponse> responses = examApiService.fetchExams();
+                Platform.runLater(() -> populateFilterDropdowns(responses));
 
                 return responses.stream()
                         .map(ExamManagementController.this::mapToExamRow)
@@ -3224,7 +3558,9 @@ public class ExamManagementController implements ShellAwareController {
 
         currentLoadTask.setOnSucceeded(event -> {
             examRows.setAll(currentLoadTask.getValue());
+            applyFilters();
             updateItemCount();
+            updateShellExamCards();
             setLoading(false);
         });
 
@@ -3242,14 +3578,149 @@ public class ExamManagementController implements ShellAwareController {
         thread.start();
     }
 
+    private void populateFilterDropdowns(List<ExamResponse> exams) {
+
+        List<ExamResponse> sortedExams = exams.stream()
+                .sorted((a, b) -> {
+
+                    int ayCompare = academicYearStart(b.getAcademicYear())
+                            .compareTo(academicYearStart(a.getAcademicYear()));
+
+                    if (ayCompare != 0) {
+                        return ayCompare;
+                    }
+
+                    return Integer.compare(
+                            termRank(a.getTerm()),
+                            termRank(b.getTerm())
+                    );
+                })
+                .toList();
+
+        List<String> terms = sortedExams.stream()
+                .map(exam -> safe(exam.getTerm()) + ", AY " + safe(exam.getAcademicYear()))
+                .filter(value -> !value.equals(", AY "))
+                .distinct()
+                .toList();
+
+        termFilterComboBox.getItems().clear();
+        termFilterComboBox.getItems().add("All Terms");
+        termFilterComboBox.getItems().addAll(terms);
+
+        if (!terms.isEmpty()) {
+            termFilterComboBox.getSelectionModel().select(1);
+        } else {
+            termFilterComboBox.getSelectionModel().selectFirst();
+        }
+
+        applyFilters();
+    }
+
+    private Integer academicYearStart(String academicYear) {
+        if (academicYear == null || academicYear.isBlank()) {
+            return 0;
+        }
+
+        try {
+            return Integer.parseInt(academicYear.substring(0, 4));
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private int termRank(String term) {
+        if (term == null) {
+            return 99;
+        }
+
+        String normalized = term.trim().toUpperCase();
+
+        return switch (normalized) {
+            case "SUMMER", "SUMMER TERM" -> 1;
+
+            case "SECOND SEMESTER",
+                 "2ND SEMESTER",
+                 "SECOND" -> 2;
+
+            case "FIRST SEMESTER",
+                 "1ST SEMESTER",
+                 "FIRST" -> 3;
+
+            case "FOURTH QUARTER",
+                 "4TH QUARTER",
+                 "Q4" -> 1;
+
+            case "THIRD QUARTER",
+                 "3RD QUARTER",
+                 "Q3" -> 2;
+
+            case "SECOND QUARTER",
+                 "2ND QUARTER",
+                 "Q2" -> 3;
+
+            case "FIRST QUARTER",
+                 "1ST QUARTER",
+                 "Q1" -> 4;
+
+            default -> 99;
+        };
+    }
+
+    private void applyFilters() {
+        if (filteredRows == null) {
+            return;
+        }
+
+        String keyword = searchField == null || searchField.getText() == null
+                ? ""
+                : searchField.getText().toLowerCase().trim();
+
+        String selectedTerm = termFilterComboBox == null
+                ? "All Terms"
+                : termFilterComboBox.getValue();
+
+        filteredRows.setPredicate(row -> {
+            boolean matchesSearch =
+                    keyword.isBlank()
+                            || contains(row.getTitle(), keyword)
+                            || contains(row.getStatus(), keyword)
+                            || contains(row.getAssigned(), keyword)
+                            || contains(row.getDuration(), keyword)
+                            || contains(row.getTakers(), keyword)
+                            || contains(row.getDateCreated(), keyword)
+                            || contains(row.getValidity(), keyword)
+                            || contains(row.getCreatedBy(), keyword)
+                            || contains(row.getUpdatedBy(), keyword)
+                            || contains(row.getTerm(), keyword)
+                            || contains(row.getAcademicYear(), keyword);
+
+            boolean matchesTerm;
+
+            if (selectedTerm == null || selectedTerm.equals("All Terms")) {
+                matchesTerm = true;
+            } else {
+                String rowTerm = safe(row.getTerm()) + ", AY " + safe(row.getAcademicYear());
+                matchesTerm = selectedTerm.equalsIgnoreCase(rowTerm);
+            }
+
+
+            return matchesSearch && matchesTerm;
+        });
+
+        updateShellExamCards();
+        updateItemCount();
+    }
+
     private ExamRow mapToExamRow(ExamResponse exam) {
         return new ExamRow(
                 exam.getExamId(),
                 safe(exam.getDateCreated()),
                 safe(exam.getTitle()),
-                computeDisplayStatus(exam),
+                safe(exam.getStatus()),
                 safe(exam.getDuration()),
                 safe(exam.getAssigned()),
+                safe(exam.getTerm()),
+                safe(exam.getAcademicYear()),
                 formatTakers(exam.getTakers()),
                 formatSchedule(exam.getStartDateTime(), exam.getEndDateTime()),
                 safe(exam.getCreatedBy()),
@@ -3257,82 +3728,6 @@ public class ExamManagementController implements ShellAwareController {
         );
     }
 
-    private String computeDisplayStatus(ExamResponse exam) {
-        String status = safe(exam.getStatus());
-
-        if ("CANCELLED".equalsIgnoreCase(status)) {
-            return "CANCELLED";
-        }
-
-        if ("DRAFT".equalsIgnoreCase(status)) {
-            return "DRAFT";
-        }
-
-        if (isFullyTaken(exam.getTakers())) {
-            return "COMPLETED";
-        }
-
-        try {
-            DateTimeFormatter formatter =
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
-            LocalDateTime start =
-                    LocalDateTime.parse(exam.getStartDateTime(), formatter);
-
-            LocalDateTime end =
-                    LocalDateTime.parse(exam.getEndDateTime(), formatter);
-
-            LocalDateTime now = LocalDateTime.now();
-
-            if (now.isBefore(start)) {
-                return "SCHEDULED";
-            }
-
-            if (now.isAfter(end)) {
-                return "EXPIRED";
-            }
-
-            return "ONGOING";
-
-        } catch (Exception e) {
-            return status;
-        }
-    }
-
-    private boolean isFullyTaken(String takers) {
-        if (takers == null || takers.isBlank()) {
-            return false;
-        }
-
-        try {
-            int open = takers.indexOf("(");
-            int close = takers.indexOf(")");
-
-            String ratio = takers;
-
-            if (open >= 0 && close > open) {
-                ratio = takers.substring(open + 1, close);
-            }
-
-            if (!ratio.contains("/")) {
-                return false;
-            }
-
-            String[] parts = ratio.trim().split("/");
-
-            if (parts.length != 2) {
-                return false;
-            }
-
-            int submitted = Integer.parseInt(parts[0].trim());
-            int total = Integer.parseInt(parts[1].trim());
-
-            return total > 0 && submitted == total;
-
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
 
     private String formatTakers(String value) {
         if (value == null || value.isBlank()) {
@@ -3364,6 +3759,204 @@ public class ExamManagementController implements ShellAwareController {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private List<EvidenceFrame> getEvidenceFrames(ExamAttemptViolationDTO violation) {
+
+        List<EvidenceFrame> frames = new ArrayList<>();
+
+        if (violation == null) {
+            return frames;
+        }
+
+        JsonObject metadata = violation.getEvidenceMetadata();
+
+        if (metadata != null
+                && metadata.has("frames")
+                && metadata.get("frames").isJsonArray()) {
+
+            JsonArray frameArray = metadata.getAsJsonArray("frames");
+
+            for (JsonElement element : frameArray) {
+                if (element == null || !element.isJsonObject()) {
+                    continue;
+                }
+
+                JsonObject frameObject = element.getAsJsonObject();
+
+                String url = getJsonString(frameObject, "url");
+                String label = getJsonString(frameObject, "label");
+                Integer offsetMs = getJsonInt(frameObject, "offsetMs");
+
+                if (url != null && !url.isBlank()) {
+                    frames.add(new EvidenceFrame(
+                            url,
+                            label == null || label.isBlank() ? "evidence" : label,
+                            offsetMs
+                    ));
+                }
+            }
+        }
+
+        if (frames.isEmpty()
+                && violation.getEvidenceUrl() != null
+                && !violation.getEvidenceUrl().isBlank()) {
+
+            frames.add(new EvidenceFrame(
+                    violation.getEvidenceUrl(),
+                    "evidence",
+                    0
+            ));
+        }
+
+        return frames;
+    }
+
+    private String getJsonString(JsonObject object, String key) {
+        if (object == null || key == null) {
+            return null;
+        }
+
+        if (!object.has(key) || object.get(key).isJsonNull()) {
+            return null;
+        }
+
+        return object.get(key).getAsString();
+    }
+
+    private Integer getJsonInt(JsonObject object, String key) {
+        if (object == null || key == null) {
+            return null;
+        }
+
+        if (!object.has(key) || object.get(key).isJsonNull()) {
+            return null;
+        }
+
+        try {
+            return object.get(key).getAsInt();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String buildImageUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return "";
+        }
+
+        if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+            return rawUrl;
+        }
+
+        if (rawUrl.startsWith("/")) {
+            return ExamApiService.BASE_URL + rawUrl;
+        }
+
+        return ExamApiService.BASE_URL + "/" + rawUrl;
+    }
+
+    private String formatEvidenceLabel(String label, int index) {
+        if (label == null || label.isBlank()) {
+            return "Frame " + (index + 1);
+        }
+
+        return switch (label.toLowerCase()) {
+            case "before" -> "Before";
+            case "during" -> "During";
+            case "after" -> "After";
+            case "screenshot" -> "Screenshot";
+            default -> formatStatus(label);
+        };
+    }
+
+    private void openEvidenceImagePreview(String imageUrl, String titleText) {
+        Stage stage = new Stage();
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setTitle(titleText == null || titleText.isBlank()
+                ? "Evidence Preview"
+                : titleText
+        );
+
+        ImageView imageView = new ImageView(
+                new Image(imageUrl, true)
+        );
+
+        imageView.setPreserveRatio(true);
+        imageView.setSmooth(true);
+        imageView.setFitWidth(1100);
+        imageView.setFitHeight(760);
+
+        Label hint = new Label("Click anywhere to close");
+        hint.getStyleClass().add("evidence-preview-hint");
+
+        VBox box = new VBox(12, imageView, hint);
+        box.setAlignment(Pos.CENTER);
+
+        StackPane root = new StackPane(box);
+        root.getStyleClass().add("evidence-preview-root");
+        root.setOnMouseClicked(e -> stage.close());
+
+        Scene scene = new Scene(root, 1200, 820);
+        stage.setScene(scene);
+        stage.showAndWait();
+    }
+
+    private boolean isViolationFinalized(ExamAttemptViolationDTO violation) {
+        if (violation == null) {
+            return false;
+        }
+
+        String status = safe(violation.getReviewStatus());
+
+        return "IGNORED".equalsIgnoreCase(status)
+                || "PENALIZED".equalsIgnoreCase(status)
+                || "REVIEWED".equalsIgnoreCase(status)
+                || "UPHELD".equalsIgnoreCase(status);
+    }
+
+    private void updateShellExamCards() {
+        if (shellController == null) {
+            return;
+        }
+
+        long drafts = filteredRows.stream()
+                .filter(row -> "DRAFT".equalsIgnoreCase(safe(row.getStatus())))
+                .count();
+
+        long published = filteredRows.stream()
+                .filter(row ->
+                        "PUBLISHED".equalsIgnoreCase(safe(row.getStatus())) ||
+                                "SCHEDULED".equalsIgnoreCase(safe(row.getStatus())) ||
+                                "ASSIGNED".equalsIgnoreCase(safe(row.getStatus()))
+                )
+                .count();
+
+        long ongoing = filteredRows.stream()
+                .filter(row -> "ONGOING".equalsIgnoreCase(safe(row.getStatus())))
+                .count();
+
+        long cancelled = filteredRows.stream()
+                .filter(row -> "CANCELLED".equalsIgnoreCase(safe(row.getStatus())))
+                .count();
+
+        long expired = filteredRows.stream()
+                .filter(row -> "EXPIRED".equalsIgnoreCase(safe(row.getStatus())))
+                .count();
+
+        long completed = filteredRows.stream()
+                .filter(row ->"COMPLETED".equalsIgnoreCase(safe(row.getStatus())))
+                .count();
+
+        shellController.setHeroCards(
+                new DashboardShellController.HeroCardData("Drafts", String.valueOf(drafts)),
+                new DashboardShellController.HeroCardData("Scheduled", String.valueOf(published)),
+                new DashboardShellController.HeroCardData("Ongoing", String.valueOf(ongoing)),
+                new DashboardShellController.HeroCardData("Cancelled", String.valueOf(cancelled)),
+                new DashboardShellController.HeroCardData("Expired", String.valueOf(expired)),
+                new DashboardShellController.HeroCardData("Completed", String.valueOf(completed))
+
+        );
     }
 
     private void setLoading(boolean loading) {
@@ -3469,6 +4062,7 @@ public class ExamManagementController implements ShellAwareController {
     @Override
     public void setShellController(DashboardShellController shellController) {
         this.shellController = shellController;
+        updateShellExamCards();
     }
 
     private void showSuccess(String message) {
@@ -3512,10 +4106,7 @@ public class ExamManagementController implements ShellAwareController {
 
         boolean showProctor = "ONGOING".equalsIgnoreCase(safe(examStatus));
 
-        proctorTabButton.setVisible(showProctor);
-        proctorTabButton.setManaged(showProctor);
-
-        if (!showProctor && proctorTabButton.getStyleClass().contains("workspace-tab-active")) {
+        if (!showProctor) {
             showWorkspaceOverview();
         }
     }
@@ -3956,8 +4547,6 @@ public class ExamManagementController implements ShellAwareController {
         }
     }
 
-
-
     private void runExamActionAsync(String loadingText, Runnable action) {
         setLoading(true);
 
@@ -4001,7 +4590,6 @@ public class ExamManagementController implements ShellAwareController {
         List<Button> buttons = List.of(
                 overviewTabButton,
                 studentsTabButton,
-                proctorTabButton,
                 activityLogTabButton,
                 leaderboardTabButton,
                 reportsTabButton
@@ -4069,6 +4657,74 @@ public class ExamManagementController implements ShellAwareController {
                 || Boolean.TRUE.equals(answer.getNeedsChecking());
     }
 
+    private void showInfo(
+            String title,
+            String message
+    ) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private boolean saveBytesToFile(
+            byte[] bytes,
+            String fileName,
+            String description,
+            String extension
+    ) {
+
+        try {
+
+            FileChooser chooser =
+                    new FileChooser();
+
+            chooser.setTitle(
+                    "Save Report"
+            );
+
+            chooser.setInitialFileName(
+                    fileName
+            );
+
+            chooser.getExtensionFilters()
+                    .add(
+                            new FileChooser.ExtensionFilter(
+                                    description,
+                                    extension
+                            )
+                    );
+
+            File file =
+                    chooser.showSaveDialog(
+                            workspaceContent
+                                    .getScene()
+                                    .getWindow()
+                    );
+
+            if (file == null) {
+                return false;
+            }
+
+            Files.write(
+                    file.toPath(),
+                    bytes
+            );
+
+            Desktop.getDesktop()
+                    .open(file);
+
+            return true;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return false;
+        }
+    }
+
     private String formatPercent(Double value) {
         if (value == null) {
             return "0%";
@@ -4111,6 +4767,22 @@ public class ExamManagementController implements ShellAwareController {
         }
 
         return result.get() == separateButton ? "SEPARATE" : "MERGE";
+    }
+
+    private String formatTimelineAction(String actionType) {
+        if (actionType == null || actionType.isBlank()) {
+            return "Review Update";
+        }
+
+        return switch (actionType.toUpperCase()) {
+            case "VIOLATION_PENALIZED" -> "Violation Penalized";
+            case "VIOLATION_IGNORED" -> "Violation Ignored";
+            case "VIOLATION_REVISED" -> "Violation Revised";
+            case "SCORE_UPDATED" -> "Score Updated";
+            case "ESSAY_REVIEWED" -> "Essay Reviewed";
+            case "ATTEMPT_MARKED_REVIEWED" -> "Attempt Marked Reviewed";
+            default -> formatStatus(actionType);
+        };
     }
 
 }

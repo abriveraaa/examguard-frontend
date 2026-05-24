@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.examguard.controller.faculty.FacultyReportsController"
+            stylesheets="@../../styles/faculty-reports.css"
+            styleClass="reports-root">
+
+    <top>
+        <HBox spacing="14" alignment="CENTER_LEFT" styleClass="reports-header">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Reports" styleClass="reports-title"/>
+                <Label text="View analytics and generate exportable academic reports."
+                       styleClass="reports-subtitle"/>
+            </VBox>
+
+            <ComboBox fx:id="academicPeriodCombo" promptText="Academic Period" styleClass="reports-header-combo"/>
+            <ComboBox fx:id="courseCombo" promptText="Course" styleClass="reports-header-combo"/>
+            <ComboBox fx:id="sectionCombo" promptText="Section" styleClass="reports-header-combo"/>
+
+            <Button text="Refresh" onAction="#handleRefresh" styleClass="primary-button"/>
+        </HBox>
+    </top>
+
+    <center>
+        <StackPane>
+
+            <VBox fx:id="reportsContent"
+                  spacing="18"
+                  styleClass="reports-content">
+
+                <VBox spacing="18" styleClass="reports-content">
+
+                    <HBox spacing="16"
+                          alignment="CENTER_LEFT">
+
+                        <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <Label text="Average Score"
+                                   styleClass="summary-label"/>
+                            <Label fx:id="averageScoreLabel"
+                                   text="87.5%"
+                                   styleClass="summary-value"/>
+                        </VBox>
+
+                        <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <Label text="Submission Rate"
+                                   styleClass="summary-label"/>
+                            <Label fx:id="submissionRateLabel"
+                                   text="91%"
+                                   styleClass="summary-value"/>
+                        </VBox>
+
+                        <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <Label text="Total Violations"
+                                   styleClass="summary-label"/>
+                            <Label fx:id="totalViolationsLabel"
+                                   text="44"
+                                   styleClass="summary-value"/>
+                        </VBox>
+
+                        <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <Label text="Pending Review"
+                                   styleClass="summary-label"/>
+                            <Label fx:id="pendingReviewLabel"
+                                   text="18"
+                                   styleClass="summary-value"/>
+                        </VBox>
+
+                        <VBox styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <Label text="Penalized"
+                                   styleClass="summary-label"/>
+                            <Label fx:id="penalizedLabel"
+                                   text="9"
+                                   styleClass="summary-value"/>
+                        </VBox>
+
+                    </HBox>
+
+                    <HBox spacing="18" VBox.vgrow="ALWAYS">
+
+                        <VBox spacing="18" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+
+                            <VBox spacing="8" styleClass="chart-card" VBox.vgrow="ALWAYS" >
+                                <Label text="Exam Participation and Average Score" styleClass="section-title"/>
+                                <Label text="Bars show total takers. Line shows average score."
+                                       styleClass="chart-subtitle"/>
+
+                                <StackPane styleClass="combo-chart-stack" VBox.vgrow="ALWAYS">
+
+                                    <BarChart fx:id="takersCountBarChart"
+                                              legendVisible="false"
+                                              animated="false"
+                                              categoryGap="22"
+                                              barGap="4">
+
+                                        <xAxis>
+                                            <CategoryAxis/>
+                                        </xAxis>
+
+                                        <yAxis>
+                                            <NumberAxis lowerBound="0" upperBound="60" tickUnit="10"/>
+                                        </yAxis>
+                                    </BarChart>
+
+                                    <LineChart fx:id="averageScoreLineChart"
+                                               styleClass="average-score-line-chart"
+                                               legendVisible="false"
+                                               animated="false"
+                                               createSymbols="true"
+                                               alternativeColumnFillVisible="false"
+                                               alternativeRowFillVisible="false"
+                                               horizontalGridLinesVisible="false"
+                                               verticalGridLinesVisible="false">
+
+                                        <xAxis>
+                                            <CategoryAxis opacity="0"/>
+                                        </xAxis>
+
+                                        <yAxis>
+                                            <NumberAxis lowerBound="0" upperBound="100" tickUnit="10" opacity="0"/>
+                                        </yAxis>
+                                    </LineChart>
+
+                                </StackPane>
+
+                                <HBox spacing="18" alignment="CENTER" styleClass="manual-chart-legend">
+                                    <HBox spacing="6" alignment="CENTER">
+                                        <Region styleClass="legend-bar"/>
+                                        <Label text="Total Takers"/>
+                                    </HBox>
+
+                                    <HBox spacing="6" alignment="CENTER">
+                                        <Region styleClass="legend-line"/>
+                                        <Label text="Average Score"/>
+                                    </HBox>
+                                </HBox>
+                            </VBox>
+
+                            <VBox spacing="10" styleClass="chart-card" VBox.vgrow="ALWAYS">
+
+                                <HBox spacing="10" alignment="CENTER_LEFT">
+                                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                        <Label text="Violation Breakdown" styleClass="section-title"/>
+                                        <Label text="Flagged incidents grouped by violation type."
+                                               styleClass="chart-subtitle"/>
+                                    </VBox>
+
+                                    <ComboBox fx:id="violationExamCombo"
+                                              promptText="Select Exam"
+                                              styleClass="chart-card-combo"/>
+                                </HBox>
+
+                                <BarChart fx:id="violationTypeBarChart"
+                                          legendVisible="false"
+                                          animated="false"
+                                          VBox.vgrow="ALWAYS"
+                                          styleClass="violation-horizontal-chart">
+
+                                    <xAxis>
+                                        <NumberAxis lowerBound="0" tickUnit="5"/>
+                                    </xAxis>
+
+                                    <yAxis>
+                                        <CategoryAxis/>
+                                    </yAxis>
+
+                                </BarChart>
+
+                            </VBox>
+
+                        </VBox>
+
+                        <VBox spacing="18" styleClass="reports-side-panel" alignment="TOP_CENTER" VBox.vgrow="ALWAYS">
+
+                            <VBox spacing="10" alignment="TOP_CENTER" styleClass="chart-card">
+
+                                <HBox spacing="10" alignment="CENTER_LEFT">
+                                    <Label text="Submission Status"
+                                           styleClass="section-title"
+                                           HBox.hgrow="ALWAYS"/>
+
+                                    <Region VBox.vgrow="ALWAYS"/>
+
+                                    <ComboBox fx:id="submissionExamCombo"
+                                              promptText="Select Exam"
+                                              styleClass="chart-card-combo"/>
+                                </HBox>
+
+                                <PieChart fx:id="submissionPieChart" prefHeight="280" prefWidth="340" legendVisible="false"/>
+
+                            </VBox>
+
+                            <VBox spacing="12" styleClass="available-card" VBox.vgrow="ALWAYS">
+                                <Label text="Available Reports" styleClass="section-title"/>
+
+                                <VBox spacing="10">
+
+                                    <HBox spacing="10" alignment="CENTER_LEFT" styleClass="report-row">
+                                        <Label text="Student Roster" styleClass="report-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <HBox spacing="6" alignment="CENTER_RIGHT">
+                                            <Button text="View" onAction="#handleViewClassRoster" styleClass="report-view-button"/>
+                                            <Button text="Export" onAction="#handleExportClassRoster" styleClass="report-export-button"/>
+                                        </HBox>
+                                    </HBox>
+
+                                    <HBox spacing="10" alignment="CENTER_LEFT" styleClass="report-row">
+                                        <Label text="Class Record" styleClass="report-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <HBox spacing="6" alignment="CENTER_RIGHT">
+                                            <Button text="View" onAction="#handleViewGradebook" styleClass="report-view-button"/>
+                                            <Button text="Export" onAction="#handleExportGradebook" styleClass="report-export-button"/>
+                                        </HBox>
+                                    </HBox>
+
+                                    <HBox spacing="10" alignment="CENTER_LEFT" styleClass="report-row">
+                                        <Label text="Exam Portfolio" styleClass="report-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <HBox spacing="6" alignment="CENTER_RIGHT">
+                                            <Button text="View" onAction="#handleViewExamPortfolio" styleClass="report-view-button"/>
+                                            <Button text="Export" onAction="#handleExportExamPortfolio" styleClass="report-export-button"/>
+                                        </HBox>
+                                    </HBox>
+
+                                    <HBox spacing="10" alignment="CENTER_LEFT" styleClass="report-row">
+                                        <Label text="Violation Report" styleClass="report-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <HBox spacing="6" alignment="CENTER_RIGHT">
+                                            <Button text="View" onAction="#handleViewViolationReport" styleClass="report-view-button"/>
+                                            <Button text="Export" onAction="#handleExportViolationReport" styleClass="report-export-button"/>
+                                        </HBox>
+                                    </HBox>
+
+                                    <HBox spacing="10" alignment="CENTER_LEFT" styleClass="report-row">
+                                        <Label text="Exam Results Summary" styleClass="report-title"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <HBox spacing="6" alignment="CENTER_RIGHT">
+                                            <Button text="View" onAction="#handleViewExamResultsSummary" styleClass="report-view-button"/>
+                                            <Button text="Export" onAction="#handleExportExamResultsSummary" styleClass="report-export-button"/>
+                                        </HBox>
+                                    </HBox>
+
+                                </VBox>
+                            </VBox>
+
+                        </VBox>
+                    </HBox>
+
+                </VBox>
+
+            </VBox>
+
+            <StackPane fx:id="loadingOverlay"
+                       visible="false"
+                       managed="false"
+                       styleClass="loading-overlay">
+
+                <VBox spacing="12"
+                      alignment="CENTER"
+                      styleClass="loading-box">
+
+                    <ProgressIndicator prefWidth="42"
+                                       prefHeight="42"/>
+
+                    <Label text="Loading reports..."
+                           styleClass="loading-label"/>
+
+                </VBox>
+
+            </StackPane>
+
+        </StackPane>
+    </center>
+</BorderPane>
