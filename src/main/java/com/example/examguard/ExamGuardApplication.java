@@ -1,5 +1,6 @@
 package com.example.examguard;
 
+import com.example.examguard.ai.MediaPipeFaceRuntime;
 import com.example.examguard.utility.SceneManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -13,6 +14,7 @@ public class ExamGuardApplication extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+        MediaPipeFaceRuntime.startIfNeeded();
 
         SceneManager.setStage(stage);
         FXMLLoader loader = new FXMLLoader(
