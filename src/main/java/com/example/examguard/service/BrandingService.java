@@ -1,6 +1,8 @@
 package com.example.examguard.service;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.core.response.BrandingResponse;
+import com.example.examguard.model.profile.ProfileResponseDTO;
 import com.example.examguard.utility.OffsetDateTimeAdapter;
 import com.example.examguard.utility.Session;
 import com.google.gson.Gson;
@@ -13,7 +15,6 @@ import java.time.OffsetDateTime;
 
 
 public class BrandingService {
-    public static final String BASE_URL = "http://localhost:8080";
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
@@ -24,7 +25,7 @@ public class BrandingService {
             String method
     ) throws Exception {
 
-        URL url = new URL(BASE_URL + endpoint);
+        URL url = new URL(AppConfig.BASE_URL + endpoint);
 
         HttpURLConnection connection =
                 (HttpURLConnection) url.openConnection();
@@ -49,7 +50,7 @@ public class BrandingService {
 
     public BrandingResponse getBranding() throws Exception {
         HttpURLConnection conn = (HttpURLConnection)
-                new URL(BASE_URL + "/public/branding").openConnection();
+                new URL(AppConfig.BASE_URL + "/public/branding").openConnection();
 
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Accept", "application/json");

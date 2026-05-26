@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane stylesheets="@../../styles/profile-view.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.examguard.controller.profile.ProfileController">
+
+    <center>
+        <VBox spacing="14" styleClass="profile-page">
+
+            <padding>
+                <Insets bottom="28" left="30" right="30" top="24" />
+            </padding>
+
+            <VBox spacing="16" styleClass="profile-card">
+
+                <!-- LinkedIn-style top profile block -->
+                <HBox alignment="CENTER_LEFT" spacing="20" styleClass="profile-top-section">
+
+                    <StackPane styleClass="profile-photo-container">
+
+                        <ImageView fx:id="profileImageView" fitHeight="112" fitWidth="112" styleClass="profile-photo-image" />
+
+                        <Button
+                                fx:id="uploadPhotoButton"
+                                onAction="#handleUploadPhoto"
+                                styleClass="profile-upload-button">
+
+                            <graphic>
+                                <ImageView fitWidth="16"
+                                           fitHeight="16"
+                                           preserveRatio="true">
+
+                                    <Image url="@/icons/upload.png"/>
+                                </ImageView>
+                            </graphic>
+
+                        </Button>
+                    </StackPane>
+
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label fx:id="fullNameLabel" styleClass="profile-name" />
+
+                            <Label fx:id="roleBadgeLabel" styleClass="profile-role-badge" />
+
+                            <Label fx:id="statusBadgeLabel" styleClass="profile-status-badge" />
+                        </HBox>
+
+                        <Label fx:id="schoolEmailLabel" styleClass="profile-data" />
+
+                        <Label fx:id="schoolIdLabel" styleClass="profile-data" />
+
+                        <Label fx:id="collegeOrOfficeLabel" styleClass="profile-data"/>
+
+                        <Label fx:id="programOrPositionLabel" styleClass="profile-data" />
+
+                    </VBox>
+
+                    <Button fx:id="refreshButton" onAction="#handleRefresh" styleClass="profile-refresh-button" text="Refresh" />
+
+                </HBox>
+
+                <Separator />
+
+                <!-- Compact info cards -->
+                <HBox spacing="14">
+
+                    <VBox spacing="10" styleClass="profile-mini-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="profile-section-title" text="Security" />
+
+                        <Label styleClass="profile-field-label" text="Username" />
+                        <Label fx:id="usernameLabel" styleClass="profile-field-value" />
+
+                        <Label styleClass="profile-field-label" text="Password" />
+                        <Label fx:id="passwordStatusLabel" styleClass="profile-field-value"/>
+
+                        <Label styleClass="profile-field-label" text="Last Changed" />
+                        <Label fx:id="passwordLastChangedLabel" styleClass="profile-field-value"/>
+
+                        <Button onAction="#handleChangePassword" styleClass="profile-secondary-button" text="Change Password" />
+                    </VBox>
+
+                    <VBox spacing="10" styleClass="profile-mini-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="profile-section-title" text="Tenure" />
+
+                        <Label styleClass="profile-field-label" text="Member Since" />
+                        <Label fx:id="tenureStartLabel" styleClass="profile-field-value"/>
+
+                        <Label styleClass="profile-field-label" text="Duration" />
+                        <Label fx:id="tenureDurationLabel" styleClass="profile-field-value"/>
+
+                        <Label styleClass="profile-field-label" text="Account Status" />
+                        <Label fx:id="accountStatusLabel" styleClass="profile-field-value" />
+                    </VBox>
+
+                </HBox>
+
+                <Separator />
+
+                <HBox spacing="14">
+
+                    <VBox spacing="10"
+                          styleClass="profile-bottom-card"
+                          HBox.hgrow="ALWAYS">
+
+                        <HBox alignment="CENTER_LEFT">
+                            <Label fx:id="classesSectionTitleLabel"
+                                   styleClass="profile-section-title"
+                                   text="Enrolled Classes"/>
+
+                            <Region HBox.hgrow="ALWAYS"/>
+                        </HBox>
+
+                        <ScrollPane fitToWidth="true"
+                                    hbarPolicy="NEVER"
+                                    vbarPolicy="AS_NEEDED"
+                                    prefHeight="220"
+                                    styleClass="profile-list-scroll">
+
+                            <content>
+                                <VBox fx:id="classesList"
+                                      spacing="8"
+                                      styleClass="profile-compact-list"/>
+                            </content>
+
+                        </ScrollPane>
+
+                    </VBox>
+
+                    <VBox spacing="10" styleClass="profile-bottom-card" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label styleClass="profile-section-title" text="Recent Activity" />
+                            <Region HBox.hgrow="ALWAYS" />
+                        </HBox>
+
+                        <VBox fx:id="recentActivityList" spacing="8" styleClass="profile-compact-list" />
+                    </VBox>
+
+                </HBox>
+
+            </VBox>
+
+        </VBox>
+    </center>
+
+</BorderPane>

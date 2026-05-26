@@ -72,7 +72,7 @@
 
             <Region VBox.vgrow="ALWAYS" />
 
-            <Label styleClass="student-profile-link" text="My Profile →" />
+            <Label onMouseClicked="#handleProfile" styleClass="student-profile-link" text="My Profile →" />
 
         </VBox>
 

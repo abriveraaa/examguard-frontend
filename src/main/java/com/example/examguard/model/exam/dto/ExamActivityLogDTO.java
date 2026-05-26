@@ -12,6 +12,8 @@ public class ExamActivityLogDTO {
     private Integer questionNumber;
     private String studentId;
     private String studentName;
+    private String actorId;
+    private String actorName;
     private String module;
     private String action;
     private String severity;
@@ -28,6 +30,8 @@ public class ExamActivityLogDTO {
     public Integer getQuestionNumber() { return questionNumber; }
     public String getStudentId() { return studentId; }
     public String getStudentName() { return studentName; }
+    public String getActorId() { return actorId; }
+    public String getActorName() { return actorName; }
     public String getModule() { return module; }
     public String getAction() { return action; }
     public String getSeverity() { return severity; }

@@ -1,5 +1,6 @@
 package com.example.examguard.service;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.ai.AiAssetDto;
 import com.example.examguard.model.ai.AiAssetManifestDto;
 import com.google.gson.Gson;
@@ -15,7 +16,7 @@ import java.util.Optional;
 
 public class AiAssetSyncService {
 
-    private static final String BASE_URL = ExamApiService.BASE_URL;
+    private static final String BASE_URL = AppConfig.BASE_URL;
 
     private static final Path AI_ROOT = Paths.get(
             System.getProperty("user.home"),

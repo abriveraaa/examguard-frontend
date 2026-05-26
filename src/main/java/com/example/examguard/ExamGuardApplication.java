@@ -21,7 +21,7 @@ public class ExamGuardApplication extends Application {
 
         Scene scene = new Scene(loader.load());
 
-        stage.setTitle("ExamGuard Login");
+        stage.setTitle("ExamGuard");
         stage.setScene(scene);
         stage.centerOnScreen();
         stage.show();

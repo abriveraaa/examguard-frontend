@@ -105,8 +105,22 @@ public class StudentDashboardController implements ShellAwareController {
     }
 
     @FXML
-    private void handleReloadProfile() {
-        reloadDashboardPart("profile");
+    private void handleProfile() {
+
+        if (shellController == null) {
+            return;
+        }
+
+        shellController.setGreeting(
+                "Profile Settings",
+                "Manage your account details and password."
+        );
+
+        shellController.hideHeroCards();
+
+        shellController.loadContent(
+                "/fxml/common/profile-view.fxml"
+        );
     }
 
     @FXML

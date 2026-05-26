@@ -1,0 +1,286 @@
+.profile-root {
+    -fx-background-color: #f6f4f1;
+}
+
+.profile-page {
+    -fx-background-color: #f6f4f1;
+}
+
+/* MAIN CARD */
+
+.profile-card {
+    -fx-background-color: white;
+    -fx-background-radius: 22;
+    -fx-padding: 22;
+    -fx-effect: dropshadow(gaussian, rgba(48, 44, 41, 0.10), 18, 0.18, 0, 6);
+}
+
+/* TOP PROFILE SECTION */
+
+.profile-top-section {
+    -fx-padding: 2 0 4 0;
+}
+
+.profile-photo {
+    -fx-min-width: 112;
+    -fx-min-height: 112;
+    -fx-pref-width: 112;
+    -fx-pref-height: 112;
+    -fx-max-width: 112;
+    -fx-max-height: 112;
+    -fx-background-radius: 18;
+    -fx-background-color: linear-gradient(to bottom right, #800000, #b8860b);
+}
+
+.profile-photo-text {
+    -fx-font-size: 34px;
+    -fx-font-weight: 900;
+    -fx-text-fill: white;
+}
+
+.profile-name {
+    -fx-font-size: 24px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #302c29;
+}
+
+.profile-data {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6f6761;
+}
+
+.profile-role-badge {
+    -fx-background-color: #f3e4c2;
+    -fx-text-fill: #7a4e00;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+    -fx-padding: 5 10;
+    -fx-background-radius: 999;
+}
+
+.profile-status-badge {
+    -fx-background-color: #e7f5ec;
+    -fx-text-fill: #1f7a42;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+    -fx-padding: 5 10;
+    -fx-background-radius: 999;
+}
+
+.profile-meta-pill {
+    -fx-background-color: #f6f1ea;
+    -fx-text-fill: #4b4038;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 5 10;
+    -fx-background-radius: 999;
+}
+
+/* MINI CARDS */
+
+.profile-mini-card {
+    -fx-background-color: #faf9f7;
+    -fx-background-radius: 16;
+    -fx-border-color: #ece6df;
+    -fx-border-radius: 16;
+    -fx-padding: 14 16;
+    -fx-min-height: 190;
+}
+
+.profile-section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #302c29;
+}
+
+.profile-field-label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #8a817a;
+}
+
+.profile-field-value {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #302c29;
+}
+
+/* ACTIVITY */
+
+.profile-activity-card {
+    -fx-background-color: #faf9f7;
+    -fx-background-radius: 16;
+    -fx-border-color: #ece6df;
+    -fx-border-radius: 16;
+    -fx-padding: 14 16;
+}
+
+.profile-activity-list {
+    -fx-background-color: transparent;
+}
+
+.profile-activity-item {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #eee8e2;
+    -fx-border-radius: 12;
+    -fx-padding: 10 12;
+}
+
+.profile-activity-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #302c29;
+}
+
+.profile-activity-time {
+    -fx-font-size: 11px;
+    -fx-text-fill: #8a817a;
+}
+
+/* BUTTONS */
+
+.profile-refresh-button {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-background-radius: 999;
+    -fx-padding: 8 18;
+    -fx-cursor: hand;
+}
+
+.profile-refresh-button:hover {
+    -fx-background-color: #6f0000;
+}
+
+.profile-secondary-button {
+    -fx-background-color: #302c29;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-background-radius: 999;
+    -fx-padding: 8 14;
+    -fx-cursor: hand;
+}
+
+.profile-secondary-button:hover {
+    -fx-background-color: #1f1c1a;
+}
+
+.profile-link-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #800000;
+    -fx-font-size: 12px;
+    -fx-font-weight: 900;
+    -fx-cursor: hand;
+    -fx-padding: 4 8;
+}
+
+.profile-link-button:hover {
+    -fx-underline: true;
+}
+
+/* SEPARATOR */
+
+.separator .line {
+    -fx-border-color: #eee8e2;
+    -fx-border-width: 1 0 0 0;
+}
+
+.profile-photo-container {
+    -fx-min-width: 112;
+    -fx-min-height: 112;
+    -fx-pref-width: 112;
+    -fx-pref-height: 112;
+}
+
+.profile-photo-image {
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+}
+
+.profile-upload-button {
+    -fx-background-color: rgba(48,44,41,.85);
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-background-radius: 999;
+
+    -fx-pref-width: 30;
+    -fx-pref-height: 30;
+
+    -fx-translate-x: 38;
+    -fx-translate-y: 38;
+
+    -fx-cursor: hand;
+}
+
+.profile-upload-button:hover {
+    -fx-background-color: #800000;
+}
+
+.profile-bottom-card {
+    -fx-background-color: #faf9f7;
+    -fx-background-radius: 16;
+    -fx-border-color: #ece6df;
+    -fx-border-radius: 16;
+    -fx-padding: 14 16;
+    -fx-min-height: 180;
+}
+
+.profile-compact-list {
+    -fx-background-color: transparent;
+}
+
+.profile-list-item {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #eee8e2;
+    -fx-border-radius: 12;
+    -fx-padding: 9 11;
+}
+
+.profile-list-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #302c29;
+}
+
+.profile-list-subtitle {
+    -fx-font-size: 11px;
+    -fx-text-fill: #7a716b;
+}
+
+.profile-meta-pill-academic {
+    -fx-background-color: #edf4ff;
+    -fx-text-fill: #2856a3;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 5 10;
+    -fx-background-radius: 999;
+}
+
+.profile-meta-pill-term {
+    -fx-background-color: #f3e4c2;
+    -fx-text-fill: #7a4e00;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 5 10;
+    -fx-background-radius: 999;
+}
+
+.profile-list-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-fit-to-width: true;
+}
+
+.profile-list-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.profile-list-scroll .scroll-bar:vertical {
+    -fx-pref-width: 8;
+}

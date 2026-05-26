@@ -1,8 +1,8 @@
 package com.example.examguard.model.faculty.dto.reports;
 
-public record ViolationTypeDTO(
+public record ExamSubmissionBreakdownDTO(
         Long examId,
         String examTitle,
-        String violationType,
+        String status,
         Long count
 ) {}

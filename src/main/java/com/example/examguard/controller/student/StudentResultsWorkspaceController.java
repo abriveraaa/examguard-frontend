@@ -1,5 +1,6 @@
 package com.example.examguard.controller.student;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
 import com.example.examguard.model.student.StudentExamResultResponse;
@@ -686,7 +687,7 @@ public class StudentResultsWorkspaceController implements ShellAwareController {
             return path;
         }
 
-        String baseUrl = "http://localhost:8080";
+        String baseUrl = AppConfig.BASE_URL;
 
         if (path.startsWith("/")) {
             return baseUrl + path;

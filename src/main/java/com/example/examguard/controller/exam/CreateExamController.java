@@ -1,5 +1,6 @@
 package com.example.examguard.controller.exam;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
 import com.example.examguard.model.core.ClassOffering;
@@ -1940,7 +1941,7 @@ public class CreateExamController implements ShellAwareController {
 
             if (path.startsWith("/uploads/")) {
 
-                String fullUrl = ExamApiService.BASE_URL + path;
+                String fullUrl = AppConfig.BASE_URL + path;
                 preview.setImage(new Image(fullUrl, true));
 
             } else {

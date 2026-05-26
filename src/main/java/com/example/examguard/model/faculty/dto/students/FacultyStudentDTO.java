@@ -15,5 +15,6 @@ public record FacultyStudentDTO(
 
         String courseCode,
         String courseDescription,
-        String classOfferingId
+        String classOfferingId,
+        String profileImageUrl
 ) {}

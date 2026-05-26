@@ -1,5 +1,6 @@
 package com.example.examguard.service;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.student.StudentDashboardResponse;
 import com.example.examguard.utility.Session;
 import com.google.gson.Gson;
@@ -12,7 +13,6 @@ import java.time.Duration;
 
 public class StudentDashboardApiService {
 
-    private static final String BASE_URL = "http://localhost:8080";
 
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
@@ -21,11 +21,9 @@ public class StudentDashboardApiService {
 
     public StudentDashboardResponse fetchDashboard() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/student/dashboard"))
+                .uri(URI.create(AppConfig.BASE_URL + "/student/dashboard"))
                 .timeout(Duration.ofSeconds(8))
                 .header("Content-Type", "application/json")
-                .header("X-User-Id", Session.getSchoolId())
-                .header("X-Role", Session.getRole())
                 .header("Authorization", "Bearer " + Session.getSessionToken())
                 .GET()
                 .build();

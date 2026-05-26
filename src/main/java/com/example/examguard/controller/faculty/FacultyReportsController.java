@@ -6,14 +6,15 @@ import com.example.examguard.service.FacultyApiService;
 import com.example.examguard.model.faculty.dto.students.FacultyStudentDTO;
 
 import javafx.collections.ObservableList;
-import java.util.ArrayList;
-import java.util.Objects;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Pos;
@@ -23,15 +24,12 @@ import javafx.stage.FileChooser;
 import java.io.File;
 import java.nio.file.Files;
 
-import java.util.List;
-
 public class FacultyReportsController {
 
     @FXML private ComboBox<String> academicPeriodCombo;
     @FXML private ComboBox<CourseOption> courseCombo;
     @FXML private ComboBox<SectionOption> sectionCombo;
     @FXML private ComboBox<String> submissionExamCombo;
-    @FXML private ComboBox<String> violationExamCombo;
 
     @FXML private Label averageScoreLabel;
     @FXML private Label totalViolationsLabel;
@@ -44,8 +42,11 @@ public class FacultyReportsController {
 
     @FXML private PieChart submissionPieChart;
     @FXML private BarChart<String, Number> takersCountBarChart;
-    @FXML private BarChart<Number, String> violationTypeBarChart;
     @FXML private LineChart<String, Number> averageScoreLineChart;
+    @FXML private StackedBarChart<String, Number> violationStackedChart;
+    @FXML private StackedBarChart<String, Number> submissionStackedChart;
+
+    private List<ExamParticipationDTO> latestParticipation = List.of();
 
     private final ObservableList<StudentRow> allPeriodStudents = FXCollections.observableArrayList();
     private final FacultyApiService facultyApiService = new FacultyApiService();
@@ -55,7 +56,6 @@ public class FacultyReportsController {
     @FXML
     public void initialize() {
         loadFilters();
-        reloadReportsAsync();
     }
 
     @FXML
@@ -64,21 +64,55 @@ public class FacultyReportsController {
     }
 
     @FXML
-    private void handleViewGradebook() {
-        showGradebookExamPicker(false);
-    }
-
-    @FXML
     private void handleExportGradebook() {
-        showGradebookExamPicker(true);
+        exportClassRecordPdf();
     }
 
-    @FXML
-    private void handleViewClassRoster() {
-        showAlert(
-                "Class Roster Preview",
-                "Preview class roster will be added here. For now, use Export."
-        );
+    private void exportClassRecordPdf() {
+        try {
+            SectionOption section = sectionCombo.getValue();
+
+            if (section == null || section.all()) {
+                showAlert(
+                        "Export Class Record",
+                        "Please select a specific section first."
+                );
+                return;
+            }
+
+            byte[] bytes =
+                    facultyApiService.exportClassRecordPdf(
+                            section.classOfferingId()
+                    );
+
+            boolean saved =
+                    saveBytesToFile(
+                            bytes,
+                            buildReportFileName(
+                                    "class-record",
+                                    "pdf"
+                            ),
+                            "PDF Files",
+                            "*.pdf"
+                    );
+
+            if (!saved) {
+                return;
+            }
+
+            showAlert(
+                    "Export Successful",
+                    "Class record exported successfully."
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            showAlert(
+                    "Export Failed",
+                    "Unable to export class record: " + e.getMessage()
+            );
+        }
     }
 
     @FXML
@@ -173,11 +207,6 @@ public class FacultyReportsController {
     }
 
     @FXML
-    private void handleViewExamPortfolio() {
-        showExamPortfolioPicker(false);
-    }
-
-    @FXML
     private void handleExportExamPortfolio() {
         showExamPortfolioPicker(true);
     }
@@ -234,22 +263,42 @@ public class FacultyReportsController {
                                 ? 1
                                 : selectedExam.classOfferingCount();
 
-                if (offeringCount <= 1) {
+                String selectedClassOfferingId =
+                        filter.classOfferingId();
 
-                    String mode = "MERGED";
+                if (selectedClassOfferingId != null && !selectedClassOfferingId.isBlank()) {
+                    if (exportMode) {
+                        exportExamPortfolio(
+                                selectedExam.examId(),
+                                selectedExam.title(),
+                                "SEPARATE",
+                                selectedClassOfferingId
+                        );
+                    } else {
+                        viewExamPortfolio(
+                                selectedExam.examId(),
+                                selectedExam.title(),
+                                "SEPARATE"
+                        );
+                    }
+
+                    return;
+                }
+
+                if (offeringCount <= 1) {
 
                     if (exportMode) {
                         exportExamPortfolio(
                                 selectedExam.examId(),
                                 selectedExam.title(),
-                                mode,
+                                "MERGED",
                                 null
                         );
                     } else {
                         viewExamPortfolio(
                                 selectedExam.examId(),
                                 selectedExam.title(),
-                                mode
+                                "MERGED"
                         );
                     }
 
@@ -447,53 +496,6 @@ public class FacultyReportsController {
     }
 
     @FXML
-    private void handleViewViolationReport() {
-        showAlert(
-                "Violation Report Preview",
-                "Preview violation report will be added here. For now, use Export."
-        );
-    }
-
-    @FXML
-    private void handleExportViolationReport() {
-        exportViolationReport("pdf");
-    }
-
-    private void exportViolationReport(String type) {
-        try {
-            FacultyReportFilter filter = getCurrentFilterForViolation();
-
-            if (filter.academicYear() == null || filter.term() == null) {
-                showAlert("Export Failed", "Please select an academic period first.");
-                return;
-            }
-
-            byte[] bytes = facultyApiService.exportViolationReport(filter, type);
-
-            saveBytesToFile(
-                    bytes,
-                    "violation-report." + ("excel".equalsIgnoreCase(type) ? "xlsx" : "pdf"),
-                    "excel".equalsIgnoreCase(type) ? "Excel Files" : "PDF Files",
-                    "excel".equalsIgnoreCase(type) ? "*.xlsx" : "*.pdf"
-            );
-
-            showAlert("Export Successful", "Violation report exported successfully.");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Export Failed", "Unable to export violation report: " + e.getMessage());
-        }
-    }
-
-    @FXML
-    private void handleViewExamResultsSummary() {
-        showAlert(
-                "Exam Results Summary Preview",
-                "Preview exam results summary will be added here. For now, use Export."
-        );
-    }
-
-    @FXML
     private void handleExportExamResultsSummary() {
         showExamResultSummaryPicker();
     }
@@ -544,6 +546,19 @@ public class FacultyReportsController {
                         selectedExam.classOfferingCount() == null
                                 ? 1
                                 : selectedExam.classOfferingCount();
+
+                String selectedClassOfferingId =
+                        filter.classOfferingId();
+
+                if (selectedClassOfferingId != null && !selectedClassOfferingId.isBlank()) {
+                    exportSingleExamResultSummary(
+                            selectedExam.examId(),
+                            selectedExam.title(),
+                            selectedClassOfferingId,
+                            "SEPARATE"
+                    );
+                    return;
+                }
 
                 if (offeringCount <= 1) {
                     exportSingleExamResultSummary(
@@ -694,6 +709,8 @@ public class FacultyReportsController {
     }
 
     private void renderParticipation(List<ExamParticipationDTO> data) {
+
+        latestParticipation = data == null ? List.of() : data;
         takersCountBarChart.getData().clear();
         averageScoreLineChart.getData().clear();
 
@@ -728,22 +745,74 @@ public class FacultyReportsController {
         Platform.runLater(this::updatePieLabels);
     }
 
-    private void renderViolations(List<ViolationTypeDTO> data) {
-        violationTypeBarChart.getData().clear();
+    private void renderViolations(
+            List<ViolationTypeDTO> data
+    ) {
 
-        XYChart.Series<Number, String> series = new XYChart.Series<>();
+        violationStackedChart.getData().clear();
+
+        Map<String, XYChart.Series<String, Number>> seriesMap =
+                new LinkedHashMap<>();
 
         for (ViolationTypeDTO row : data) {
-            series.getData().add(
-                    new XYChart.Data<>(
-                            row.count(),
-                            formatViolationType(row.violationType())
-                    )
+
+            String violation =
+                    formatViolationType(
+                            row.violationType()
+                    );
+
+            seriesMap.putIfAbsent(
+                    violation,
+                    new XYChart.Series<>()
             );
+
+            seriesMap.get(violation)
+                    .setName(violation);
+
+            long total =
+                    data.stream()
+                            .filter(x ->
+                                    x.examTitle().equals(
+                                            row.examTitle()
+                                    )
+                            )
+                            .mapToLong(x ->
+                                    x.count() == null
+                                            ? 0
+                                            : x.count()
+                            )
+                            .sum();
+
+            double percent =
+                    total == 0
+                            ? 0
+                            : (row.count() * 100.0 / total);
+
+            seriesMap.get(violation)
+                    .getData()
+                    .add(
+                            new XYChart.Data<>(
+                                    row.examTitle(),
+                                    percent
+                            )
+                    );
         }
 
-        violationTypeBarChart.getData().add(series);
-        addChartValueLabels(series);
+        violationStackedChart.getData().addAll(seriesMap.values());
+        addStackedCountLabels(violationStackedChart);
+
+    }
+
+    private String formatSubmissionStatus(
+            String value
+    ) {
+        if (value == null) {
+            return "UNKNOWN";
+        }
+
+        return value
+                .replace("_", " ")
+                .toUpperCase();
     }
 
     private String formatViolationType(String value) {
@@ -807,15 +876,11 @@ public class FacultyReportsController {
             submissionExamCombo.setItems(FXCollections.observableArrayList("All Exams"));
             submissionExamCombo.getSelectionModel().selectFirst();
 
-            violationExamCombo.setItems(FXCollections.observableArrayList("All Exams"));
-            violationExamCombo.getSelectionModel().selectFirst();
-
             loadExamDropdownsAsync();
 
             academicPeriodCombo.setOnAction(e -> {
                 loadStudentsForSelectedPeriodAsync();
                 loadExamDropdownsAsync();
-                reloadReportsAsync();
             });
 
             courseCombo.setOnAction(e -> {
@@ -823,18 +888,18 @@ public class FacultyReportsController {
 
                 populateSectionsFromLoadedStudents();
                 loadExamDropdownsAsync();
-                reloadReportsAsync();
             });
 
             sectionCombo.setOnAction(e -> {
                 if (loadingDropdowns) return;
 
                 loadExamDropdownsAsync();
-                reloadReportsAsync();
             });
 
-            submissionExamCombo.setOnAction(e -> reloadSubmissionStatusAsync());
-            violationExamCombo.setOnAction(e -> reloadViolationsAsync());
+            submissionExamCombo.setOnAction(e -> {
+                if (loadingDropdowns) return;
+                reloadSubmissionStatusAsync();
+            });
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -855,14 +920,15 @@ public class FacultyReportsController {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                FacultyReportSummaryDTO summary =
-                        facultyApiService.getFacultyReportSummary(filter);
+                FacultyReportSummaryDTO summary = facultyApiService.getFacultyReportSummary(filter);
 
-                List<ExamParticipationDTO> participation =
-                        facultyApiService.getFacultyReportParticipation(filter);
+                List<ExamParticipationDTO> participation = facultyApiService.getFacultyReportParticipation(filter);
 
                 List<SubmissionStatusDTO> submissions =
                         facultyApiService.getFacultyReportSubmissionStatus(filter);
+
+                List<ExamSubmissionBreakdownDTO> submissionBreakdown =
+                        facultyApiService.getFacultyReportSubmissionBreakdown(filter);
 
                 List<ViolationTypeDTO> violations =
                         facultyApiService.getFacultyReportViolations(filter);
@@ -871,6 +937,7 @@ public class FacultyReportsController {
                     renderSummary(summary);
                     renderParticipation(participation);
                     renderSubmissionStatus(submissions);
+                    renderExamSubmissionBreakdown(submissionBreakdown);
                     renderViolations(violations);
                 });
 
@@ -920,38 +987,54 @@ public class FacultyReportsController {
         thread.start();
     }
 
-    private void reloadViolationsAsync() {
+    private void renderExamSubmissionBreakdown(
+            List<ExamSubmissionBreakdownDTO> data
+    ) {
 
-        FacultyReportFilter filter =
-                getCurrentFilterForViolation();
+        submissionStackedChart.getData().clear();
 
-        if (filter.academicYear() == null || filter.term() == null) {
-            return;
+        Map<String, XYChart.Series<String, Number>> seriesMap =
+                new LinkedHashMap<>();
+
+        for (ExamSubmissionBreakdownDTO row : data) {
+
+            String status =
+                    formatSubmissionStatus(
+                            row.status()
+                    );
+
+            seriesMap.putIfAbsent(status, new XYChart.Series<>());
+
+            seriesMap.get(status).setName(status);
+
+            long total = data.stream()
+                            .filter(x ->
+                                    x.examTitle().equals(
+                                            row.examTitle()
+                                    )
+                            )
+                            .mapToLong(x -> x.count() == null ? 0 : x.count()).sum();
+
+            double percent = total == 0 ? 0 : (row.count() * 100.0 / total);
+
+            seriesMap.get(status)
+                    .getData()
+                    .add(
+                            new XYChart.Data<>(
+                                    row.examTitle(),
+                                    percent
+                            )
+                    );
         }
 
-        Task<List<ViolationTypeDTO>> task = new Task<>() {
-            @Override
-            protected List<ViolationTypeDTO> call() throws Exception {
-                return facultyApiService.getFacultyReportViolations(filter);
-            }
-        };
+        submissionStackedChart.getData().addAll(seriesMap.values());
+        addStackedCountLabels(submissionStackedChart);
 
-        task.setOnSucceeded(e ->
-                renderViolations(task.getValue())
-        );
-
-        task.setOnFailed(e ->
-                task.getException().printStackTrace()
-        );
-
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
     }
 
     private void loadExamDropdownsAsync() {
 
-        FacultyReportFilter filter = getCurrentFilter();
+        FacultyReportFilter filter = getBaseFilter();
 
         if (filter.academicYear() == null || filter.term() == null) {
             return;
@@ -965,6 +1048,8 @@ public class FacultyReportsController {
         };
 
         task.setOnSucceeded(e -> {
+            loadingDropdowns = true;
+
             List<String> items = task.getValue()
                     .stream()
                     .map(exam -> exam.examId() + " - " + exam.title())
@@ -974,12 +1059,15 @@ public class FacultyReportsController {
             submissionExamCombo.getItems().addAll(items);
             submissionExamCombo.getSelectionModel().selectFirst();
 
-            violationExamCombo.getItems().setAll("All Exams");
-            violationExamCombo.getItems().addAll(items);
-            violationExamCombo.getSelectionModel().selectFirst();
+            loadingDropdowns = false;
+
+            reloadReportsAsync();
         });
 
-        task.setOnFailed(e -> task.getException().printStackTrace());
+        task.setOnFailed(e -> {
+            loadingDropdowns = false;
+            task.getException().printStackTrace();
+        });
 
         Thread thread = new Thread(task);
         thread.setDaemon(true);
@@ -1077,10 +1165,16 @@ public class FacultyReportsController {
     }
 
     private void populateSectionsFromLoadedStudents() {
+        populateSectionsFromLoadedStudents(false);
+    }
+
+    private void populateSectionsFromLoadedStudents(
+            boolean resetSelection
+    ) {
         loadingDropdowns = true;
 
         CourseOption selectedCourse = courseCombo.getValue();
-        SectionOption current = sectionCombo.getValue();
+        SectionOption current = resetSelection ? null : sectionCombo.getValue();
 
         List<SectionOption> options = new ArrayList<>();
 
@@ -1100,12 +1194,13 @@ public class FacultyReportsController {
                                 selectedCourse.courseCode().equals(s.courseCode())
                 )
                 .filter(s ->
-                        s.programCode() != null &&
+                        s.classOfferingId() != null &&
+                                s.programCode() != null &&
                                 s.yearLevel() != null &&
                                 s.sectionName() != null
                 )
-                .collect(java.util.stream.Collectors.toMap(
-                        s -> s.programCode() + "|" + s.yearLevel() + "|" + s.sectionName(),
+                .collect(Collectors.toMap(
+                        StudentRow::classOfferingId,
                         s -> new SectionOption(
                                 s.classOfferingId(),
                                 s.programCode(),
@@ -1124,12 +1219,7 @@ public class FacultyReportsController {
 
         if (current != null) {
             options.stream()
-                    .filter(o ->
-                            o.all() == current.all() &&
-                                    Objects.equals(o.programCode(), current.programCode()) &&
-                                    Objects.equals(o.yearLevel(), current.yearLevel()) &&
-                                    Objects.equals(o.sectionName(), current.sectionName())
-                    )
+                    .filter(o -> Objects.equals(o.classOfferingId(), current.classOfferingId()))
                     .findFirst()
                     .ifPresentOrElse(
                             sectionCombo.getSelectionModel()::select,
@@ -1142,46 +1232,6 @@ public class FacultyReportsController {
         loadingDropdowns = false;
     }
 
-    private FacultyReportFilter getCurrentFilter() {
-
-        String selectedPeriod =
-                academicPeriodCombo.getSelectionModel().getSelectedItem();
-
-        String academicYear = null;
-        String term = null;
-
-        if (selectedPeriod != null && selectedPeriod.contains(", AY ")) {
-            String[] parts = selectedPeriod.split(", AY ");
-            term = parts[0].trim();
-            academicYear = parts[1].trim();
-        }
-
-        String courseCode = null;
-
-        CourseOption selectedCourse = courseCombo.getValue();
-        if (selectedCourse != null && !selectedCourse.all()) {
-            courseCode = selectedCourse.courseCode();
-        }
-
-        String classOfferingId = null;
-
-        SectionOption selectedSection = sectionCombo.getValue();
-        if (selectedSection != null && !selectedSection.all()) {
-            classOfferingId = selectedSection.classOfferingId();
-        }
-
-        Long examId = parseSelectedExamId(
-                submissionExamCombo.getValue()
-        );
-
-        return new FacultyReportFilter(
-                academicYear,
-                term,
-                courseCode,
-                classOfferingId,
-                examId
-        );
-    }
 
     private FacultyReportFilter getCurrentFilterForSubmission() {
         FacultyReportFilter base = getBaseFilter();
@@ -1203,7 +1253,7 @@ public class FacultyReportsController {
                 base.term(),
                 base.courseCode(),
                 base.classOfferingId(),
-                parseSelectedExamId(violationExamCombo.getValue())
+                parseSelectedExamId(submissionExamCombo.getValue())
         );
     }
 
@@ -1355,6 +1405,37 @@ public class FacultyReportsController {
         loadingOverlay.setVisible(show);
         loadingOverlay.setManaged(show);
         reportsContent.setDisable(show);
+    }
+
+    private void addStackedCountLabels(
+            StackedBarChart<String, Number> chart
+    ) {
+        Platform.runLater(() -> {
+            for (XYChart.Series<String, Number> series : chart.getData()) {
+                for (XYChart.Data<String, Number> data : series.getData()) {
+                    if (!(data.getNode() instanceof StackPane bar)) {
+                        continue;
+                    }
+
+                    double value = data.getYValue().doubleValue();
+
+                    if (value <= 0) {
+                        continue;
+                    }
+
+                    Label label = new Label(String.format("%.0f%%", value));
+                    label.getStyleClass().add("stacked-chart-value-label");
+
+                    bar.getChildren().removeIf(node ->
+                            node instanceof Label &&
+                                    node.getStyleClass().contains("stacked-chart-value-label")
+                    );
+
+                    StackPane.setAlignment(label, Pos.CENTER);
+                    bar.getChildren().add(label);
+                }
+            }
+        });
     }
 
     private <X, Y> void addChartValueLabels(XYChart.Series<X, Y> series) {

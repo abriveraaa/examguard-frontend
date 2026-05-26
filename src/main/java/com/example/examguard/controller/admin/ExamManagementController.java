@@ -1,5 +1,6 @@
 package com.example.examguard.controller.admin;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
 import com.example.examguard.controller.exam.CreateExamController;
@@ -1086,7 +1087,7 @@ public class ExamManagementController implements ShellAwareController {
 
         if (answer.getQuestionImageUrl() != null && !answer.getQuestionImageUrl().isBlank()) {
             ImageView img = new ImageView(
-                    new Image(FacultyApiService.BASE_URL + answer.getQuestionImageUrl(), true)
+                    new Image(AppConfig.BASE_URL + answer.getQuestionImageUrl(), true)
             );
             img.setFitWidth(320);
             img.setPreserveRatio(true);
@@ -1102,7 +1103,7 @@ public class ExamManagementController implements ShellAwareController {
 
         if (answer.getCorrectAnswerImageUrl() != null && !answer.getCorrectAnswerImageUrl().isBlank()) {
             ImageView img = new ImageView(
-                    new Image(FacultyApiService.BASE_URL + answer.getCorrectAnswerImageUrl(), true)
+                    new Image(AppConfig.BASE_URL + answer.getCorrectAnswerImageUrl(), true)
             );
             img.setFitWidth(240);
             img.setPreserveRatio(true);
@@ -1137,7 +1138,7 @@ public class ExamManagementController implements ShellAwareController {
 
         if (answer.getStudentAnswerImageUrl() != null && !answer.getStudentAnswerImageUrl().isBlank()) {
             ImageView img = new ImageView(
-                    new Image(FacultyApiService.BASE_URL + answer.getStudentAnswerImageUrl(), true)
+                    new Image(AppConfig.BASE_URL + answer.getStudentAnswerImageUrl(), true)
             );
             img.setFitWidth(240);
             img.setPreserveRatio(true);
@@ -2270,6 +2271,24 @@ public class ExamManagementController implements ShellAwareController {
                 )
         );
 
+        TableColumn<ExamActivityLogDTO, String> actorIdColumn =
+                new TableColumn<>("Actor ID");
+
+        actorIdColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(
+                        safe(data.getValue().getActorId())
+                )
+        );
+
+        TableColumn<ExamActivityLogDTO, String> actorNameColumn =
+                new TableColumn<>("Actor Name");
+
+        actorNameColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(
+                        safe(data.getValue().getActorName())
+                )
+        );
+
         TableColumn<ExamActivityLogDTO, String> questionColumn = new TableColumn<>("Question");
         questionColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(
@@ -2289,11 +2308,6 @@ public class ExamManagementController implements ShellAwareController {
                 new SimpleStringProperty(safe(data.getValue().getSeverity()))
         );
 
-        TableColumn<ExamActivityLogDTO, String> messageColumn = new TableColumn<>("Message");
-        messageColumn.setCellValueFactory(data ->
-                new SimpleStringProperty(safe(data.getValue().getMessage()))
-        );
-
         TableColumn<ExamActivityLogDTO, String> durationColumn = new TableColumn<>("Duration");
         durationColumn.setCellValueFactory(data ->
                 new SimpleStringProperty(
@@ -2306,12 +2320,13 @@ public class ExamManagementController implements ShellAwareController {
         table.getColumns().addAll(
                 timeColumn,
                 typeColumn,
+                actorIdColumn,
+                actorNameColumn,
                 studentIdColumn,
                 studentNameColumn,
                 questionColumn,
                 actionColumn,
                 severityColumn,
-                messageColumn,
                 durationColumn
         );
 
@@ -2582,15 +2597,34 @@ public class ExamManagementController implements ShellAwareController {
                         e -> handleExportExamResultSummary()
                 );
 
+        VBox classRecordCard =
+                createReportCard(
+                        "Class Record",
+                        "Student scores per exam, average percentage, and section grade record.",
+                        "Export PDF",
+                        e -> handleExportClassRecord()
+                );
+
         HBox reportRow = new HBox(16);
 
         reportRow.setAlignment(Pos.TOP_LEFT);
 
-        HBox.setHgrow(portfolioCard,Priority.ALWAYS);
-        HBox.setHgrow(summaryCard,Priority.ALWAYS);
+        HBox.setHgrow(portfolioCard, Priority.ALWAYS);
+        HBox.setHgrow(summaryCard, Priority.ALWAYS);
+        HBox.setHgrow(classRecordCard, Priority.ALWAYS);
+
         portfolioCard.setMaxWidth(Double.MAX_VALUE);
         summaryCard.setMaxWidth(Double.MAX_VALUE);
-        reportRow.getChildren().addAll(portfolioCard,summaryCard);
+        classRecordCard.setMaxWidth(Double.MAX_VALUE);
+
+        reportRow.getChildren().addAll(
+                portfolioCard,
+                summaryCard,
+                classRecordCard
+        );
+
+
+
         root.getChildren().addAll(pageHeader,reportRow);
 
         ScrollPane scrollPane = new ScrollPane(root);
@@ -2666,6 +2700,143 @@ public class ExamManagementController implements ShellAwareController {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void handleExportClassRecord() {
+
+        if (selectedWorkspaceExamId == null) {
+            showError("No exam selected.");
+            return;
+        }
+
+        Task<FacultyExamDetailResponse> task =
+                new Task<>() {
+
+                    @Override
+                    protected FacultyExamDetailResponse call()
+                            throws Exception {
+
+                        return examApiService.getExamDetail(
+                                selectedWorkspaceExamId
+                        );
+                    }
+                };
+
+        task.setOnSucceeded(event -> {
+
+            FacultyExamDetailResponse detail =
+                    task.getValue();
+
+            if (detail == null) {
+                showError("Exam not found.");
+                return;
+            }
+
+            List<FacultyClassDTO> classes =
+                    detail.getAssignedClasses();
+
+            if (classes == null || classes.isEmpty()) {
+                showError("No assigned classes found.");
+                return;
+            }
+
+            if (classes.size() == 1) {
+                exportWorkspaceClassRecord(
+                        classes.get(0).getClassOfferingId()
+                );
+                return;
+            }
+
+            showClassRecordSectionPicker(classes);
+        });
+
+        task.setOnFailed(event -> {
+            showError("Unable to load exam details.");
+        });
+
+        Thread thread =
+                new Thread(task);
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void showClassRecordSectionPicker(
+            List<FacultyClassDTO> classes
+    ) {
+        List<String> sectionOptions =
+                classes.stream()
+                        .map(this::formatClassOption)
+                        .toList();
+
+        ChoiceDialog<String> dialog =
+                new ChoiceDialog<>(
+                        sectionOptions.get(0),
+                        sectionOptions
+                );
+
+        dialog.setTitle("Export Class Record");
+        dialog.setHeaderText("Choose section for class record");
+        dialog.setContentText("Section:");
+
+        dialog.showAndWait()
+                .ifPresent(selectedLabel -> {
+
+                    FacultyClassDTO selectedClass =
+                            classes.stream()
+                                    .filter(c ->
+                                            formatClassOption(c)
+                                                    .equals(selectedLabel)
+                                    )
+                                    .findFirst()
+                                    .orElse(null);
+
+                    if (selectedClass == null) {
+                        showError("Selected class not found.");
+                        return;
+                    }
+
+                    exportWorkspaceClassRecord(
+                            selectedClass.getClassOfferingId()
+                    );
+                });
+    }
+
+    private void exportWorkspaceClassRecord(
+            String classOfferingId
+    ) {
+        if (classOfferingId == null || classOfferingId.isBlank()) {
+            showError("Class offering ID not found.");
+            return;
+        }
+
+        try {
+            byte[] bytes =
+                    facultyApiService.exportClassRecordPdf(
+                            classOfferingId
+                    );
+
+            boolean saved =
+                    saveBytesToFile(
+                            bytes,
+                            "class-record.pdf",
+                            "PDF Files",
+                            "*.pdf"
+                    );
+
+            if (!saved) {
+                return;
+            }
+
+            showInfo(
+                    "Export Successful",
+                    "Class record exported successfully."
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Unable to export class record.");
+        }
     }
 
     private void showPortfolioModePicker(List<FacultyClassDTO> classes) {
@@ -3850,10 +4021,10 @@ public class ExamManagementController implements ShellAwareController {
         }
 
         if (rawUrl.startsWith("/")) {
-            return ExamApiService.BASE_URL + rawUrl;
+            return AppConfig.BASE_URL + rawUrl;
         }
 
-        return ExamApiService.BASE_URL + "/" + rawUrl;
+        return AppConfig.BASE_URL + "/" + rawUrl;
     }
 
     private String formatEvidenceLabel(String label, int index) {

@@ -1,5 +1,6 @@
 package com.example.examguard.controller.student;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.utility.FaceBehaviorAnalyzer;
 import com.example.examguard.model.ai.MediaPipeFaceResult;
@@ -331,7 +332,7 @@ public class ExamTakingController {
         if (logoUrl != null && !logoUrl.isBlank()) {
             String fullLogoUrl = logoUrl.startsWith("http://") || logoUrl.startsWith("https://")
                     ? logoUrl
-                    : ExamApiService.BASE_URL + (logoUrl.startsWith("/") ? logoUrl : "/" + logoUrl);
+                    : AppConfig.BASE_URL + (logoUrl.startsWith("/") ? logoUrl : "/" + logoUrl);
 
             schoolLogoImageView.setImage(new Image(fullLogoUrl, true));
         }
@@ -2048,7 +2049,7 @@ public class ExamTakingController {
             path = "/" + path;
         }
 
-        return ExamApiService.BASE_URL + path;
+        return AppConfig.BASE_URL + path;
     }
 
     private void renderQuestionNavigation() {

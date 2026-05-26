@@ -1,5 +1,6 @@
 package com.example.examguard.service;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.admin.monitoring.AdminMonitoringLogsResponse;
 import com.example.examguard.model.admin.monitoring.MonitoringOverviewResponse;
 import com.example.examguard.model.core.request.ReactivateUserRequest;
@@ -19,7 +20,6 @@ import java.util.Map;
 
 public class AdminApiService {
 
-    private static final String BASE_URL = "http://localhost:8080";
     private final HttpClient httpClient;
     private final Gson gson;
 
@@ -41,7 +41,7 @@ public class AdminApiService {
     public String createAdminProfile(String jsonBody) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/profiles")) // ✅ FIXED
+                    .uri(URI.create(AppConfig.BASE_URL + "/admin/profiles")) // ✅ FIXED
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
@@ -62,7 +62,7 @@ public class AdminApiService {
     public String updateAdminProfile(String employeeId, String jsonBody) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/profiles/" + employeeId))
+                    .uri(URI.create(AppConfig.BASE_URL + "/admin/profiles/" + employeeId))
                     .header("Content-Type", "application/json")
                     .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
@@ -89,7 +89,7 @@ public class AdminApiService {
             String jsonBody = gson.toJson(payload);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/profiles/" + employeeId + "/deactivate"))
+                    .uri(URI.create(AppConfig.BASE_URL + "/admin/profiles/" + employeeId + "/deactivate"))
                     .header("Content-Type", "application/json")
                     .method("PATCH", HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
@@ -115,7 +115,7 @@ public class AdminApiService {
             String jsonBody = new Gson().toJson(payload);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/profiles/" + employeeId + "/reactivate"))
+                    .uri(URI.create(AppConfig.BASE_URL + "/admin/profiles/" + employeeId + "/reactivate"))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + Session.getSessionToken())
                     .method("PATCH", HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -135,7 +135,7 @@ public class AdminApiService {
     public String refreshAndSyncRegistrarAccess() {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/cache/refresh-and-sync"))
+                    .uri(URI.create(AppConfig.BASE_URL + "/admin/cache/refresh-and-sync"))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + Session.getSessionToken())
                     .POST(HttpRequest.BodyPublishers.noBody())
@@ -157,7 +157,7 @@ public class AdminApiService {
     public String getLastSuccessfulSync() {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/registrar-sync/last-sync"))
+                    .uri(URI.create(AppConfig.BASE_URL + "/admin/registrar-sync/last-sync"))
                     .header("Authorization", "Bearer " + Session.getSessionToken())
                     .GET()
                     .build();
@@ -176,7 +176,7 @@ public class AdminApiService {
     public String getEligibleReactivationUsers() {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/cache/eligible-reactivation"))
+                    .uri(URI.create(AppConfig.BASE_URL + "/admin/cache/eligible-reactivation"))
                     .header("Content-Type", "application/json")
                     .GET()
                     .build();
@@ -204,7 +204,7 @@ public class AdminApiService {
             String jsonBody = gson.toJson(payload);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/admin/registrar-sync/reactivate-user"))
+                    .uri(URI.create(AppConfig.BASE_URL + "/admin/registrar-sync/reactivate-user"))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + Session.getSessionToken())
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -225,7 +225,7 @@ public class AdminApiService {
 
     public String getUserDetails(String schoolId, String role) {
         try {
-            String url = BASE_URL + "/admin/users/details?schoolId=" + schoolId + "&role=" + role;
+            String url = AppConfig.BASE_URL + "/admin/users/details?schoolId=" + schoolId + "&role=" + role;
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -249,7 +249,7 @@ public class AdminApiService {
     }
 
     private String postJson(String endpoint, Object body) throws Exception {
-        URL url = new URL(BASE_URL + endpoint);
+        URL url = new URL(AppConfig.BASE_URL + endpoint);
 
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");

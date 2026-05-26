@@ -35,12 +35,14 @@ public class DashboardShellController {
 
     private String currentRole;
     private String activePage;
+    private static DashboardShellController instance;
 
     String name = com.example.examguard.utility.Session.getFirstName();
 
 
     @FXML
     public void initialize() {
+        instance = this;
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(heroPane.widthProperty());
         clip.heightProperty().bind(heroPane.heightProperty());
@@ -48,6 +50,10 @@ public class DashboardShellController {
 
         bannerImage.fitWidthProperty().bind(heroPane.widthProperty());
 
+    }
+
+    public static DashboardShellController getInstance() {
+        return instance;
     }
 
     public void setAvatarLetter(String letter) {
@@ -125,6 +131,7 @@ public class DashboardShellController {
                         fxmlPath.contains("admin-monitoring") ||
                         fxmlPath.contains("faculty-students") ||
                         fxmlPath.contains("faculty-reports") ||
+                        fxmlPath.contains("profile-view") ||
                         fxmlPath.contains("workspace");
 
         heroPane.setVisible(!hideHero);
@@ -423,7 +430,7 @@ public class DashboardShellController {
         activePage = null;
         buildNavigation();
         hideHeroCards();
-        loadContent("/fxml/common/profile-settings.fxml");
+        loadContent("/fxml/common/profile-view.fxml");
     }
 
     @FXML

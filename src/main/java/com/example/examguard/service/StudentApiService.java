@@ -26,8 +26,9 @@ import java.util.stream.Collectors;
 
 public class StudentApiService {
 
-    private static final String BASE_URL = "http://localhost:8080";
-
+    private static final String BASE_URL =
+            "https://examguard-backend-production.up.railway.app";
+    
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .build();
@@ -90,8 +91,6 @@ public class StudentApiService {
                 .uri(URI.create(BASE_URL + endpoint))
                 .timeout(Duration.ofSeconds(8))
                 .header("Content-Type", "application/json")
-                .header("X-User-Id", Session.getSchoolId())
-                .header("X-Role", Session.getRole())
                 .header("Authorization", "Bearer " + Session.getSessionToken())
                 .GET()
                 .build();
@@ -116,8 +115,7 @@ public class StudentApiService {
 
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("X-User-Id", Session.getSchoolId());
-        conn.setRequestProperty("X-Role", Session.getRole());
+        conn.setRequestProperty("Authorization", Session.getSessionToken());
 
         conn.setDoOutput(true);
 

@@ -1,5 +1,6 @@
 package com.example.examguard.service;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.faculty.dto.*;
 import com.example.examguard.model.faculty.dto.reports.*;
 import com.example.examguard.model.faculty.dto.students.FacultyAcademicPeriodDTO;
@@ -23,8 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class FacultyApiService {
-
-    public static final String BASE_URL = "http://localhost:8080";
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(
@@ -128,6 +127,18 @@ public class FacultyApiService {
         );
     }
 
+    public List<ExamSubmissionBreakdownDTO> getFacultyReportSubmissionBreakdown(
+            FacultyReportFilter filter
+    ) throws Exception {
+        String endpoint =
+                "/faculty/reports/submission-breakdown" + buildReportsQuery(filter);
+
+        return getList(
+                endpoint,
+                ExamSubmissionBreakdownDTO[].class
+        );
+    }
+
     public List<ViolationTypeDTO> getFacultyReportViolations(
             FacultyReportFilter filter
     ) throws Exception {
@@ -158,7 +169,7 @@ public class FacultyApiService {
             String type
     ) throws IOException {
 
-        StringBuilder url = new StringBuilder(BASE_URL +
+        StringBuilder url = new StringBuilder(AppConfig.BASE_URL +
                                 "/faculty/students/export" +
                                 "?academicYear=" + encode(academicYear) +
                                 "&term=" + encode(term) +
@@ -242,30 +253,21 @@ public class FacultyApiService {
         return downloadBytes(endpoint);
     }
 
-    public byte[] exportViolationReport(
-            FacultyReportFilter filter,
-            String type
+    public byte[] exportClassRecordPdf(
+            String classOfferingId
     ) throws Exception {
 
-        String url = "/faculty/reports/violations/export"
-                + "?academicYear=" + encode(filter.academicYear())
-                + "&term=" + encode(filter.term())
-                + "&type=" + encode(type);
+        String endpoint =
+                "/faculty/reports/class-record/export/pdf"
+                        + "?classOfferingId="
+                        + URLEncoder.encode(
+                        classOfferingId,
+                        StandardCharsets.UTF_8
+                );
 
-        if (filter.courseCode() != null) {
-            url += "&courseCode=" + encode(filter.courseCode());
-        }
-
-        if (filter.classOfferingId() != null) {
-            url += "&classOfferingId=" + encode(filter.classOfferingId());
-        }
-
-        if (filter.examId() != null) {
-            url += "&examId=" + filter.examId();
-        }
-
-        return downloadBytes(url);
+        return getBytes(endpoint);
     }
+
 
     private <T> T get(String endpoint, Class<T> responseType) throws Exception {
         HttpURLConnection connection = createConnection(endpoint, "GET");
@@ -295,7 +297,7 @@ public class FacultyApiService {
             String method
     ) throws Exception {
 
-        URL url = new URL(BASE_URL + endpoint);
+        URL url = new URL(AppConfig.BASE_URL + endpoint);
 
         HttpURLConnection connection =
                 (HttpURLConnection) url.openConnection();
@@ -346,6 +348,53 @@ public class FacultyApiService {
             }
 
             return outputStream.toByteArray();
+        }
+    }
+
+    private byte[] getBytes(
+            String endpoint
+    ) throws Exception {
+
+        HttpURLConnection connection =
+                createConnection(
+                        endpoint,
+                        "GET"
+                );
+
+        int responseCode =
+                connection.getResponseCode();
+
+        if (responseCode != 200) {
+            throw new RuntimeException(
+                    "Request failed: " + responseCode
+            );
+        }
+
+        try (
+                InputStream input =
+                        connection.getInputStream();
+
+                ByteArrayOutputStream output =
+                        new ByteArrayOutputStream()
+        ) {
+
+            byte[] buffer =
+                    new byte[4096];
+
+            int bytesRead;
+
+            while (
+                    (bytesRead = input.read(buffer))
+                            != -1
+            ) {
+                output.write(
+                        buffer,
+                        0,
+                        bytesRead
+                );
+            }
+
+            return output.toByteArray();
         }
     }
 

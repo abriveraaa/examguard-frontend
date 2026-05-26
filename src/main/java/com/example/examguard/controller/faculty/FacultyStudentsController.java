@@ -1,5 +1,6 @@
 package com.example.examguard.controller.faculty;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.core.response.BrandingResponse;
 import com.example.examguard.model.faculty.dto.students.*;
 import com.example.examguard.service.FacultyApiService;
@@ -16,6 +17,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 
 import java.io.File;
@@ -444,7 +446,8 @@ public class FacultyStudentsController {
                                         student.sectionName(),
                                         student.courseCode(),
                                         student.courseDescription(),
-                                        student.classOfferingId()
+                                        student.classOfferingId(),
+                                        student.profileImageUrl()
                                 ))
                                 .toList()
                 );
@@ -471,6 +474,37 @@ public class FacultyStudentsController {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private javafx.scene.Node createStudentPhoto(StudentRow student, double size, String fallbackStyleClass) {
+
+        String imageUrl = student.profileImageUrl();
+
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            ImageView imageView = new ImageView();
+
+            String finalUrl = imageUrl.startsWith("http")
+                    ? imageUrl
+                    : AppConfig.BASE_URL + imageUrl;
+
+            imageView.setImage(new Image(finalUrl, true));
+            imageView.setFitWidth(size);
+            imageView.setFitHeight(size);
+            imageView.setPreserveRatio(false);
+            imageView.setSmooth(true);
+
+            Rectangle clip = new Rectangle(size, size);
+            clip.setArcWidth(18);
+            clip.setArcHeight(18);
+            imageView.setClip(clip);
+
+            return imageView;
+        }
+
+        Label fallback = new Label(getInitials(student.fullName()));
+        fallback.getStyleClass().add(fallbackStyleClass);
+
+        return fallback;
     }
 
     private void populateCoursesFromLoadedStudents() {
@@ -755,8 +789,7 @@ public class FacultyStudentsController {
         HBox row = new HBox();
         row.getStyleClass().add("students-table-row");
 
-        Label avatar = new Label(getInitials(student.fullName()));
-        avatar.getStyleClass().add("student-avatar-small");
+        javafx.scene.Node avatar = createStudentPhoto(student, 36, "student-avatar-small");
 
         VBox nameBox = new VBox();
         nameBox.setAlignment(Pos.CENTER);
@@ -850,14 +883,11 @@ public class FacultyStudentsController {
 
         try {
 
-            if (branding != null &&
-                    branding.getLogoUrl() != null &&
-                    !branding.getLogoUrl().isBlank()) {
+            if (branding != null && branding.getLogoUrl() != null && !branding.getLogoUrl().isBlank()) {
 
                 logo.setImage(
                         new Image(
-                                BrandingService.BASE_URL +
-                                        branding.getLogoUrl(),
+                                AppConfig.BASE_URL + branding.getLogoUrl(),
                                 true
                         )
                 );
@@ -894,8 +924,7 @@ public class FacultyStudentsController {
         Label tagline = new Label("“The Country’s 1st PolytechnicU”");
         tagline.getStyleClass().add("student-card-tagline");
 
-        Label photo = new Label(getInitials(student.fullName()));
-        photo.getStyleClass().add("student-card-photo");
+        javafx.scene.Node photo = createStudentPhoto(student, 88, "student-card-photo");
 
         Label firstName = new Label(extractFirstDisplayName(student.fullName()));
         firstName.getStyleClass().add("student-card-firstname");
@@ -1243,6 +1272,7 @@ public class FacultyStudentsController {
             String sectionName,
             String courseCode,
             String courseDescription,
-            String classOfferingId
+            String classOfferingId,
+            String profileImageUrl
     ) {}
 }

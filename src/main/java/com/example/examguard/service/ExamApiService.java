@@ -1,5 +1,6 @@
 package com.example.examguard.service;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.core.ClassOffering;
 import com.example.examguard.model.exam.dto.ExamActivityLogDTO;
 import com.example.examguard.model.exam.dto.ExamLeaderboardDTO;
@@ -47,8 +48,6 @@ import java.util.stream.Collectors;
 
 public class ExamApiService {
 
-    public static final String BASE_URL = "http://localhost:8080";
-
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
             .create();
@@ -58,21 +57,16 @@ public class ExamApiService {
             String method
     ) throws Exception {
 
-        URL url = new URL(BASE_URL + endpoint);
+        URL url = new URL(AppConfig.BASE_URL + endpoint);
 
         HttpURLConnection connection =
                 (HttpURLConnection) url.openConnection();
 
         connection.setRequestMethod(method);
         connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("X-User-Id", Session.getSchoolId());
-        connection.setRequestProperty("X-Role", Session.getRole());
 
         if (Session.getSessionToken() != null) {
-            connection.setRequestProperty(
-                    "Authorization",
-                    "Bearer " + Session.getSessionToken()
-            );
+            connection.setRequestProperty("Authorization", "Bearer " + Session.getSessionToken());
         }
 
         connection.setConnectTimeout(8000);
@@ -86,7 +80,7 @@ public class ExamApiService {
     // ===================
 
     public void downloadTemplate(File destinationFile) throws Exception {
-        URL url = new URL(BASE_URL + "/exams/template/download");
+        URL url = new URL(AppConfig.BASE_URL + "/exams/template/download");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         conn.setRequestMethod("GET");
@@ -114,7 +108,7 @@ public class ExamApiService {
     }
 
     public List<ClassOffering> fetchClassOfferings() throws Exception {
-        String endpoint = BASE_URL + "/exams/class-offerings";
+        String endpoint = AppConfig.BASE_URL + "/exams/class-offerings";
 
         HttpURLConnection conn = null;
 
@@ -154,7 +148,7 @@ public class ExamApiService {
     public ImageUploadResponse uploadExamImage(File file) throws Exception {
         String boundary = "----ExamGuardImageBoundary" + System.currentTimeMillis();
 
-        URL url = new URL(BASE_URL + "/exams/images/upload");
+        URL url = new URL(AppConfig.BASE_URL + "/exams/images/upload");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         conn.setRequestMethod("POST");
@@ -201,7 +195,7 @@ public class ExamApiService {
     }
 
     public ExamResponse getExamPreview(Long examId) throws Exception {
-        String endpoint = BASE_URL + "/exams/" + examId ;
+        String endpoint = AppConfig.BASE_URL + "/exams/" + examId ;
 
         HttpURLConnection conn = null;
 
@@ -261,7 +255,7 @@ public class ExamApiService {
     public UploadExamTemplateResponse previewExamTemplate(File file) throws Exception {
         String boundary = "----ExamGuardBoundary" + System.currentTimeMillis();
 
-        URL url = new URL(BASE_URL + "/exams/template/preview");
+        URL url = new URL(AppConfig.BASE_URL + "/exams/template/preview");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         conn.setRequestMethod("POST");
@@ -322,7 +316,7 @@ public class ExamApiService {
     }
 
     public List<ExamResponse> fetchExams() throws Exception {
-        String endpoint = BASE_URL + "/exams";
+        String endpoint = AppConfig.BASE_URL + "/exams";
 
         HttpURLConnection conn = null;
 
@@ -389,7 +383,7 @@ public class ExamApiService {
     // ===================
 
     public ExamTakingResponse beginExam(Long examId) throws Exception {
-        String endpoint = BASE_URL + "/exams/" + examId + "/begin";
+        String endpoint = AppConfig.BASE_URL + "/exams/" + examId + "/begin";
 
         HttpURLConnection conn = null;
 
@@ -433,7 +427,7 @@ public class ExamApiService {
             String studentId
     ) {
         try {
-            URL url = new URL(BASE_URL + "/exam-camera/sessions");
+            URL url = new URL(AppConfig.BASE_URL + "/exam-camera/sessions");
 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
@@ -470,7 +464,7 @@ public class ExamApiService {
 
     public CameraSessionStatusResponse getCameraSessionStatus(String token) {
         try {
-            URL url = new URL(BASE_URL + "/exam-camera/sessions/" + token);
+            URL url = new URL(AppConfig.BASE_URL + "/exam-camera/sessions/" + token);
 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
@@ -497,7 +491,7 @@ public class ExamApiService {
     public void endPhoneCameraSession(String token) {
         try {
             URL url = new URL(
-                    BASE_URL + "/exam-camera/sessions/" + token + "/end"
+                    AppConfig.BASE_URL + "/exam-camera/sessions/" + token + "/end"
             );
 
             HttpURLConnection conn =
@@ -532,7 +526,7 @@ public class ExamApiService {
 
     public byte[] getCameraPreviewFrame(String token) {
         try {
-            URL url = new URL(BASE_URL + "/exam-camera/sessions/" + token + "/preview-frame");
+            URL url = new URL(AppConfig.BASE_URL + "/exam-camera/sessions/" + token + "/preview-frame");
 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
@@ -561,7 +555,7 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(BASE_URL + "/system/health");
+            URL url = new URL(AppConfig.BASE_URL + "/system/health");
             conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("GET");
@@ -585,7 +579,7 @@ public class ExamApiService {
     }
 
     public ExamTakingResponse getExamForTaking(Long examId) throws Exception {
-        String endpoint = BASE_URL + "/exams/" + examId + "/taking";
+        String endpoint = AppConfig.BASE_URL + "/exams/" + examId + "/taking";
 
         HttpURLConnection conn = null;
 
@@ -601,8 +595,6 @@ public class ExamApiService {
             if (Session.getSchoolId() == null || Session.getSchoolId().isBlank()) {
                 throw new RuntimeException("Session school ID is missing. Please login again.");
             }
-
-            conn.setRequestProperty("X-User-Id", Session.getSchoolId());
 
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);
@@ -628,7 +620,7 @@ public class ExamApiService {
     public ImageUploadResponse uploadViolationEvidence(File file) throws Exception {
         String boundary = "----ExamGuardEvidenceBoundary" + System.currentTimeMillis();
 
-        URL url = new URL(BASE_URL + "/exams/evidence/upload");
+        URL url = new URL(AppConfig.BASE_URL + "/exams/evidence/upload");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         conn.setRequestMethod("POST");
@@ -683,7 +675,7 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(BASE_URL + "/student/exams/answers/save");
+            URL url = new URL(AppConfig.BASE_URL + "/student/exams/answers/save");
             conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("POST");
@@ -695,7 +687,7 @@ public class ExamApiService {
 
             applyAuthHeaders(conn);
 
-            conn.setRequestProperty("X-User-Id", Session.getSchoolId());
+            conn.setRequestProperty("Authorization", Session.getSessionToken());
 
             conn.setDoOutput(true);
 
@@ -732,7 +724,7 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(BASE_URL + "/student/exams/submit");
+            URL url = new URL(AppConfig.BASE_URL + "/student/exams/submit");
             conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("POST");
@@ -743,7 +735,7 @@ public class ExamApiService {
             conn.setRequestProperty("Accept", "application/json");
 
             applyAuthHeaders(conn);
-            conn.setRequestProperty("X-User-Id", Session.getSchoolId());
+            conn.setRequestProperty("Authorization", Session.getSessionToken());
 
             conn.setDoOutput(true);
 
@@ -922,7 +914,7 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(BASE_URL + "/exams/violations");
+            URL url = new URL(AppConfig.BASE_URL + "/exams/violations");
             conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("POST");
@@ -970,7 +962,7 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(BASE_URL + "/student/exams/activity");
+            URL url = new URL(AppConfig.BASE_URL + "/student/exams/activity");
 
             conn = (HttpURLConnection) url.openConnection();
 
@@ -984,8 +976,7 @@ public class ExamApiService {
 
             applyAuthHeaders(conn);
 
-            conn.setRequestProperty("X-User-Id", Session.getSchoolId());
-            conn.setRequestProperty("X-Role", Session.getRole());
+            conn.setRequestProperty("Authorization", Session.getSessionToken());
 
             conn.setDoOutput(true);
 
@@ -1017,7 +1008,7 @@ public class ExamApiService {
     // ===================
 
     private String sendPostRequest(String endpoint, String json) throws Exception {
-        URL url = new URL(BASE_URL + endpoint);
+        URL url = new URL(AppConfig.BASE_URL + endpoint);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         conn.setRequestMethod("POST");
@@ -1026,8 +1017,7 @@ public class ExamApiService {
 
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("X-User-Id", Session.getSchoolId());
-        conn.setRequestProperty("X-Role", Session.getRole());
+        conn.setRequestProperty("X-Authorization", Session.getSessionToken());
 
         conn.setDoOutput(true);
 
@@ -1051,7 +1041,7 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(BASE_URL + endpointPath);
+            URL url = new URL(AppConfig.BASE_URL + endpointPath);
             conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("PUT");
@@ -1086,7 +1076,7 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(BASE_URL + endpointPath);
+            URL url = new URL(AppConfig.BASE_URL + endpointPath);
             conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("PUT");
@@ -1126,20 +1116,7 @@ public class ExamApiService {
     }
 
     private void applyAuthHeaders(HttpURLConnection conn) {
-        String userId = Session.getSchoolId();
-        String role = Session.getRole();
         String token = Session.getSessionToken();
-
-        if (userId == null || userId.isBlank()) {
-            throw new RuntimeException("Session username is missing. Please login again.");
-        }
-
-        if (role == null || role.isBlank()) {
-            throw new RuntimeException("Session role is missing. Please login again.");
-        }
-
-        conn.setRequestProperty("X-User-Id", userId);
-        conn.setRequestProperty("X-Role", role);
 
         if (token != null && !token.isBlank()) {
             conn.setRequestProperty("Authorization", "Bearer " + token);
@@ -1168,17 +1145,6 @@ public class ExamApiService {
         return responseCode >= 200 && responseCode < 300;
     }
 
-    private String readResponse(InputStream stream) throws Exception {
-        if (stream == null) {
-            return "";
-        }
-
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(stream, StandardCharsets.UTF_8)
-        )) {
-            return reader.lines().collect(Collectors.joining());
-        }
-    }
 
     private <T> T get(String endpoint, Class<T> responseType) throws Exception {
         HttpURLConnection connection = createConnection(endpoint, "GET");
@@ -1265,7 +1231,7 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(BASE_URL + endpoint);
+            URL url = new URL(AppConfig.BASE_URL + endpoint);
             conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("GET");
@@ -1293,10 +1259,7 @@ public class ExamApiService {
                         .trim();
             }
 
-            File destination = new File(
-                    System.getProperty("user.home") + "/Downloads",
-                    fileName
-            );
+            File destination = new File(System.getProperty("user.home") + "/Downloads", fileName);
 
             try (InputStream inputStream = conn.getInputStream();
                  FileOutputStream outputStream = new FileOutputStream(destination)) {
