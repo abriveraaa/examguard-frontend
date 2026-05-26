@@ -17,9 +17,7 @@ public class ExamGuardApplication extends Application {
         MediaPipeFaceRuntime.startIfNeeded();
 
         SceneManager.setStage(stage);
-        FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/fxml/auth/login.fxml")
-        );
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/auth/login.fxml"));
 
         Scene scene = new Scene(loader.load());
 
