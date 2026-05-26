@@ -39,4 +39,4 @@ build/
 .DS_Store
 
 ### Python Virtual Environment ###
-ai-runtime/mediapipe-face/.venv
+ai-runtime/mediapipe-face/.venv/
