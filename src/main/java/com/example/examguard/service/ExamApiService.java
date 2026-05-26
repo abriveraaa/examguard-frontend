@@ -1017,7 +1017,7 @@ public class ExamApiService {
 
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("X-Authorization", Session.getSessionToken());
+        conn.setRequestProperty("Authorization", Session.getSessionToken());
 
         conn.setDoOutput(true);
 
@@ -1046,6 +1046,7 @@ public class ExamApiService {
 
             conn.setRequestMethod("PUT");
             conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("Authorization", Session.getSessionToken());
 
             applyAuthHeaders(conn);
 
@@ -1151,9 +1152,7 @@ public class ExamApiService {
 
         int status = connection.getResponseCode();
 
-        InputStream stream = status >= 200 && status < 300
-                ? connection.getInputStream()
-                : connection.getErrorStream();
+        InputStream stream = status >= 200 && status < 300 ? connection.getInputStream() : connection.getErrorStream();
 
         try (InputStreamReader reader = new InputStreamReader(stream)) {
             if (status < 200 || status >= 300) {

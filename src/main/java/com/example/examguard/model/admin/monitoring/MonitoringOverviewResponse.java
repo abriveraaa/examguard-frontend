@@ -11,14 +11,43 @@ public class MonitoringOverviewResponse {
     private List<ChartPointDto> violationsByType;
     private List<ChartPointDto> violationsByProgram;
     private List<ChartPointDto> activeSessionsByRole;
-
+    private List<ChartPointDto> loginVolume;
+    private List<ChartPointDto> concurrentUsers;
     private List<AdminLogRowDto> recentCriticalEvents;
 
-    public List<MetricCardDto> getSummaryCards() { return summaryCards; }
-    public List<ChartPointDto> getConcurrentUsersByRole() { return concurrentUsersByRole; }
-    public List<ChartPointDto> getActivityVolume() { return activityVolume; }
-    public List<ChartPointDto> getViolationsByType() { return violationsByType; }
-    public List<ChartPointDto> getViolationsByProgram() { return violationsByProgram; }
-    public List<ChartPointDto> getActiveSessionsByRole() { return activeSessionsByRole; }
-    public List<AdminLogRowDto> getRecentCriticalEvents() { return recentCriticalEvents; }
+    public List<MetricCardDto> getSummaryCards() {
+        return summaryCards;
+    }
+
+    public List<ChartPointDto> getConcurrentUsersByRole() {
+        return concurrentUsersByRole;
+    }
+
+    public List<ChartPointDto> getActivityVolume() {
+        return activityVolume;
+    }
+
+    public List<ChartPointDto> getViolationsByType() {
+        return violationsByType;
+    }
+
+    public List<ChartPointDto> getViolationsByProgram() {
+        return violationsByProgram;
+    }
+
+    public List<ChartPointDto> getActiveSessionsByRole() {
+        return activeSessionsByRole;
+    }
+
+    public List<ChartPointDto> getLoginVolume() {
+        return loginVolume;
+    }
+
+    public List<ChartPointDto> getConcurrentUsers() {
+        return concurrentUsers;
+    }
+
+    public List<AdminLogRowDto> getRecentCriticalEvents() {
+        return recentCriticalEvents;
+    }
 }

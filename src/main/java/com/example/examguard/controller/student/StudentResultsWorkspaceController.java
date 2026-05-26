@@ -10,6 +10,7 @@ import com.example.examguard.service.StudentApiService;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -93,19 +94,35 @@ public class StudentResultsWorkspaceController implements ShellAwareController {
                         " • Submitted: " + formatDateTime(result.getSubmittedAt())
         );
 
+        List<StudentExamResultQuestionResponse> questions = result.getQuestions();
+
+        double calculatedScore = questions == null
+                ? 0.0
+                : questions.stream()
+                .mapToDouble(q -> q.getEarnedPoints() == null ? 0.0 : q.getEarnedPoints())
+                .sum();
+
+        double calculatedTotal = questions == null
+                ? 0.0
+                : questions.stream()
+                .mapToDouble(q -> q.getPoints() == null ? 0.0 : q.getPoints())
+                .sum();
+
+        double calculatedPercentage = calculatedTotal <= 0
+                ? 0.0
+                : (calculatedScore / calculatedTotal) * 100.0;
+
         scoreLabel.setText(
-                formatNumber(result.getTotalScore()) +
+                formatNumber(calculatedScore) +
                         " / " +
-                        formatNumber(result.getTotalPoints())
+                        formatNumber(calculatedTotal)
         );
 
         percentageLabel.setText(
-                formatNumber(result.getScorePercentage()) + "%"
+                formatNumber(calculatedPercentage) + "%"
         );
 
         questionContainer.getChildren().clear();
-
-        List<StudentExamResultQuestionResponse> questions = result.getQuestions();
 
         if (questions == null || questions.isEmpty()) {
             questionContainer.getChildren().add(new Label("No answers found."));
@@ -589,93 +606,131 @@ public class StudentResultsWorkspaceController implements ShellAwareController {
     private void showViolationPreviewDialog(
             List<StudentExamResultViolationResponse> violations
     ) {
+        if (violations == null || violations.isEmpty()) {
+            showError("No violations found.");
+            return;
+        }
+
+        final int[] index = {0};
+
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Violation Evidence Preview");
 
-        BorderPane root = new BorderPane();
-        root.getStyleClass().add("violation-preview-root");
-
-        ImageView previewImage = new ImageView();
-        previewImage.setFitWidth(760);
-        previewImage.setFitHeight(430);
-        previewImage.setPreserveRatio(true);
-        previewImage.getStyleClass().add("violation-preview-image");
-
-        Label emptyPreviewLabel = new Label("No screenshot/evidence available for this violation.");
-        emptyPreviewLabel.getStyleClass().add("violation-preview-empty");
-
-        StackPane previewPane = new StackPane(emptyPreviewLabel, previewImage);
-        previewPane.getStyleClass().add("violation-preview-pane");
-
-        VBox listBox = new VBox(8);
-        listBox.getStyleClass().add("violation-preview-list");
-
-        for (int i = 0; i < violations.size(); i++) {
-            StudentExamResultViolationResponse violation = violations.get(i);
-
-            Button item = new Button(
-                    "Violation " + (i + 1) +
-                            " • " + formatType(violation.getViolationType()) +
-                            " • " + nullSafe(violation.getReviewStatus())
-            );
-            item.setMaxWidth(Double.MAX_VALUE);
-            item.getStyleClass().add("violation-preview-list-button");
-
-            item.setOnAction(e -> {
-                String evidenceUrl = violation.getEvidenceUrl();
-
-                if (evidenceUrl == null || evidenceUrl.isBlank()) {
-                    previewImage.setImage(null);
-                    emptyPreviewLabel.setVisible(true);
-                    emptyPreviewLabel.setManaged(true);
-                    return;
-                }
-
-                try {
-                    Image image = new Image(buildImageUrl(evidenceUrl), true);
-                    previewImage.setImage(image);
-                    emptyPreviewLabel.setVisible(false);
-                    emptyPreviewLabel.setManaged(false);
-                } catch (Exception ex) {
-                    previewImage.setImage(null);
-                    emptyPreviewLabel.setText("Failed to load evidence image.");
-                    emptyPreviewLabel.setVisible(true);
-                    emptyPreviewLabel.setManaged(true);
-                }
-            });
-
-            listBox.getChildren().add(item);
-        }
-
-        VBox detailsBox = new VBox(10);
-        detailsBox.getStyleClass().add("violation-preview-details");
-
         Label title = new Label("Violation Evidence");
         title.getStyleClass().add("violation-preview-title");
 
-        Label note = new Label("Select a violation to preview its screenshot or evidence.");
+        Label note = new Label("Review evidence screenshots recorded for this question.");
         note.setWrapText(true);
         note.getStyleClass().add("violation-preview-note");
 
-        detailsBox.getChildren().addAll(title, note, listBox);
+        StackPane previewPane = new StackPane();
+        previewPane.getStyleClass().add("violation-preview-pane");
+        previewPane.setMinHeight(430);
 
-        root.setCenter(previewPane);
-        root.setRight(detailsBox);
+        Label metadataLabel = new Label();
+        metadataLabel.getStyleClass().add("violation-preview-note");
 
-        Scene scene = new Scene(root, 1100, 620);
-        scene.getStylesheets().add(
-                getClass().getResource("/css/student-exam.css").toExternalForm()
+        Label counterLabel = new Label();
+        counterLabel.getStyleClass().add("evidence-frame-offset");
+
+        Button previousButton = new Button("← Previous");
+        previousButton.getStyleClass().add("outline-button");
+
+        Button nextButton = new Button("Next →");
+        nextButton.getStyleClass().add("outline-button");
+
+        Runnable render = () -> {
+            StudentExamResultViolationResponse violation = violations.get(index[0]);
+
+            previewPane.getChildren().clear();
+
+            String evidenceUrl = violation.getEvidenceUrl();
+
+            if (evidenceUrl == null || evidenceUrl.isBlank()) {
+                Label empty = new Label("No evidence image available.");
+                empty.getStyleClass().add("violation-preview-empty");
+                previewPane.getChildren().add(empty);
+            } else {
+                ImageView imageView = new ImageView(
+                        new Image(buildImageUrl(evidenceUrl), true)
+                );
+
+                imageView.setFitWidth(850);
+                imageView.setFitHeight(420);
+                imageView.setPreserveRatio(true);
+                imageView.setSmooth(true);
+                imageView.getStyleClass().add("evidence-frame-image");
+
+                previewPane.getChildren().add(imageView);
+            }
+
+            metadataLabel.setText(
+                    "Violation " + (index[0] + 1) +
+                            " • " + formatType(violation.getViolationType()) +
+                            " • " + nullSafe(violation.getSeverity()) +
+                            " • " + nullSafe(violation.getReviewStatus()) +
+                            " • " + formatDateTime(violation.getOccurredAt())
+            );
+
+            counterLabel.setText(
+                    (index[0] + 1) + " of " + violations.size()
+            );
+
+            previousButton.setDisable(index[0] == 0);
+            nextButton.setDisable(index[0] == violations.size() - 1);
+        };
+
+        previousButton.setOnAction(e -> {
+            if (index[0] > 0) {
+                index[0]--;
+                render.run();
+            }
+        });
+
+        nextButton.setOnAction(e -> {
+            if (index[0] < violations.size() - 1) {
+                index[0]++;
+                render.run();
+            }
+        });
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox navigationRow = new HBox(
+                10,
+                previousButton,
+                counterLabel,
+                spacer,
+                nextButton
+        );
+        navigationRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox root = new VBox(
+                16,
+                title,
+                note,
+                previewPane,
+                metadataLabel,
+                navigationRow
         );
 
-        dialog.setScene(scene);
-        dialog.show();
+        root.getStyleClass().add("violation-preview-root");
+        root.setPadding(new javafx.geometry.Insets(22));
 
-        if (!violations.isEmpty()) {
-            listBox.getChildren().get(0).fireEvent(
-                    new javafx.event.ActionEvent()
-            );
+        Scene scene = new Scene(root, 1100, 650);
+
+        java.net.URL cssUrl =
+                getClass().getResource("/styles/student-exam.css");
+
+        if (cssUrl != null) {
+            scene.getStylesheets().add(cssUrl.toExternalForm());
         }
+
+        dialog.setScene(scene);
+        render.run();
+        dialog.show();
     }
 
     private String buildImageUrl(String path) {

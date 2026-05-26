@@ -1,69 +1,57 @@
 package com.example.examguard.controller.admin;
 
-import com.example.examguard.model.admin.monitoring.AdminLogRowDto;
-import com.example.examguard.model.admin.monitoring.ChartPointDto;
-import com.example.examguard.model.admin.monitoring.MetricCardDto;
-import com.example.examguard.model.admin.monitoring.MonitoringOverviewResponse;
-import com.example.examguard.model.admin.monitoring.AdminMonitoringLogsResponse;
+import com.example.examguard.model.admin.monitoring.*;
 import com.example.examguard.service.AdminApiService;
-import com.example.examguard.utility.LoadingSpinner;
-
-
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
-import javafx.geometry.Pos;
-import javafx.scene.control.TableCell;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.fxml.FXML;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.PieChart;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
+import java.util.HashMap;
+import java.util.Map;
 
 public class AdminMonitoringController {
 
-    @FXML private ComboBox<String> academicYearComboBox;
-    @FXML private ComboBox<String> termComboBox;
+    private static final int PAGE_SIZE = 20;
+    private static final ZoneId MANILA = ZoneId.of("Asia/Manila");
+    private static final DateTimeFormatter LOG_DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final AdminApiService adminApiService = new AdminApiService();
+
     @FXML private ComboBox<String> rangeComboBox;
+    @FXML private ComboBox<String> violationSeverityFilterComboBox;
+    @FXML private ComboBox<String> violationStatusFilterComboBox;
+    @FXML private ComboBox<String> systemStatusFilterComboBox;
+    @FXML private ComboBox<String> systemRoleFilterComboBox;
+    @FXML private ComboBox<String> sessionStatusFilterComboBox;
+    @FXML private ComboBox<String> sessionRoleFilterComboBox;
+    @FXML private ComboBox<String> accessEventTypeFilterComboBox;
+    @FXML private ComboBox<String> accessStatusFilterComboBox;
+    @FXML private ComboBox<String> accessRoleFilterComboBox;
+    @FXML private ComboBox<String> accountActionFilterComboBox;
+    @FXML private ComboBox<String> accountStatusFilterComboBox;
+    @FXML private ComboBox<String> accountRoleFilterComboBox;
+    @FXML private ComboBox<String> registrarSyncTypeFilterComboBox;
+    @FXML private ComboBox<String> registrarStatusFilterComboBox;
+
     @FXML private DatePicker customStartDatePicker;
     @FXML private DatePicker customEndDatePicker;
-
-    @FXML private ComboBox<String> concurrentTimeScaleComboBox;
-    @FXML private ComboBox<String> violationDistributionGroupComboBox;
-    @FXML private ComboBox<String> activityVolumeGroupComboBox;
-    @FXML private ComboBox<String> violationsByProgramGroupComboBox;
-
-    @FXML private PieChart violationDistributionChart;
-    @FXML private BarChart<String, Number> activityVolumeChart;
-    @FXML private BarChart<String, Number> violationsByProgramChart;
-
-    @FXML private Label concurrentUsersLabel;
-    @FXML private Label violationLogsLabel;
-    @FXML private Label systemLogsLabel;
-    @FXML private Label activeSessionsLabel;
-
-    @FXML private Button overviewTabButton;
     @FXML private Button allLogsTabButton;
     @FXML private Button violationLogsTabButton;
     @FXML private Button systemLogsTabButton;
     @FXML private Button sessionsTabButton;
-
     @FXML private Button accessLogsTabButton;
     @FXML private Button accountLogsTabButton;
     @FXML private Button registrarLogsTabButton;
-
-    @FXML private VBox overviewPane;
+    @FXML private Button cameraSessionsTabButton;
     @FXML private VBox allLogsPane;
     @FXML private VBox violationLogsPane;
     @FXML private VBox systemLogsPane;
@@ -71,13 +59,7 @@ public class AdminMonitoringController {
     @FXML private VBox accessLogsPane;
     @FXML private VBox accountLogsPane;
     @FXML private VBox registrarLogsPane;
-
-    @FXML private LineChart<String, Number> concurrentUsersChart;
-    @FXML private PieChart logDistributionChart;
-
-    @FXML private ListView<String> recentViolationsListView;
-    @FXML private ListView<String> recentSystemEventsListView;
-
+    @FXML private VBox cameraSessionsPane;
     @FXML private TextField allLogsSearchField;
     @FXML private TextField violationSearchField;
     @FXML private TextField systemSearchField;
@@ -85,10 +67,12 @@ public class AdminMonitoringController {
     @FXML private TextField accessSearchField;
     @FXML private TextField accountSearchField;
     @FXML private TextField registrarSearchField;
-
+    @FXML private TextField cameraSearchField;
     @FXML private ComboBox<String> violationTypeFilterComboBox;
     @FXML private ComboBox<String> systemModuleFilterComboBox;
-
+    @FXML private ComboBox<String> cameraStatusFilterComboBox;
+    @FXML private ComboBox<String> cameraDeviceTypeFilterComboBox;
+    @FXML private ComboBox<String> cameraStreamRoleFilterComboBox;
     @FXML private TableView<AdminLogRowDto> allLogsTable;
     @FXML private TableView<AdminLogRowDto> violationLogsTable;
     @FXML private TableView<AdminLogRowDto> systemLogsTable;
@@ -96,39 +80,34 @@ public class AdminMonitoringController {
     @FXML private TableView<AdminLogRowDto> accessLogsTable;
     @FXML private TableView<AdminLogRowDto> accountLogsTable;
     @FXML private TableView<AdminLogRowDto> registrarLogsTable;
-
+    @FXML private TableView<AdminLogRowDto> cameraSessionsTable;
     @FXML private Label allLogsPageLabel;
     @FXML private Button allLogsPrevButton;
     @FXML private Button allLogsNextButton;
-
     @FXML private Label violationLogsPageLabel;
     @FXML private Button violationLogsPrevButton;
     @FXML private Button violationLogsNextButton;
-
     @FXML private Label systemLogsPageLabel;
     @FXML private Button systemLogsPrevButton;
     @FXML private Button systemLogsNextButton;
-
     @FXML private Label sessionLogsPageLabel;
     @FXML private Button sessionLogsPrevButton;
     @FXML private Button sessionLogsNextButton;
-
     @FXML private Label accessLogsPageLabel;
     @FXML private Button accessLogsPrevButton;
     @FXML private Button accessLogsNextButton;
-
     @FXML private Label accountLogsPageLabel;
     @FXML private Button accountLogsPrevButton;
     @FXML private Button accountLogsNextButton;
-
     @FXML private Label registrarLogsPageLabel;
     @FXML private Button registrarLogsPrevButton;
     @FXML private Button registrarLogsNextButton;
-
     @FXML private Label reactivationLogsPageLabel;
     @FXML private Button reactivationLogsPrevButton;
     @FXML private Button reactivationLogsNextButton;
-
+    @FXML private Label cameraSessionsPageLabel;
+    @FXML private Button cameraSessionsPrevButton;
+    @FXML private Button cameraSessionsNextButton;
     @FXML private TableColumn<AdminLogRowDto, String> allLogTimeColumn;
     @FXML private TableColumn<AdminLogRowDto, String> allLogTypeColumn;
     @FXML private TableColumn<AdminLogRowDto, String> allLogActorColumn;
@@ -140,7 +119,6 @@ public class AdminMonitoringController {
     @FXML private TableColumn<AdminLogRowDto, String> allLogTargetUserColumn;
     @FXML private TableColumn<AdminLogRowDto, String> allLogTargetRoleColumn;
     @FXML private TableColumn<AdminLogRowDto, String> allLogDurationColumn;
-
     @FXML private TableColumn<AdminLogRowDto, String> violationTimeColumn;
     @FXML private TableColumn<AdminLogRowDto, String> violationStudentColumn;
     @FXML private TableColumn<AdminLogRowDto, String> violationCourseColumn;
@@ -150,7 +128,6 @@ public class AdminMonitoringController {
     @FXML private TableColumn<AdminLogRowDto, String> violationSeverityColumn;
     @FXML private TableColumn<AdminLogRowDto, String> violationStatusColumn;
     @FXML private TableColumn<AdminLogRowDto, String> violationMessageColumn;
-
     @FXML private TableColumn<AdminLogRowDto, String> systemTimeColumn;
     @FXML private TableColumn<AdminLogRowDto, String> systemActorColumn;
     @FXML private TableColumn<AdminLogRowDto, String> systemRoleColumn;
@@ -161,7 +138,6 @@ public class AdminMonitoringController {
     @FXML private TableColumn<AdminLogRowDto, String> systemStatusColumn;
     @FXML private TableColumn<AdminLogRowDto, String> systemMessageColumn;
     @FXML private TableColumn<AdminLogRowDto, String> systemDurationColumn;
-
     @FXML private TableColumn<AdminLogRowDto, String> sessionStartedColumn;
     @FXML private TableColumn<AdminLogRowDto, String> sessionUserColumn;
     @FXML private TableColumn<AdminLogRowDto, String> sessionRoleColumn;
@@ -169,32 +145,33 @@ public class AdminMonitoringController {
     @FXML private TableColumn<AdminLogRowDto, String> sessionIpColumn;
     @FXML private TableColumn<AdminLogRowDto, String> sessionStatusColumn;
     @FXML private TableColumn<AdminLogRowDto, String> sessionLastSeenColumn;
-
     @FXML private TableColumn<AdminLogRowDto, String> accessTimeColumn;
     @FXML private TableColumn<AdminLogRowDto, String> accessActorColumn;
     @FXML private TableColumn<AdminLogRowDto, String> accessActionColumn;
     @FXML private TableColumn<AdminLogRowDto, String> accessStatusColumn;
     @FXML private TableColumn<AdminLogRowDto, String> accessMessageColumn;
-
     @FXML private TableColumn<AdminLogRowDto, String> accountTimeColumn;
     @FXML private TableColumn<AdminLogRowDto, String> accountActorColumn;
     @FXML private TableColumn<AdminLogRowDto, String> accountActionColumn;
     @FXML private TableColumn<AdminLogRowDto, String> accountStatusColumn;
     @FXML private TableColumn<AdminLogRowDto, String> accountMessageColumn;
-
     @FXML private TableColumn<AdminLogRowDto, String> registrarTimeColumn;
     @FXML private TableColumn<AdminLogRowDto, String> registrarActorColumn;
     @FXML private TableColumn<AdminLogRowDto, String> registrarActionColumn;
     @FXML private TableColumn<AdminLogRowDto, String> registrarStatusColumn;
     @FXML private TableColumn<AdminLogRowDto, String> registrarMessageColumn;
-
     @FXML private TableColumn<AdminLogRowDto, String> reactivationTimeColumn;
     @FXML private TableColumn<AdminLogRowDto, String> reactivationActorColumn;
     @FXML private TableColumn<AdminLogRowDto, String> reactivationRoleColumn;
     @FXML private TableColumn<AdminLogRowDto, String> reactivationStatusColumn;
     @FXML private TableColumn<AdminLogRowDto, String> reactivationMessageColumn;
-
-    private final AdminApiService adminApiService = new AdminApiService();
+    @FXML private TableColumn<AdminLogRowDto, String> cameraTimeColumn;
+    @FXML private TableColumn<AdminLogRowDto, String> cameraStudentColumn;
+    @FXML private TableColumn<AdminLogRowDto, String> cameraExamColumn;
+    @FXML private TableColumn<AdminLogRowDto, String> cameraAttemptColumn;
+    @FXML private TableColumn<AdminLogRowDto, String> cameraDeviceColumn;
+    @FXML private TableColumn<AdminLogRowDto, String> cameraStatusColumn;
+    @FXML private TableColumn<AdminLogRowDto, String> cameraMessageColumn;
 
     private int allLogsPage = 0;
     private int violationLogsPage = 0;
@@ -204,8 +181,6 @@ public class AdminMonitoringController {
     private int accountLogsPage = 0;
     private int registrarLogsPage = 0;
     private int reactivationLogsPage = 0;
-
-
     private int allLogsTotalPages = 1;
     private int violationLogsTotalPages = 1;
     private int systemLogsTotalPages = 1;
@@ -214,7 +189,6 @@ public class AdminMonitoringController {
     private int accountLogsTotalPages = 1;
     private int registrarLogsTotalPages = 1;
     private int reactivationLogsTotalPages = 1;
-
     private long allLogsTotalElements = 0;
     private long violationLogsTotalElements = 0;
     private long systemLogsTotalElements = 0;
@@ -223,33 +197,24 @@ public class AdminMonitoringController {
     private long accountLogsTotalElements = 0;
     private long registrarLogsTotalElements = 0;
     private long reactivationLogsTotalElements = 0;
+    private int cameraSessionsPage = 0;
+    private int cameraSessionsTotalPages = 1;
+    private long cameraSessionsTotalElements = 0;
 
-    private static final int PAGE_SIZE = 20;
-    private static final ZoneId MANILA = ZoneId.of("Asia/Manila");
-
-    private static final DateTimeFormatter LOG_DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private boolean updatingFilterOptions = false;
 
     @FXML
     public void initialize() {
         setupFilters();
         updateCustomRangeVisibility();
 
-        setupPlaceholderData();
         setupLogTables();
-        setupSearchListeners();
-
-        loadOverviewAsync();
-        loadLogsAsync("ALL", allLogsTable, allLogsSearchField, allLogsPage);
-
-        setupLogTables();
-
         setupTableResizePolicies();
-
         setupBadgeColumns();
-
         setupSearchListeners();
         initializePaginationLabels();
+
+        showAllLogsPane();
     }
 
     private void setupLogTables() {
@@ -316,6 +281,13 @@ public class AdminMonitoringController {
         registrarStatusColumn.setCellValueFactory(c -> text(c.getValue().getStatus()));
         registrarMessageColumn.setCellValueFactory(c -> text(c.getValue().getMessage()));
 
+        cameraTimeColumn.setCellValueFactory(c -> text(formatDateTime(c.getValue().getStartedAt())));
+        cameraStudentColumn.setCellValueFactory(c -> text(c.getValue().getActorId()));
+        cameraExamColumn.setCellValueFactory(c -> text(c.getValue().getExamId()));
+        cameraAttemptColumn.setCellValueFactory(c -> text(c.getValue().getAttemptId()));
+        cameraDeviceColumn.setCellValueFactory(c -> text(c.getValue().getAction()));
+        cameraStatusColumn.setCellValueFactory(c -> text(c.getValue().getStatus()));
+        cameraMessageColumn.setCellValueFactory(c -> text(c.getValue().getMessage()));
     }
 
     private void initializePaginationLabels() {
@@ -351,6 +323,7 @@ public class AdminMonitoringController {
         if (accountLogsPageLabel != null) accountLogsPageLabel.setText("Page 1 of 1 • 0 records");
         if (registrarLogsPageLabel != null) registrarLogsPageLabel.setText("Page 1 of 1 • 0 records");
         if (reactivationLogsPageLabel != null) reactivationLogsPageLabel.setText("Page 1 of 1 • 0 records");
+        if (cameraSessionsPageLabel != null) { cameraSessionsPageLabel.setText("Page 1 of 1 • 0 records");}
 
         if (accessLogsPrevButton != null) accessLogsPrevButton.setDisable(true);
         if (accessLogsNextButton != null) accessLogsNextButton.setDisable(true);
@@ -363,6 +336,10 @@ public class AdminMonitoringController {
 
         if (reactivationLogsPrevButton != null) reactivationLogsPrevButton.setDisable(true);
         if (reactivationLogsNextButton != null) reactivationLogsNextButton.setDisable(true);
+
+        if (cameraSessionsPrevButton != null) cameraSessionsPrevButton.setDisable(true);
+        if (cameraSessionsNextButton != null) cameraSessionsNextButton.setDisable(true);
+
     }
 
     private SimpleStringProperty text(Object value) {
@@ -395,6 +372,8 @@ public class AdminMonitoringController {
 
             table.setItems(FXCollections.observableArrayList(response.getContent()));
 
+            populateFiltersFromOptions(source, response.getFilterOptions());
+
             updatePaginationState(
                     source,
                     response.getCurrentPage(),
@@ -411,6 +390,63 @@ public class AdminMonitoringController {
         });
 
         new Thread(task).start();
+    }
+
+    private void populateFiltersFromOptions(
+            String source,
+            AdminMonitoringFilterOptionsDto options
+    ) {
+        if (options == null) {
+            return;
+        }
+
+        updatingFilterOptions = true;
+
+        try {
+            switch (source) {
+                case "VIOLATION" -> {
+                    setFilterItems(violationTypeFilterComboBox, "All Violations", options.getViolationTypes());
+                    setFilterItems(violationSeverityFilterComboBox, "All Severities", options.getSeverities());
+                    setFilterItems(violationStatusFilterComboBox, "All Statuses", options.getStatuses());
+                }
+
+                case "SYSTEM" -> {
+                    setFilterItems(systemModuleFilterComboBox, "All Modules", options.getModules());
+                    setFilterItems(systemStatusFilterComboBox, "All Statuses", options.getStatuses());
+                    setFilterItems(systemRoleFilterComboBox, "All Roles", options.getRoles());
+                }
+
+                case "SESSION" -> {
+                    setFilterItems(sessionStatusFilterComboBox, "All Statuses", options.getStatuses());
+                    setFilterItems(sessionRoleFilterComboBox, "All Roles", options.getRoles());
+                }
+
+                case "ACCESS" -> {
+                    setFilterItems(accessEventTypeFilterComboBox, "All Events", options.getActions());
+                    setFilterItems(accessStatusFilterComboBox, "All Statuses", options.getStatuses());
+                    setFilterItems(accessRoleFilterComboBox, "All Roles", options.getRoles());
+                }
+
+                case "ACCOUNT" -> {
+                    setFilterItems(accountActionFilterComboBox, "All Actions", options.getActions());
+                    setFilterItems(accountStatusFilterComboBox, "All Statuses", options.getStatuses());
+                    setFilterItems(accountRoleFilterComboBox, "All Roles", options.getRoles());
+                }
+
+                case "REGISTRAR" -> {
+                    setFilterItems(registrarSyncTypeFilterComboBox, "All Sync Types", options.getActions());
+                    setFilterItems(registrarStatusFilterComboBox, "All Statuses", options.getStatuses());
+                }
+
+                case "CAMERA" -> {
+                    setFilterItems(cameraStatusFilterComboBox, "All Statuses", options.getCameraStatuses());
+                    setFilterItems(cameraDeviceTypeFilterComboBox, "All Devices", options.getCameraDeviceTypes());
+                    setFilterItems(cameraStreamRoleFilterComboBox, "All Stream Roles", options.getCameraStreamRoles());
+                }
+            }
+        } finally {
+            updatingFilterOptions = false;
+        }
     }
 
     private void updatePaginationState(
@@ -535,6 +571,24 @@ public class AdminMonitoringController {
                 if (reactivationLogsPrevButton != null) reactivationLogsPrevButton.setDisable(currentPage <= 0);
                 if (reactivationLogsNextButton != null) reactivationLogsNextButton.setDisable(!hasNext);
             }
+
+            case "CAMERA" -> {
+                cameraSessionsPage = currentPage;
+                cameraSessionsTotalPages = safeTotalPages;
+                cameraSessionsTotalElements = totalElements;
+
+                if (cameraSessionsPageLabel != null) {
+                    cameraSessionsPageLabel.setText(labelText);
+                }
+
+                if (cameraSessionsPrevButton != null) {
+                    cameraSessionsPrevButton.setDisable(currentPage <= 0);
+                }
+
+                if (cameraSessionsNextButton != null) {
+                    cameraSessionsNextButton.setDisable(!hasNext);
+                }
+            }
         }
     }
 
@@ -644,422 +698,79 @@ public class AdminMonitoringController {
         loadLogsAsync("REGISTRAR", registrarLogsTable, registrarSearchField, registrarLogsPage);
     }
 
+    @FXML
+    private void handleCameraSessionsPrevious() {
+        if (cameraSessionsPage <= 0) return;
 
-    private void loadOverviewAsync() {
-        if (!isCustomRangeValid()) {
-            return;
-        }
-
-        Task<MonitoringOverviewResponse> task = new Task<>() {
-            @Override
-            protected MonitoringOverviewResponse call() throws Exception {
-                return adminApiService.getOverview(buildOverviewRequest());
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            MonitoringOverviewResponse response = task.getValue();
-            applyOverviewResponse(response);
-        });
-
-        task.setOnFailed(e -> {
-            Throwable ex = task.getException();
-            ex.printStackTrace();
-            showInfo("Failed to load monitoring overview: " + ex.getMessage());
-        });
-
-        new Thread(task).start();
+        cameraSessionsPage--;
+        loadLogsAsync("CAMERA", cameraSessionsTable, cameraSearchField, cameraSessionsPage);
     }
 
-    private void applyOverviewResponse(MonitoringOverviewResponse response) {
-        if (response == null) return;
+    @FXML
+    private void handleCameraSessionsNext() {
+        if (cameraSessionsPage + 1 >= cameraSessionsTotalPages) return;
 
-        applySummaryCards(response.getSummaryCards());
-        applyActivityVolumeChart(response.getActivityVolume());
-        applyActivityVolumeBarChart(response.getActivityVolume());
-        applyViolationDistributionChart(response.getViolationsByType());
-        applyViolationsByProgramChart(response.getViolationsByProgram());
-        applyRecentCriticalEvents(response.getRecentCriticalEvents());
-    }
-
-    private void applySummaryCards(List<MetricCardDto> cards) {
-        if (cards == null) return;
-
-        long activities = 0;
-        long violations = 0;
-        long critical = 0;
-
-        for (MetricCardDto card : cards) {
-            if (card.getLabel() == null) continue;
-
-            String label = card.getLabel().toLowerCase();
-            long value = card.getValue() == null ? 0 : card.getValue();
-
-            if (label.contains("activity")) {
-                activities = value;
-            } else if (label.contains("violation")) {
-                violations = value;
-            } else if (label.contains("critical")) {
-                critical = value;
-            }
-        }
-
-        systemLogsLabel.setText(String.valueOf(activities));
-        violationLogsLabel.setText(String.valueOf(violations));
-        activeSessionsLabel.setText("0");
-        concurrentUsersLabel.setText(String.valueOf(critical));
-    }
-
-    private void applyActivityVolumeChart(List<ChartPointDto> points) {
-        if (concurrentUsersChart == null) return;
-
-        concurrentUsersChart.getData().clear();
-
-        if (points == null || points.isEmpty()) {
-            XYChart.Series<String, Number> emptySeries = new XYChart.Series<>();
-            emptySeries.setName("No Activity");
-            emptySeries.getData().add(new XYChart.Data<>("No Data", 0));
-            concurrentUsersChart.getData().add(emptySeries);
-            return;
-        }
-
-        Map<String, XYChart.Series<String, Number>> seriesMap = new LinkedHashMap<>();
-
-        for (ChartPointDto point : points) {
-            String category = safe(point.getCategory());
-            String label = safe(point.getLabel());
-            long value = point.getValue() == null ? 0 : point.getValue();
-
-            XYChart.Series<String, Number> series = seriesMap.computeIfAbsent(category, key -> {
-                XYChart.Series<String, Number> s = new XYChart.Series<>();
-                s.setName(key);
-                return s;
-            });
-
-            series.getData().add(new XYChart.Data<>(label, value));
-        }
-
-        concurrentUsersChart.getData().addAll(seriesMap.values());
-    }
-
-    private void applyViolationDistributionChart(List<ChartPointDto> points) {
-        if (violationDistributionChart == null) return;
-
-        ObservableList<PieChart.Data> data = FXCollections.observableArrayList();
-
-        if (points != null) {
-            Map<String, Long> grouped = new LinkedHashMap<>();
-
-            for (ChartPointDto point : points) {
-                String label = safe(point.getLabel());
-                long value = point.getValue() == null ? 0 : point.getValue();
-
-                grouped.merge(label, value, Long::sum);
-            }
-
-            grouped.forEach((label, value) ->
-                    data.add(new PieChart.Data(label, value))
-            );
-        }
-
-        if (data.isEmpty()) {
-            data.add(new PieChart.Data("No Data", 0));
-        }
-
-        violationDistributionChart.setData(data);
-    }
-
-    private void applyActivityVolumeBarChart(List<ChartPointDto> points) {
-        if (activityVolumeChart == null) return;
-
-        activityVolumeChart.getData().clear();
-
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Activity Volume");
-
-        if (points == null || points.isEmpty()) {
-            series.getData().add(new XYChart.Data<>("No Data", 0));
-            activityVolumeChart.getData().add(series);
-            return;
-        }
-
-        Map<String, Long> grouped = new LinkedHashMap<>();
-
-        for (ChartPointDto point : points) {
-            String category = safe(point.getCategory());
-            long value = point.getValue() == null ? 0 : point.getValue();
-
-            grouped.merge(category, value, Long::sum);
-        }
-
-        grouped.forEach((label, value) ->
-                series.getData().add(new XYChart.Data<>(label, value))
-        );
-
-        activityVolumeChart.getData().add(series);
-    }
-
-    private void applyViolationsByProgramChart(List<ChartPointDto> points) {
-        if (violationsByProgramChart == null) return;
-
-        violationsByProgramChart.getData().clear();
-
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Violations by Program");
-
-        if (points == null || points.isEmpty()) {
-            series.getData().add(new XYChart.Data<>("No Data", 0));
-            violationsByProgramChart.getData().add(series);
-            return;
-        }
-
-        for (ChartPointDto point : points) {
-            String label = safe(point.getLabel());
-            long value = point.getValue() == null ? 0 : point.getValue();
-
-            series.getData().add(new XYChart.Data<>(label, value));
-        }
-
-        violationsByProgramChart.getData().add(series);
-    }
-
-    private void applyRecentCriticalEvents(List<AdminLogRowDto> logs) {
-        if (recentSystemEventsListView == null) return;
-
-        ObservableList<String> items = FXCollections.observableArrayList();
-
-        if (logs != null) {
-            for (AdminLogRowDto log : logs) {
-                items.add(
-                        safe(log.getStartedAt()) + " • " +
-                                safe(log.getModule()) + " • " +
-                                safe(log.getAction()) + " • " +
-                                safe(log.getMessage())
-                );
-            }
-        }
-
-        if (items.isEmpty()) {
-            items.add("No recent critical events.");
-        }
-
-        recentSystemEventsListView.setItems(items);
+        cameraSessionsPage++;
+        loadLogsAsync("CAMERA", cameraSessionsTable, cameraSearchField, cameraSessionsPage);
     }
 
     private void setupFilters() {
-        if (academicYearComboBox != null) {
-            academicYearComboBox.setItems(FXCollections.observableArrayList(
-                    "All Academic Years",
-                    "2025-2026",
-                    "2026-2027"
-            ));
-            academicYearComboBox.setValue("All Academic Years");
-            academicYearComboBox.setOnAction(e -> reloadOverviewByFilters());
-        }
-
-        if (termComboBox != null) {
-            termComboBox.setItems(FXCollections.observableArrayList(
-                    "All Terms",
-                    "1st Semester",
-                    "2nd Semester",
-                    "Summer"
-            ));
-            termComboBox.setValue("All Terms");
-            termComboBox.setOnAction(e -> reloadOverviewByFilters());
-        }
 
         if (rangeComboBox != null) {
             rangeComboBox.setItems(FXCollections.observableArrayList(
-                    "Entire Period",
-                    "Entire Term",
-                    "This Month",
                     "Today",
+                    "This Month",
+                    "Entire Period",
                     "Custom Range"
             ));
-            rangeComboBox.setValue("Entire Period");
+            rangeComboBox.setValue("Today");
             rangeComboBox.setOnAction(e -> {
                 updateCustomRangeVisibility();
-                reloadOverviewByFilters();
+                reloadVisibleTabFromFirstPage();
             });
         }
 
-        setupChartDropdowns();
+        setupFilterComboBox(violationTypeFilterComboBox, "All Violations");
+        setupFilterComboBox(violationSeverityFilterComboBox, "All Severities");
+        setupFilterComboBox(violationStatusFilterComboBox, "All Statuses");
 
-        if (customStartDatePicker != null) {
-            customStartDatePicker.setOnAction(e -> reloadOverviewByFilters());
-        }
+        setupFilterComboBox(systemModuleFilterComboBox, "All Modules");
+        setupFilterComboBox(systemStatusFilterComboBox, "All Statuses");
+        setupFilterComboBox(systemRoleFilterComboBox, "All Roles");
 
-        if (customEndDatePicker != null) {
-            customEndDatePicker.setOnAction(e -> reloadOverviewByFilters());
-        }
+        setupFilterComboBox(sessionStatusFilterComboBox, "All Statuses");
+        setupFilterComboBox(sessionRoleFilterComboBox, "All Roles");
 
-        if (violationTypeFilterComboBox != null) {
-            violationTypeFilterComboBox.setItems(FXCollections.observableArrayList(
-                    "All Violations",
-                    "FOCUS_LOST",
-                    "FULLSCREEN_EXIT",
-                    "MULTIPLE_FACE",
-                    "NO_FACE",
-                    "LOOKING_AWAY"
-            ));
-            violationTypeFilterComboBox.setValue("All Violations");
-        }
+        setupFilterComboBox(accessEventTypeFilterComboBox, "All Events");
+        setupFilterComboBox(accessStatusFilterComboBox, "All Statuses");
+        setupFilterComboBox(accessRoleFilterComboBox, "All Roles");
 
-        if (systemModuleFilterComboBox != null) {
-            systemModuleFilterComboBox.setItems(FXCollections.observableArrayList(
-                    "All Modules",
-                    "AUTH",
-                    "USERS",
-                    "EXAMS",
-                    "REPORTS",
-                    "MONITORING"
-            ));
-            systemModuleFilterComboBox.setValue("All Modules");
-        }
+        setupFilterComboBox(accountActionFilterComboBox, "All Actions");
+        setupFilterComboBox(accountStatusFilterComboBox, "All Statuses");
+        setupFilterComboBox(accountRoleFilterComboBox, "All Roles");
+
+        setupFilterComboBox(registrarSyncTypeFilterComboBox, "All Sync Types");
+        setupFilterComboBox(registrarStatusFilterComboBox, "All Statuses");
+
+        setupFilterComboBox(cameraStatusFilterComboBox, "All Statuses");
+        setupFilterComboBox(cameraDeviceTypeFilterComboBox, "All Devices");
+        setupFilterComboBox(cameraStreamRoleFilterComboBox, "All Stream Roles");
     }
 
-    private void setupChartDropdowns() {
-        setupTimeScaleOptions();
+    private void setupFilterComboBox(ComboBox<String> comboBox, String defaultValue) {
+        if (comboBox == null) return;
 
-        if (violationDistributionGroupComboBox != null) {
-            violationDistributionGroupComboBox.setItems(FXCollections.observableArrayList(
-                    "Violation Type"
-            ));
-            violationDistributionGroupComboBox.setValue("Violation Type");
-        }
+        comboBox.setItems(FXCollections.observableArrayList(defaultValue));
+        comboBox.setValue(defaultValue);
 
-        if (activityVolumeGroupComboBox != null) {
-            activityVolumeGroupComboBox.setItems(FXCollections.observableArrayList(
-                    "Role"
-            ));
-            activityVolumeGroupComboBox.setValue("Role");
-        }
+        comboBox.setOnAction(e -> {
+            if (updatingFilterOptions) {
+                return;
+            }
 
-        if (violationsByProgramGroupComboBox != null) {
-            violationsByProgramGroupComboBox.setItems(FXCollections.observableArrayList(
-                    "Program"
-            ));
-            violationsByProgramGroupComboBox.setValue("Program");
-        }
+            reloadVisibleTabFromFirstPage();
+        });
     }
-
-    private void setupTimeScaleOptions() {
-        if (concurrentTimeScaleComboBox == null) return;
-
-        String academicYear = valueOf(academicYearComboBox, "All Academic Years");
-        String range = valueOf(rangeComboBox, "Entire Period");
-
-        ObservableList<String> options;
-
-        if ("All Academic Years".equals(academicYear)) {
-            options = FXCollections.observableArrayList("Auto", "Year");
-        } else if ("Today".equals(range)) {
-            options = FXCollections.observableArrayList("Auto", "Hour");
-        } else if ("This Month".equals(range) || "Custom Range".equals(range)) {
-            options = FXCollections.observableArrayList("Auto", "Day", "Hour");
-        } else {
-            options = FXCollections.observableArrayList("Auto", "Month");
-        }
-
-        String previous = concurrentTimeScaleComboBox.getValue();
-
-        concurrentTimeScaleComboBox.setItems(options);
-
-        if (previous != null && options.contains(previous)) {
-            concurrentTimeScaleComboBox.setValue(previous);
-        } else {
-            concurrentTimeScaleComboBox.setValue("Auto");
-        }
-
-        concurrentTimeScaleComboBox.setOnAction(e -> setupConcurrentUsersChart());
-    }
-
-    private void setupPlaceholderData() {
-        concurrentUsersLabel.setText("0");
-        violationLogsLabel.setText("0");
-        systemLogsLabel.setText("0");
-        activeSessionsLabel.setText("0");
-
-        if (logDistributionChart != null) {
-            setupLogDistributionChart();
-        }
-
-        recentViolationsListView.setItems(FXCollections.observableArrayList(
-                "No violation logs loaded yet."
-        ));
-
-        recentSystemEventsListView.setItems(FXCollections.observableArrayList(
-                "No system logs loaded yet."
-        ));
-    }
-
-    private void reloadOverviewByFilters() {
-        if (!isCustomRangeValid()) {
-            return;
-        }
-
-        setupTimeScaleOptions();
-        loadOverviewAsync();
-
-        if (allLogsPane.isVisible()) {
-            allLogsPage = 0;
-            loadLogsAsync("ALL", allLogsTable, allLogsSearchField, allLogsPage);
-        } else if (violationLogsPane.isVisible()) {
-            violationLogsPage = 0;
-            loadLogsAsync("VIOLATION", violationLogsTable, violationSearchField, violationLogsPage);
-        } else if (systemLogsPane.isVisible()) {
-            systemLogsPage = 0;
-            loadLogsAsync("SYSTEM", systemLogsTable, systemSearchField, systemLogsPage);
-        } else if (sessionsPane.isVisible()) {
-            sessionLogsPage = 0;
-            loadLogsAsync("SESSION", sessionLogsTable, sessionSearchField, sessionLogsPage);
-        } else if (accessLogsPane.isVisible()) {
-            accessLogsPage = 0;
-            loadLogsAsync("ACCESS", accessLogsTable, accessSearchField, accessLogsPage);
-        } else if (accountLogsPane.isVisible()) {
-            accountLogsPage = 0;
-            loadLogsAsync("ACCOUNT", accountLogsTable, accountSearchField, accountLogsPage);
-        } else if (registrarLogsPane.isVisible()) {
-            registrarLogsPage = 0;
-            loadLogsAsync("REGISTRAR", registrarLogsTable, registrarSearchField, registrarLogsPage);
-        }
-    }
-
-    private void setupLogDistributionChart() {
-        if (logDistributionChart == null) return;
-
-        logDistributionChart.setData(FXCollections.observableArrayList(
-                new PieChart.Data("Violations", 120),
-                new PieChart.Data("System", 532),
-                new PieChart.Data("Sessions", 2543)
-        ));
-    }
-
-    private void setupConcurrentUsersChart() {
-        if (concurrentUsersChart == null) return;
-
-        concurrentUsersChart.getData().clear();
-
-        String groupBy = resolveTimeScale();
-
-        XYChart.Series<String, Number> adminSeries = new XYChart.Series<>();
-        adminSeries.setName("Admin");
-
-        XYChart.Series<String, Number> facultySeries = new XYChart.Series<>();
-        facultySeries.setName("Faculty");
-
-        XYChart.Series<String, Number> studentSeries = new XYChart.Series<>();
-        studentSeries.setName("Student");
-
-        for (String label : buildTimeLabels(groupBy)) {
-            adminSeries.getData().add(new XYChart.Data<>(label, 0));
-            facultySeries.getData().add(new XYChart.Data<>(label, 0));
-            studentSeries.getData().add(new XYChart.Data<>(label, 0));
-        }
-
-        concurrentUsersChart.getData().addAll(adminSeries, facultySeries, studentSeries);
-    }
-
 
     private void setupSearchListeners() {
         if (allLogsSearchField != null) {
@@ -1110,51 +821,97 @@ public class AdminMonitoringController {
                 loadLogsAsync("REGISTRAR", registrarLogsTable, registrarSearchField, registrarLogsPage);
             });
         }
+
+        if (cameraSearchField != null) {
+            cameraSearchField.setOnAction(e -> {
+                cameraSessionsPage = 0;
+                loadLogsAsync("CAMERA", cameraSessionsTable, cameraSearchField, cameraSessionsPage);
+            });
+        }
     }
 
+    // ======================
+    // EXPORT
+    // ======================
+
     @FXML
-    private void handleExportAllLogs() {
+    private void handleExportAllLogsPdf() {
         showInfo("Export all logs coming next.");
     }
 
     @FXML
-    private void handleExportViolationLogs() {
+    private void handleExportAllLogsExcel() {
         showInfo("Export violation logs coming next.");
     }
 
     @FXML
-    private void handleExportSystemLogs() {
-        showInfo("Export system logs coming next.");
+    private void handleExportViolationLogsPdf() {
+        showInfo("Export all logs coming next.");
     }
 
     @FXML
-    private void handleExportSessionLogs() {
-        showInfo("Export session logs coming next.");
+    private void handleExportViolationLogsExcel() {
+        showInfo("Export violation logs coming next.");
     }
 
     @FXML
-    private void handleExportAccessLogs() {
-        showInfo("Export access logs coming next.");
+    private void handleExportSystemLogsPdf() {
+        showInfo("Export all logs coming next.");
     }
 
     @FXML
-    private void handleExportAccountLogs() {
-        showInfo("Export account logs coming next.");
+    private void handleExportSystemLogsExcel() {
+        showInfo("Export violation logs coming next.");
     }
 
     @FXML
-    private void handleExportRegistrarLogs() {
-        showInfo("Export registrar sync logs coming next.");
+    private void handleExportSessionLogsPdf() {
+        showInfo("Export all logs coming next.");
     }
 
     @FXML
-    private void handleExportReactivationLogs() {
-        showInfo("Export reactivation logs coming next.");
+    private void handleExportSessionLogsExcel() {
+        showInfo("Export violation logs coming next.");
     }
 
     @FXML
-    private void showOverviewPane() {
-        showPane(overviewPane, overviewTabButton);
+    private void handleExportAccessLogsPdf() {
+        showInfo("Export all logs coming next.");
+    }
+
+    @FXML
+    private void handleExportAccessLogsExcel() {
+        showInfo("Export violation logs coming next.");
+    }
+
+    @FXML
+    private void handleExportAccountLogsPdf() {
+        showInfo("Export all logs coming next.");
+    }
+
+    @FXML
+    private void handleExportAccountLogsExcel() {
+        showInfo("Export violation logs coming next.");
+    }
+
+    @FXML
+    private void handleExportRegistrarLogsPdf() {
+        showInfo("Export all logs coming next.");
+    }
+
+    @FXML
+    private void handleExportRegistrarLogsExcel() {
+        showInfo("Export violation logs coming next.");
+    }
+
+    @FXML
+    private void handleExportCameraSessionsPdf() {
+        showInfo("Export all logs coming next.");
+    }
+
+    @FXML
+    private void handleExportCameraSessionsExcel() {
+        showInfo("Export violation logs coming next.");
     }
 
     @FXML
@@ -1206,10 +963,68 @@ public class AdminMonitoringController {
         loadLogsAsync("REGISTRAR", registrarLogsTable, registrarSearchField, registrarLogsPage);
     }
 
+    @FXML
+    private void showCameraSessionsPane() {
+        showPane(cameraSessionsPane, cameraSessionsTabButton);
+        cameraSessionsPage = 0;
+        loadLogsAsync("CAMERA", cameraSessionsTable, cameraSearchField, cameraSessionsPage);
+    }
+
+    private void reloadVisibleTabFromFirstPage() {
+
+        if (!isCustomRangeValid()) {
+            return;
+        }
+
+        if (allLogsPane.isVisible()) {
+            allLogsPage = 0;
+            loadLogsAsync("ALL", allLogsTable, allLogsSearchField, allLogsPage);
+
+        } else if (violationLogsPane.isVisible()) {
+            violationLogsPage = 0;
+            loadLogsAsync("VIOLATION", violationLogsTable, violationSearchField, violationLogsPage);
+
+        } else if (systemLogsPane.isVisible()) {
+            systemLogsPage = 0;
+            loadLogsAsync("SYSTEM", systemLogsTable, systemSearchField, systemLogsPage);
+
+        } else if (sessionsPane.isVisible()) {
+            sessionLogsPage = 0;
+            loadLogsAsync("SESSION", sessionLogsTable, sessionSearchField, sessionLogsPage);
+
+        } else if (accessLogsPane.isVisible()) {
+            accessLogsPage = 0;
+            loadLogsAsync("ACCESS", accessLogsTable, accessSearchField, accessLogsPage);
+
+        } else if (accountLogsPane.isVisible()) {
+            accountLogsPage = 0;
+            loadLogsAsync("ACCOUNT", accountLogsTable, accountSearchField, accountLogsPage);
+
+        } else if (registrarLogsPane.isVisible()) {
+            registrarLogsPage = 0;
+            loadLogsAsync("REGISTRAR", registrarLogsTable, registrarSearchField, registrarLogsPage);
+
+        } else if (cameraSessionsPane.isVisible()) {
+            cameraSessionsPage = 0;
+            loadLogsAsync("CAMERA", cameraSessionsTable, cameraSearchField, cameraSessionsPage);
+        }
+    }
+
 
     @FXML
     private void handleRefresh() {
-        loadOverviewAsync();
+        reloadVisibleTabCurrentPage();
+    }
+
+
+    // =============
+    // HELPERS
+    // =============
+
+    private void reloadVisibleTabCurrentPage() {
+        if (!isCustomRangeValid()) {
+            return;
+        }
 
         if (allLogsPane.isVisible()) {
             loadLogsAsync("ALL", allLogsTable, allLogsSearchField, allLogsPage);
@@ -1220,33 +1035,22 @@ public class AdminMonitoringController {
         } else if (sessionsPane.isVisible()) {
             loadLogsAsync("SESSION", sessionLogsTable, sessionSearchField, sessionLogsPage);
         } else if (accessLogsPane.isVisible()) {
-            accessLogsPage = 0;
             loadLogsAsync("ACCESS", accessLogsTable, accessSearchField, accessLogsPage);
         } else if (accountLogsPane.isVisible()) {
-            accountLogsPage = 0;
             loadLogsAsync("ACCOUNT", accountLogsTable, accountSearchField, accountLogsPage);
         } else if (registrarLogsPane.isVisible()) {
-            registrarLogsPage = 0;
             loadLogsAsync("REGISTRAR", registrarLogsTable, registrarSearchField, registrarLogsPage);
+        } else if (cameraSessionsPane.isVisible()) {
+            loadLogsAsync("CAMERA", cameraSessionsTable, cameraSearchField, cameraSessionsPage);
         }
     }
 
+    private Map<String, Object> buildExportRequest(String source, TextField searchField, String format) {
+        Map<String, Object> body = buildLogsRequest(source, 0, searchField);
 
-    // =============
-    // HELPERS
-    // =============
-    private Map<String, Object> buildOverviewRequest() {
-        Map<String, Object> body = new HashMap<>();
-
-        body.put("academicYear", valueOf(academicYearComboBox, "All Academic Years"));
-        body.put("term", valueOf(termComboBox, "All Terms"));
-        body.put("range", valueOf(rangeComboBox, "This Month"));
-        body.put("groupBy", valueOf(concurrentTimeScaleComboBox, "Auto"));
-        body.put("programCode", "All Programs");
-        body.put("collegeCode", "All Colleges");
-        body.put("role", "All Roles");
-
-        putCustomDates(body);
+        body.put("page", 0);
+        body.put("size", 100000);
+        body.put("format", format);
 
         return body;
     }
@@ -1257,14 +1061,73 @@ public class AdminMonitoringController {
         body.put("page", page);
         body.put("size", PAGE_SIZE);
         body.put("source", source);
-        body.put("range", valueOf(rangeComboBox, "This Month"));
-        body.put("role", "All Roles");
-        body.put("severity", "All Severities");
+        body.put("range", valueOf(rangeComboBox, "Entire Period"));
         body.put("search", searchField == null ? "" : searchField.getText());
+
+        body.put("role", roleForSource(source));
+        body.put("status", statusForSource(source));
+        body.put("action", actionForSource(source));
+        body.put("module", moduleForSource(source));
+        body.put("severity", severityForSource(source));
+        body.put("violationType", violationTypeForSource(source));
+
+        body.put("cameraStatus", valueOf(cameraStatusFilterComboBox, "All Statuses"));
+        body.put("cameraDeviceType", valueOf(cameraDeviceTypeFilterComboBox, "All Devices"));
+        body.put("cameraStreamRole", valueOf(cameraStreamRoleFilterComboBox, "All Stream Roles"));
 
         putCustomDates(body);
 
         return body;
+    }
+
+    private String roleForSource(String source) {
+        return switch (source) {
+            case "SYSTEM" -> valueOf(systemRoleFilterComboBox, "All Roles");
+            case "SESSION" -> valueOf(sessionRoleFilterComboBox, "All Roles");
+            case "ACCESS" -> valueOf(accessRoleFilterComboBox, "All Roles");
+            case "ACCOUNT" -> valueOf(accountRoleFilterComboBox, "All Roles");
+            default -> "All Roles";
+        };
+    }
+
+    private String statusForSource(String source) {
+        return switch (source) {
+            case "VIOLATION" -> valueOf(violationStatusFilterComboBox, "All Statuses");
+            case "SYSTEM" -> valueOf(systemStatusFilterComboBox, "All Statuses");
+            case "SESSION" -> valueOf(sessionStatusFilterComboBox, "All Statuses");
+            case "ACCESS" -> valueOf(accessStatusFilterComboBox, "All Statuses");
+            case "ACCOUNT" -> valueOf(accountStatusFilterComboBox, "All Statuses");
+            case "REGISTRAR" -> valueOf(registrarStatusFilterComboBox, "All Statuses");
+            case "CAMERA" -> valueOf(cameraStatusFilterComboBox, "All Statuses");
+            default -> "All Statuses";
+        };
+    }
+
+    private String actionForSource(String source) {
+        return switch (source) {
+            case "ACCESS" -> valueOf(accessEventTypeFilterComboBox, "All Events");
+            case "ACCOUNT" -> valueOf(accountActionFilterComboBox, "All Actions");
+            case "REGISTRAR" -> valueOf(registrarSyncTypeFilterComboBox, "All Sync Types");
+            default -> "All Actions";
+        };
+    }
+
+    private String moduleForSource(String source) {
+        return "SYSTEM".equals(source)
+                ? valueOf(systemModuleFilterComboBox, "All Modules")
+                : "All Modules";
+    }
+
+    private String severityForSource(String source) {
+        return "VIOLATION".equals(source)
+                ? valueOf(violationSeverityFilterComboBox, "All Severities")
+                : "All Severities";
+    }
+
+    private String violationTypeForSource(String source) {
+        return "VIOLATION".equals(source)
+                ? valueOf(violationTypeFilterComboBox, "All Violations")
+                : "All Violations";
     }
 
     private void putCustomDates(Map<String, Object> body) {
@@ -1289,25 +1152,25 @@ public class AdminMonitoringController {
 
     private void showPane(VBox selectedPane, Button selectedButton) {
         VBox[] panes = {
-                overviewPane,
                 allLogsPane,
                 violationLogsPane,
                 systemLogsPane,
                 sessionsPane,
                 accessLogsPane,
                 accountLogsPane,
-                registrarLogsPane
+                registrarLogsPane,
+                cameraSessionsPane
         };
 
         Button[] buttons = {
-                overviewTabButton,
                 allLogsTabButton,
                 violationLogsTabButton,
                 systemLogsTabButton,
                 sessionsTabButton,
                 accessLogsTabButton,
                 accountLogsTabButton,
-                registrarLogsTabButton
+                registrarLogsTabButton,
+                cameraSessionsTabButton
         };
 
         for (VBox pane : panes) {
@@ -1334,59 +1197,6 @@ public class AdminMonitoringController {
         new Alert(Alert.AlertType.INFORMATION, message).showAndWait();
     }
 
-    private String resolveTimeScale() {
-        String selected = valueOf(concurrentTimeScaleComboBox, "Auto");
-
-        if (!"Auto".equals(selected)) {
-            return selected;
-        }
-
-        String academicYear = valueOf(academicYearComboBox, "All Academic Years");
-        String range = valueOf(rangeComboBox, "Entire Period");
-
-        if ("All Academic Years".equals(academicYear)) {
-            return "Year";
-        }
-
-        if ("Today".equals(range)) {
-            return "Hour";
-        }
-
-        if ("This Month".equals(range) || "Custom Range".equals(range)) {
-            return "Day";
-        }
-
-        return "Month";
-    }
-
-    private ObservableList<String> buildTimeLabels(String groupBy) {
-        ObservableList<String> labels = FXCollections.observableArrayList();
-
-        switch (groupBy) {
-            case "Year" -> {
-                labels.add("2023-2024");
-                labels.add("2024-2025");
-                labels.add("2025-2026");
-                labels.add("2026-2027");
-            }
-            case "Month" -> {
-                labels.addAll("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-            }
-            case "Day" -> {
-                for (int day = 1; day <= 31; day++) {
-                    labels.add(String.valueOf(day));
-                }
-            }
-            case "Hour" -> {
-                for (int hour = 0; hour < 24; hour++) {
-                    labels.add(String.format("%02d:00", hour));
-                }
-            }
-        }
-
-        return labels;
-    }
 
     private String valueOf(ComboBox<String> comboBox, String fallback) {
         return comboBox == null || comboBox.getValue() == null
@@ -1491,6 +1301,7 @@ public class AdminMonitoringController {
         setBadgeColumn(accountStatusColumn, this::statusBadgeClass);
         setBadgeColumn(registrarStatusColumn, this::statusBadgeClass);
         setBadgeColumn(reactivationStatusColumn, this::statusBadgeClass);
+        setBadgeColumn(cameraStatusColumn, this::statusBadgeClass);
     }
 
     private void setBadgeColumn(
@@ -1575,10 +1386,9 @@ public class AdminMonitoringController {
         String normalized = value.trim().toUpperCase();
 
         return switch (normalized) {
-            case "SYSTEM" -> "badge-blue";
+            case "SYSTEM", "CAMERA" -> "badge-blue";
             case "VIOLATION" -> "badge-maroon";
             case "SESSION" -> "badge-gold";
-            case "ACCESS" -> "badge-neutral";
             case "ACCOUNT", "REACTIVATION" -> "badge-warning";
             case "REGISTRAR" -> "badge-success";
             default -> "badge-neutral";
@@ -1593,6 +1403,40 @@ public class AdminMonitoringController {
         setUnconstrainedResize(accessLogsTable);
         setUnconstrainedResize(accountLogsTable);
         setUnconstrainedResize(registrarLogsTable);
+        setUnconstrainedResize(cameraSessionsTable);
+    }
+
+    private void setFilterItems(
+            ComboBox<String> comboBox,
+            String defaultValue,
+            java.util.List<String> values
+    ) {
+        if (comboBox == null) {
+            return;
+        }
+
+        String previousValue = comboBox.getValue();
+
+        ObservableList<String> items =
+                FXCollections.observableArrayList();
+
+        items.add(defaultValue);
+
+        if (values != null) {
+            items.addAll(values);
+        }
+
+        comboBox.setItems(items);
+
+        if (previousValue != null && items.contains(previousValue)) {
+            if (!previousValue.equals(comboBox.getValue())) {
+                comboBox.setValue(previousValue);
+            }
+        } else {
+            if (!defaultValue.equals(comboBox.getValue())) {
+                comboBox.setValue(defaultValue);
+            }
+        }
     }
 
     private void setUnconstrainedResize(TableView<AdminLogRowDto> table) {

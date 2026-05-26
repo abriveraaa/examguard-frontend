@@ -17,15 +17,47 @@ public class AnswerReviewTimelineDTO {
     private String createdByRole;
     private OffsetDateTime createdAt;
 
-    public Long getReviewLogId() { return reviewLogId; }
-    public String getActionType() { return actionType; }
-    public String getPreviousValue() { return previousValue; }
-    public String getNewValue() { return newValue; }
-    public BigDecimal getScoreBefore() { return scoreBefore; }
-    public BigDecimal getScoreAfter() { return scoreAfter; }
-    public BigDecimal getDeduction() { return deduction; }
-    public String getNotes() { return notes; }
-    public String getCreatedBy() { return createdBy; }
-    public String getCreatedByRole() { return createdByRole; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public Long getReviewLogId() {
+        return reviewLogId;
+    }
+
+    public String getActionType() {
+        return actionType;
+    }
+
+    public String getPreviousValue() {
+        return previousValue;
+    }
+
+    public String getNewValue() {
+        return newValue;
+    }
+
+    public BigDecimal getScoreBefore() {
+        return scoreBefore;
+    }
+
+    public BigDecimal getScoreAfter() {
+        return scoreAfter;
+    }
+
+    public BigDecimal getDeduction() {
+        return deduction;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public String getCreatedByRole() {
+        return createdByRole;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
 }

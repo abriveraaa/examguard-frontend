@@ -2,39 +2,34 @@ package com.example.examguard.controller.student;
 
 import com.example.examguard.config.AppConfig;
 import com.example.examguard.controller.layout.DashboardShellController;
-import com.example.examguard.utility.FaceBehaviorAnalyzer;
 import com.example.examguard.model.ai.MediaPipeFaceResult;
+import com.example.examguard.model.camera.CameraSessionStatusResponse;
+import com.example.examguard.model.camera.CreateCameraSessionResponse;
+import com.example.examguard.model.core.response.BrandingResponse;
+import com.example.examguard.model.enums.QuestionType;
 import com.example.examguard.model.exam.request.EssayRubricRequest;
+import com.example.examguard.model.exam.request.ExamActivityRequest;
 import com.example.examguard.model.exam.request.ViolationLogRequest;
 import com.example.examguard.model.exam.request.ViolationSettingRequest;
 import com.example.examguard.model.exam.response.ImageUploadResponse;
 import com.example.examguard.model.exam.take.ExamTakeChoice;
 import com.example.examguard.model.exam.take.ExamTakeQuestion;
-import com.example.examguard.model.enums.QuestionType;
 import com.example.examguard.model.exam.take.ExamTakingResponse;
-import com.example.examguard.model.core.response.BrandingResponse;
-import com.example.examguard.model.exam.request.ExamActivityRequest;
-import com.example.examguard.utility.*;
-import com.example.examguard.model.camera.CreateCameraSessionResponse;
-import com.example.examguard.model.camera.CameraSessionStatusResponse;
 import com.example.examguard.service.AiAssetSyncService;
-import javafx.scene.image.WritableImage;
-import org.opencv.core.Mat;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.core.MatOfByte;
+import com.example.examguard.service.BrandingService;
+import com.example.examguard.service.ExamApiService;
+import com.example.examguard.utility.*;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
-import javafx.embed.swing.SwingFXUtils;
-import java.awt.image.BufferedImage;
-import com.example.examguard.service.BrandingService;
-import com.example.examguard.service.ExamApiService;
 import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
@@ -45,15 +40,19 @@ import javafx.scene.control.*;
 import javafx.scene.effect.GaussianBlur;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCombination;
-import javafx.scene.input.KeyEvent;
-import javafx.concurrent.Task;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -66,63 +65,116 @@ import java.util.Map;
 
 public class ExamTakingController {
 
-    @FXML private StackPane lobbyView;
-    @FXML private ImageView schoolLogoImageView;
-    @FXML private Label brandSchoolNameLabel;
-    @FXML private Label brandTaglineLabel;
-    @FXML private Label lobbyExamTitleLabel;
-    @FXML private Label lobbyExamSubtitleLabel;
-    @FXML private Label lobbyStepLabel;
-    @FXML private Label lobbyDurationLabel;
-    @FXML private Label lobbyQuestionCountLabel;
-    @FXML private Label cameraStatusLabel;
-    @FXML private Label faceStatusLabel;
-    @FXML private Label internetStatusLabel;
-    @FXML private Label systemStatusLabel;
-    @FXML private Label cameraDetailLabel;
-    @FXML private Label faceDetailLabel;
-    @FXML private Label internetDetailLabel;
-    @FXML private Label systemDetailLabel;
-    @FXML private VBox phoneCameraPairingBox;
-    @FXML private ImageView phoneCameraQrImageView;
-    @FXML private Label phoneCameraStatusLabel;
+    @FXML
+    private StackPane lobbyView;
+    @FXML
+    private ImageView schoolLogoImageView;
+    @FXML
+    private Label brandSchoolNameLabel;
+    @FXML
+    private Label brandTaglineLabel;
+    @FXML
+    private Label lobbyExamTitleLabel;
+    @FXML
+    private Label lobbyExamSubtitleLabel;
+    @FXML
+    private Label lobbyStepLabel;
+    @FXML
+    private Label lobbyDurationLabel;
+    @FXML
+    private Label lobbyQuestionCountLabel;
+    @FXML
+    private Label cameraStatusLabel;
+    @FXML
+    private Label faceStatusLabel;
+    @FXML
+    private Label internetStatusLabel;
+    @FXML
+    private Label systemStatusLabel;
+    @FXML
+    private Label cameraDetailLabel;
+    @FXML
+    private Label faceDetailLabel;
+    @FXML
+    private Label internetDetailLabel;
+    @FXML
+    private Label systemDetailLabel;
+    @FXML
+    private VBox phoneCameraPairingBox;
+    @FXML
+    private ImageView phoneCameraQrImageView;
+    @FXML
+    private Label phoneCameraStatusLabel;
 
-    @FXML private VBox lobbyAgreementStep;
-    @FXML private VBox lobbySystemCheckStep;
-    @FXML private Button continueToChecksButton;
-    @FXML private Button backToAgreementButton;
-    @FXML private CheckBox agreementCheckBox;
-    @FXML private Button beginExamButton;
-    @FXML private Button cancelLobbyButton;
-    @FXML private Button pairPhoneCameraButton;
+    @FXML
+    private VBox lobbyAgreementStep;
+    @FXML
+    private VBox lobbySystemCheckStep;
+    @FXML
+    private Button continueToChecksButton;
+    @FXML
+    private Button backToAgreementButton;
+    @FXML
+    private CheckBox agreementCheckBox;
+    @FXML
+    private Button beginExamButton;
+    @FXML
+    private Button cancelLobbyButton;
+    @FXML
+    private Button pairPhoneCameraButton;
 
-    @FXML private Label examTitleLabel;
-    @FXML private Label examSubtitleLabel;
-    @FXML private Label timerLabel;
-    @FXML private FlowPane questionNumberPane;
-    @FXML private Label answeredCountLabel;
-    @FXML private Label markedCountLabel;
-    @FXML private Label questionNumberLabel;
-    @FXML private Label questionTypeLabel;
-    @FXML private Label questionTextLabel;
-    @FXML private ImageView questionImageView;
-    @FXML private StackPane questionImageWrapper;
-    @FXML private VBox answerContainer;
-    @FXML private Button previousButton;
-    @FXML private Button nextButton;
-    @FXML private Button markReviewButton;
-    @FXML private Button runChecksButton;
-    @FXML private Button submitButton;
+    @FXML
+    private Label examTitleLabel;
+    @FXML
+    private Label examSubtitleLabel;
+    @FXML
+    private Label timerLabel;
+    @FXML
+    private FlowPane questionNumberPane;
+    @FXML
+    private Label answeredCountLabel;
+    @FXML
+    private Label markedCountLabel;
+    @FXML
+    private Label questionNumberLabel;
+    @FXML
+    private Label questionTypeLabel;
+    @FXML
+    private Label questionTextLabel;
+    @FXML
+    private ImageView questionImageView;
+    @FXML
+    private StackPane questionImageWrapper;
+    @FXML
+    private VBox answerContainer;
+    @FXML
+    private Button previousButton;
+    @FXML
+    private Button nextButton;
+    @FXML
+    private Button markReviewButton;
+    @FXML
+    private Button runChecksButton;
+    @FXML
+    private Button submitButton;
 
-    @FXML private StackPane examRoot;
-    @FXML private BorderPane examContent;
-    @FXML private StackPane violationOverlay;
-    @FXML private Label violationTitleLabel;
-    @FXML private Label violationMessageLabel;
+    @FXML
+    private StackPane examRoot;
+    @FXML
+    private BorderPane examContent;
+    @FXML
+    private StackPane violationOverlay;
+    @FXML
+    private Label violationTitleLabel;
+    @FXML
+    private Label violationMessageLabel;
 
-    @FXML private StackPane lobbyCameraPreviewPane;
-    @FXML private ImageView lobbyCameraPreviewImageView;
-    @FXML private Label lobbyCameraPreviewPlaceholder;
+    @FXML
+    private StackPane lobbyCameraPreviewPane;
+    @FXML
+    private ImageView lobbyCameraPreviewImageView;
+    @FXML
+    private Label lobbyCameraPreviewPlaceholder;
 
     private Long currentAttemptId;
     private Long currentExamId;
@@ -205,6 +257,7 @@ public class ExamTakingController {
         FAILED,
         WARNING
     }
+
     private final Map<Long, Boolean> savingQuestionMap = new HashMap<>();
 
     private final List<BufferedEvidenceFrame> evidenceFrameBuffer = new ArrayList<>();
@@ -213,7 +266,8 @@ public class ExamTakingController {
     private record BufferedEvidenceFrame(
             Mat frame,
             long capturedAtMs
-    ) {}
+    ) {
+    }
 
     private static final DateTimeFormatter VIOLATION_TIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss a");
@@ -1869,7 +1923,7 @@ public class ExamTakingController {
     }
 
     private void runSystemCheck() {
-        setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.CHECKING, "Checking","Checking system...");
+        setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.CHECKING, "Checking", "Checking system...");
 
         try {
             Thread.sleep(400);
@@ -2634,29 +2688,21 @@ public class ExamTakingController {
         }
 
         return switch (violationType.trim().toUpperCase()) {
-            case "FACE_BEHAVIOR_NO_FACE" ->
-                    "Please keep your face visible.";
+            case "FACE_BEHAVIOR_NO_FACE" -> "Please keep your face visible.";
 
-            case "FACE_BEHAVIOR_MULTIPLE_FACES" ->
-                    "Only the examinee should be visible.";
+            case "FACE_BEHAVIOR_MULTIPLE_FACES" -> "Only the examinee should be visible.";
 
-            case "FOCUS_LOST" ->
-                    "Please stay on the exam screen.";
+            case "FOCUS_LOST" -> "Please stay on the exam screen.";
 
-            case "FULLSCREEN_EXIT" ->
-                    "Please remain in fullscreen mode.";
+            case "FULLSCREEN_EXIT" -> "Please remain in fullscreen mode.";
 
-            case "WINDOW_MINIMIZED" ->
-                    "Please do not minimize the exam window.";
+            case "WINDOW_MINIMIZED" -> "Please do not minimize the exam window.";
 
-            case "RESTRICTED_KEY" ->
-                    "Keyboard shortcuts are restricted during the exam.";
+            case "RESTRICTED_KEY" -> "Keyboard shortcuts are restricted during the exam.";
 
-            case "RIGHT_CLICK" ->
-                    "Right click is disabled during the exam.";
+            case "RIGHT_CLICK" -> "Right click is disabled during the exam.";
 
-            case "MULTIPLE_MONITORS" ->
-                    "Please use only one display during the exam.";
+            case "MULTIPLE_MONITORS" -> "Please use only one display during the exam.";
 
             default -> fallbackMessage;
         };

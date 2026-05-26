@@ -18,29 +18,31 @@ import java.util.Map;
 
 public class EditAdminController {
 
-    @FXML private TextField employeeIdField;
-    @FXML private TextField firstNameField;
-    @FXML private TextField lastNameField;
-    @FXML private TextField emailField;
-    @FXML private DatePicker birthDatePicker;
-    @FXML private Label errorLabel;
-    @FXML private Button saveButton;
-    @FXML private Button deactivateButton;
-    @FXML private Button reactivateButton;
-
-    private int totalActiveAdmins = 0;
-
     private final AdminApiService adminApiService = new AdminApiService();
     private final Gson gson = new Gson();
-
+    @FXML
+    private TextField employeeIdField;
+    @FXML
+    private TextField firstNameField;
+    @FXML
+    private TextField lastNameField;
+    @FXML
+    private TextField emailField;
+    @FXML
+    private DatePicker birthDatePicker;
+    @FXML
+    private Label errorLabel;
+    @FXML
+    private Button saveButton;
+    @FXML
+    private Button deactivateButton;
+    @FXML
+    private Button reactivateButton;
+    private int totalActiveAdmins = 0;
     private Runnable onSuccess;
     private String originalEmployeeId;
     private String currentLoggedInUsername;
     private UserManagementRow currentRow;
-
-    private interface AdminAction {
-        String execute();
-    }
 
     public void configure(UserManagementRow row, String currentLoggedInAdminId, int totalActiveAdmins) {
         this.currentRow = row;
@@ -305,5 +307,9 @@ public class EditAdminController {
 
     private void showAlert(String msg) {
         new Alert(Alert.AlertType.INFORMATION, msg).showAndWait();
+    }
+
+    private interface AdminAction {
+        String execute();
     }
 }

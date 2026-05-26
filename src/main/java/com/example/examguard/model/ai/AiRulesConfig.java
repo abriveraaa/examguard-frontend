@@ -11,12 +11,29 @@ public class AiRulesConfig {
     private ObjectDetection objectDetection = new ObjectDetection();
     private RfDetr rfdetr = new RfDetr();
 
-    public boolean isEnabled() { return enabled; }
-    public CameraQuality getCameraQuality() { return cameraQuality == null ? new CameraQuality() : cameraQuality; }
-    public OpenCvFace getOpencvFace() { return opencvFace == null ? new OpenCvFace() : opencvFace; }
-    public MediaPipeFace getMediapipeFace() { return mediaPipeFace == null ? new MediaPipeFace() : mediaPipeFace;}
-    public Yolo getYolo() { return yolo == null ? new Yolo() : yolo; }
-    public LobbySetup getLobbySetup() { return lobbySetup == null ? new LobbySetup() : lobbySetup; }
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public CameraQuality getCameraQuality() {
+        return cameraQuality == null ? new CameraQuality() : cameraQuality;
+    }
+
+    public OpenCvFace getOpencvFace() {
+        return opencvFace == null ? new OpenCvFace() : opencvFace;
+    }
+
+    public MediaPipeFace getMediapipeFace() {
+        return mediaPipeFace == null ? new MediaPipeFace() : mediaPipeFace;
+    }
+
+    public Yolo getYolo() {
+        return yolo == null ? new Yolo() : yolo;
+    }
+
+    public LobbySetup getLobbySetup() {
+        return lobbySetup == null ? new LobbySetup() : lobbySetup;
+    }
 
     public static class CameraQuality {
         private boolean enabled = true;
@@ -27,13 +44,33 @@ public class AiRulesConfig {
         private int sampleCount = 8;
         private int minimumValidFrames = 4;
 
-        public boolean isEnabled() { return enabled; }
-        public double getMinBrightness() { return minBrightness; }
-        public double getMaxBrightness() { return maxBrightness; }
-        public double getFailBlurVariance() { return failBlurVariance; }
-        public double getWarningBlurVariance() { return warningBlurVariance; }
-        public int getSampleCount() { return sampleCount; }
-        public int getMinimumValidFrames() { return minimumValidFrames; }
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public double getMinBrightness() {
+            return minBrightness;
+        }
+
+        public double getMaxBrightness() {
+            return maxBrightness;
+        }
+
+        public double getFailBlurVariance() {
+            return failBlurVariance;
+        }
+
+        public double getWarningBlurVariance() {
+            return warningBlurVariance;
+        }
+
+        public int getSampleCount() {
+            return sampleCount;
+        }
+
+        public int getMinimumValidFrames() {
+            return minimumValidFrames;
+        }
     }
 
     public static class OpenCvFace {
@@ -47,15 +84,41 @@ public class AiRulesConfig {
         private double minCenterYRatio = 0.12;
         private double maxCenterYRatio = 0.72;
 
-        public boolean isEnabled() { return enabled; }
-        public int getRequiredOneFaceFrames() { return requiredOneFaceFrames; }
-        public int getMultipleFaceFramesToFail() { return multipleFaceFramesToFail; }
-        public double getMinFaceAreaRatio() { return minFaceAreaRatio; }
-        public double getMaxFaceAreaRatio() { return maxFaceAreaRatio; }
-        public double getMinCenterXRatio() { return minCenterXRatio; }
-        public double getMaxCenterXRatio() { return maxCenterXRatio; }
-        public double getMinCenterYRatio() { return minCenterYRatio; }
-        public double getMaxCenterYRatio() { return maxCenterYRatio; }
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public int getRequiredOneFaceFrames() {
+            return requiredOneFaceFrames;
+        }
+
+        public int getMultipleFaceFramesToFail() {
+            return multipleFaceFramesToFail;
+        }
+
+        public double getMinFaceAreaRatio() {
+            return minFaceAreaRatio;
+        }
+
+        public double getMaxFaceAreaRatio() {
+            return maxFaceAreaRatio;
+        }
+
+        public double getMinCenterXRatio() {
+            return minCenterXRatio;
+        }
+
+        public double getMaxCenterXRatio() {
+            return maxCenterXRatio;
+        }
+
+        public double getMinCenterYRatio() {
+            return minCenterYRatio;
+        }
+
+        public double getMaxCenterYRatio() {
+            return maxCenterYRatio;
+        }
     }
 
     public static class MediaPipeFace {
@@ -74,20 +137,61 @@ public class AiRulesConfig {
         private double pitchDownThreshold = 0.12;
         private String startupCommandKey = "mediapipe-face-start-command";
 
-        public boolean isEnabled() { return enabled; }
-        public boolean isRequired() { return required; }
-        public String getServiceHost() { return serviceHost; }
-        public int getServicePort() { return servicePort; }
-        public String getRequiredVersion() { return requiredVersion; }
-        public String getHealthEndpoint() { return healthEndpoint; }
-        public String getAnalyzeEndpoint() { return analyzeEndpoint; }
-        public int getTimeoutMs() { return timeoutMs; }
-        public int getSampleCount() { return sampleCount; }
-        public int getRequiredValidFaceFrames() { return requiredValidFaceFrames; }
-        public int getMaxFaces() { return maxFaces; }
-        public double getYawThreshold() { return yawThreshold; }
-        public double getPitchDownThreshold() { return pitchDownThreshold; }
-        public String getStartupCommandKey() { return startupCommandKey; }
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public boolean isRequired() {
+            return required;
+        }
+
+        public String getServiceHost() {
+            return serviceHost;
+        }
+
+        public int getServicePort() {
+            return servicePort;
+        }
+
+        public String getRequiredVersion() {
+            return requiredVersion;
+        }
+
+        public String getHealthEndpoint() {
+            return healthEndpoint;
+        }
+
+        public String getAnalyzeEndpoint() {
+            return analyzeEndpoint;
+        }
+
+        public int getTimeoutMs() {
+            return timeoutMs;
+        }
+
+        public int getSampleCount() {
+            return sampleCount;
+        }
+
+        public int getRequiredValidFaceFrames() {
+            return requiredValidFaceFrames;
+        }
+
+        public int getMaxFaces() {
+            return maxFaces;
+        }
+
+        public double getYawThreshold() {
+            return yawThreshold;
+        }
+
+        public double getPitchDownThreshold() {
+            return pitchDownThreshold;
+        }
+
+        public String getStartupCommandKey() {
+            return startupCommandKey;
+        }
     }
 
     public static class Yolo {
@@ -110,20 +214,61 @@ public class AiRulesConfig {
         private boolean detectBook = false;
         private boolean detectPaper = false;
 
-        public boolean isEnabled() { return enabled; }
-        public String getModelKey() { return modelKey; }
-        public String getLabelsKey() { return labelsKey; }
-        public int getInputSize() { return inputSize; }
-        public float getConfidenceThreshold() { return confidenceThreshold; }
-        public float getNmsThreshold() { return nmsThreshold; }
-        public float getPhoneConfidence() { return phoneConfidence; }
-        public int getRequiredPhoneHits() { return requiredPhoneHits; }
-        public float getPersonConfidence() { return personConfidence; }
-        public int getRequiredPersonHits() { return requiredPersonHits; }
-        public int getSideViewSampleCount() { return sideViewSampleCount; }
-        public double getMaxPhoneAreaRatio() { return maxPhoneAreaRatio; }
-        public boolean isDetectBook() { return detectBook; }
-        public boolean isDetectPaper() { return detectPaper; }
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public String getModelKey() {
+            return modelKey;
+        }
+
+        public String getLabelsKey() {
+            return labelsKey;
+        }
+
+        public int getInputSize() {
+            return inputSize;
+        }
+
+        public float getConfidenceThreshold() {
+            return confidenceThreshold;
+        }
+
+        public float getNmsThreshold() {
+            return nmsThreshold;
+        }
+
+        public float getPhoneConfidence() {
+            return phoneConfidence;
+        }
+
+        public int getRequiredPhoneHits() {
+            return requiredPhoneHits;
+        }
+
+        public float getPersonConfidence() {
+            return personConfidence;
+        }
+
+        public int getRequiredPersonHits() {
+            return requiredPersonHits;
+        }
+
+        public int getSideViewSampleCount() {
+            return sideViewSampleCount;
+        }
+
+        public double getMaxPhoneAreaRatio() {
+            return maxPhoneAreaRatio;
+        }
+
+        public boolean isDetectBook() {
+            return detectBook;
+        }
+
+        public boolean isDetectPaper() {
+            return detectPaper;
+        }
     }
 
     public static class LobbySetup {
@@ -135,13 +280,33 @@ public class AiRulesConfig {
         private boolean requireNoPhoneDetected = true;
         private boolean requireNoReviewerDetected = false;
 
-        public boolean isEnabled() { return enabled; }
-        public boolean isRequireSinglePerson() { return requireSinglePerson; }
-        public boolean isRequireFaceVisible() { return requireFaceVisible; }
-        public boolean isRequireCameraNotBlurred() { return requireCameraNotBlurred; }
-        public boolean isRequireGoodLighting() { return requireGoodLighting; }
-        public boolean isRequireNoPhoneDetected() { return requireNoPhoneDetected; }
-        public boolean isRequireNoReviewerDetected() { return requireNoReviewerDetected; }
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public boolean isRequireSinglePerson() {
+            return requireSinglePerson;
+        }
+
+        public boolean isRequireFaceVisible() {
+            return requireFaceVisible;
+        }
+
+        public boolean isRequireCameraNotBlurred() {
+            return requireCameraNotBlurred;
+        }
+
+        public boolean isRequireGoodLighting() {
+            return requireGoodLighting;
+        }
+
+        public boolean isRequireNoPhoneDetected() {
+            return requireNoPhoneDetected;
+        }
+
+        public boolean isRequireNoReviewerDetected() {
+            return requireNoReviewerDetected;
+        }
     }
 
     public ObjectDetection getObjectDetection() {

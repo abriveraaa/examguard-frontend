@@ -13,23 +13,31 @@ public class ViolationSettingRequest {
         this.violationType = violationType;
     }
 
-    public void setEnabled(Boolean enabled){
+    public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
 
-    public void setSeverity(String severity){
+    public void setSeverity(String severity) {
         this.severity = severity;
     }
 
-    public void setMaxAllowedCount(Integer maxAllowedCount){
+    public void setMaxAllowedCount(Integer maxAllowedCount) {
         this.maxAllowedCount = maxAllowedCount;
     }
 
-    public String getViolationType() { return violationType; }
+    public String getViolationType() {
+        return violationType;
+    }
 
-    public String getSeverity() { return severity; }
+    public String getSeverity() {
+        return severity;
+    }
 
-    public int getMaxAllowedCount() { return maxAllowedCount; }
+    public int getMaxAllowedCount() {
+        return maxAllowedCount;
+    }
 
-    public Boolean getEnabled() { return enabled; }
+    public Boolean getEnabled() {
+        return enabled;
+    }
 }

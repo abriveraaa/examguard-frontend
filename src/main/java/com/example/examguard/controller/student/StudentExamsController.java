@@ -2,8 +2,8 @@ package com.example.examguard.controller.student;
 
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
-import com.example.examguard.model.student.dashboard.ExamCardVM;
 import com.example.examguard.model.student.StudentExamResponse;
+import com.example.examguard.model.student.dashboard.ExamCardVM;
 import com.example.examguard.service.StudentApiService;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -17,12 +17,16 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCombination;
-import javafx.scene.layout.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.TilePane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
-import javafx.scene.shape.*;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 import javafx.stage.Stage;
 
 import java.time.OffsetDateTime;
@@ -36,18 +40,29 @@ public class StudentExamsController implements ShellAwareController {
 
     private DashboardShellController shellController;
 
-    @FXML private ComboBox<String> termComboBox;
-    @FXML private ScrollPane examScrollPane;
-    @FXML private Label pageInfoLabel;
-    @FXML private TextField searchField;
-    @FXML private TilePane examCardGrid;
+    @FXML
+    private ComboBox<String> termComboBox;
+    @FXML
+    private ScrollPane examScrollPane;
+    @FXML
+    private Label pageInfoLabel;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private TilePane examCardGrid;
 
-    @FXML private Button allButton;
-    @FXML private Button upcomingButton;
-    @FXML private Button inProgressButton;
-    @FXML private Button submittedButton;
-    @FXML private Button resultsButton;
-    @FXML private Button missedButton;
+    @FXML
+    private Button allButton;
+    @FXML
+    private Button upcomingButton;
+    @FXML
+    private Button inProgressButton;
+    @FXML
+    private Button submittedButton;
+    @FXML
+    private Button resultsButton;
+    @FXML
+    private Button missedButton;
 
     private static final int PAGE_SIZE = 10;
     private int currentPage = 0;
@@ -174,7 +189,6 @@ public class StudentExamsController implements ShellAwareController {
             updateHeroCards(cards);
             populateTermDropdown(cards);
         });
-
 
 
         task.setOnFailed(event -> {
@@ -426,23 +440,17 @@ public class StudentExamsController implements ShellAwareController {
     private String getStatusClass(String status) {
         return switch (status.toUpperCase()) {
 
-            case "UPCOMING" ->
-                    "exam-status-upcoming";
+            case "UPCOMING" -> "exam-status-upcoming";
 
-            case "ONGOING", "LOBBY OPEN" ->
-                    "exam-status-progress";
+            case "ONGOING", "LOBBY OPEN" -> "exam-status-progress";
 
-            case "PENDING REVIEW" ->
-                    "exam-status-violation";
+            case "PENDING REVIEW" -> "exam-status-violation";
 
-            case "RESULTS RELEASED" ->
-                    "exam-status-released";
+            case "RESULTS RELEASED" -> "exam-status-released";
 
-            case "DID NOT TAKE" ->
-                    "exam-status-missed";
+            case "DID NOT TAKE" -> "exam-status-missed";
 
-            default ->
-                    "exam-status-submitted";
+            default -> "exam-status-submitted";
         };
     }
 

@@ -2,14 +2,13 @@ package com.example.examguard.controller.faculty;
 
 import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.core.response.BrandingResponse;
-import com.example.examguard.model.faculty.dto.students.*;
-import com.example.examguard.service.FacultyApiService;
+import com.example.examguard.model.faculty.dto.students.FacultyAcademicPeriodDTO;
+import com.example.examguard.model.faculty.dto.students.FacultyStudentDTO;
 import com.example.examguard.service.BrandingService;
-
-import javafx.concurrent.Task;
-import javafx.application.Platform;
+import com.example.examguard.service.FacultyApiService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -28,19 +27,32 @@ import java.util.Locale;
 
 public class FacultyStudentsController {
 
-    @FXML private ComboBox<AcademicPeriodOption> academicPeriodCombo;
-    @FXML private ComboBox<CourseOption> courseCombo;
-    @FXML private ComboBox<SectionOption> sectionCombo;
-    @FXML private TextField searchField;
-    @FXML private ToggleButton listViewToggle;
-    @FXML private ToggleButton cardViewToggle;
-    @FXML private Label totalStudentsLabel;
-    @FXML private Label selectedContextLabel;
-    @FXML private VBox contentContainer;
-    @FXML private Label pageInfoLabel;
-    @FXML private ScrollPane studentsScrollPane;
-    @FXML private HBox paginationBox;
-    @FXML private MenuButton exportMenuButton;
+    @FXML
+    private ComboBox<AcademicPeriodOption> academicPeriodCombo;
+    @FXML
+    private ComboBox<CourseOption> courseCombo;
+    @FXML
+    private ComboBox<SectionOption> sectionCombo;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private ToggleButton listViewToggle;
+    @FXML
+    private ToggleButton cardViewToggle;
+    @FXML
+    private Label totalStudentsLabel;
+    @FXML
+    private Label selectedContextLabel;
+    @FXML
+    private VBox contentContainer;
+    @FXML
+    private Label pageInfoLabel;
+    @FXML
+    private ScrollPane studentsScrollPane;
+    @FXML
+    private HBox paginationBox;
+    @FXML
+    private MenuButton exportMenuButton;
 
 
     private static final int PAGE_SIZE = 10;
@@ -178,9 +190,11 @@ public class FacultyStudentsController {
                     )
             );
 
-            File file = fileChooser.showSaveDialog( exportMenuButton.getScene().getWindow());
+            File file = fileChooser.showSaveDialog(exportMenuButton.getScene().getWindow());
 
-            if (file == null) { return;}
+            if (file == null) {
+                return;
+            }
 
             byte[] bytes = facultyApiService.exportStudentsRoster(
                     academicYear,
@@ -1274,5 +1288,6 @@ public class FacultyStudentsController {
             String courseDescription,
             String classOfferingId,
             String profileImageUrl
-    ) {}
+    ) {
+    }
 }

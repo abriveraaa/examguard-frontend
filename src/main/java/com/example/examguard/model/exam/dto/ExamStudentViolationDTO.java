@@ -15,15 +15,47 @@ public class ExamStudentViolationDTO {
     private OffsetDateTime latestViolationAt;
     private String reviewStatus;
 
-    public Long getAttemptId() { return attemptId; }
-    public Long getExamId() { return examId; }
-    public String getStudentId() { return studentId; }
-    public String getStudentName() { return studentName; }
-    public String getCourseCode() { return courseCode; }
-    public String getSectionName() { return sectionName; }
-    public Long getViolationCount() { return violationCount; }
-    public String getViolationLabel() { return violationLabel; }
-    public String getHighestSeverity() { return highestSeverity; }
-    public OffsetDateTime getLatestViolationAt() { return latestViolationAt; }
-    public String getReviewStatus() { return reviewStatus; }
+    public Long getAttemptId() {
+        return attemptId;
+    }
+
+    public Long getExamId() {
+        return examId;
+    }
+
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public String getStudentName() {
+        return studentName;
+    }
+
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public String getSectionName() {
+        return sectionName;
+    }
+
+    public Long getViolationCount() {
+        return violationCount;
+    }
+
+    public String getViolationLabel() {
+        return violationLabel;
+    }
+
+    public String getHighestSeverity() {
+        return highestSeverity;
+    }
+
+    public OffsetDateTime getLatestViolationAt() {
+        return latestViolationAt;
+    }
+
+    public String getReviewStatus() {
+        return reviewStatus;
+    }
 }

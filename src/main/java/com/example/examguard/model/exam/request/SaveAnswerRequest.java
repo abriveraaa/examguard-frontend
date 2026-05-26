@@ -6,5 +6,4 @@ public class SaveAnswerRequest {
     private Long selectedChoiceId;
     private String answerText;
 
-    // getters and setters
 }

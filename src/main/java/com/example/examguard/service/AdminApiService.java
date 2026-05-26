@@ -258,6 +258,7 @@ public class AdminApiService {
         connection.setDoOutput(true);
 
         connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + Session.getSessionToken());
         connection.setRequestProperty("X-User-Id", Session.getSchoolId());
         connection.setRequestProperty("X-Role", "ADMIN");
 

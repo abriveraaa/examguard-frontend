@@ -143,11 +143,25 @@ public class MediaPipeFaceResult {
         return severity;
     }
 
-    public double getBrightness() { return brightness; }
-    public double getBlurScore() { return blurScore; }
-    public boolean isTooDark() { return tooDark; }
-    public boolean isTooBright() { return tooBright; }
-    public boolean isTooBlurry() { return tooBlurry; }
+    public double getBrightness() {
+        return brightness;
+    }
+
+    public double getBlurScore() {
+        return blurScore;
+    }
+
+    public boolean isTooDark() {
+        return tooDark;
+    }
+
+    public boolean isTooBright() {
+        return tooBright;
+    }
+
+    public boolean isTooBlurry() {
+        return tooBlurry;
+    }
 
     public boolean isEyesProbablyCovered() {
         return eyesProbablyCovered;

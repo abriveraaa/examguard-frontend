@@ -16,12 +16,18 @@ import java.time.format.DateTimeFormatter;
 
 public class ForgotPasswordController {
 
-    @FXML private TextField userIdField;
-    @FXML private TextField emailField;
-    @FXML private DatePicker birthdayField;
-    @FXML private Button forgotPasswordButton;
-    @FXML private ProgressIndicator loadingSpinner;
-    @FXML private Label errorLabel;
+    @FXML
+    private TextField userIdField;
+    @FXML
+    private TextField emailField;
+    @FXML
+    private DatePicker birthdayField;
+    @FXML
+    private Button forgotPasswordButton;
+    @FXML
+    private ProgressIndicator loadingSpinner;
+    @FXML
+    private Label errorLabel;
 
     private final AuthApiService authApiService = new AuthApiService();
     private final Gson gson = new Gson();

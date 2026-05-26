@@ -11,24 +11,38 @@ import java.util.List;
 
 public class FacultyProctorController {
 
-    @FXML private ComboBox<String> examSelector;
-    @FXML private TextField searchField;
-    @FXML private CheckBox flaggedOnlyCheck;
+    @FXML
+    private ComboBox<String> examSelector;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private CheckBox flaggedOnlyCheck;
 
-    @FXML private Label totalTakersLabel;
-    @FXML private Label onlineLabel;
-    @FXML private Label flaggedLabel;
-    @FXML private Label submittedLabel;
+    @FXML
+    private Label totalTakersLabel;
+    @FXML
+    private Label onlineLabel;
+    @FXML
+    private Label flaggedLabel;
+    @FXML
+    private Label submittedLabel;
 
-    @FXML private TilePane studentGrid;
+    @FXML
+    private TilePane studentGrid;
 
-    @FXML private Label selectedStudentName;
-    @FXML private Label selectedStudentInfo;
-    @FXML private Label phoneCameraStatus;
-    @FXML private Label connectionStatus;
-    @FXML private Label angleStatus;
+    @FXML
+    private Label selectedStudentName;
+    @FXML
+    private Label selectedStudentInfo;
+    @FXML
+    private Label phoneCameraStatus;
+    @FXML
+    private Label connectionStatus;
+    @FXML
+    private Label angleStatus;
 
-    @FXML private ListView<String> violationList;
+    @FXML
+    private ListView<String> violationList;
 
     private final List<ProctorStudentRow> students = new ArrayList<>();
 

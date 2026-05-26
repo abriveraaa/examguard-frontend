@@ -13,27 +13,44 @@ import javafx.scene.control.*;
 
 public class ChangePasswordController {
 
-    @FXML private PasswordField currentPasswordField;
-    @FXML private PasswordField newPasswordField;
-    @FXML private PasswordField confirmPasswordField;
+    @FXML
+    private PasswordField currentPasswordField;
+    @FXML
+    private PasswordField newPasswordField;
+    @FXML
+    private PasswordField confirmPasswordField;
 
-    @FXML private TextField newPasswordVisibleField;
-    @FXML private TextField confirmPasswordVisibleField;
+    @FXML
+    private TextField newPasswordVisibleField;
+    @FXML
+    private TextField confirmPasswordVisibleField;
 
-    @FXML private Label errorLabel;
-    @FXML private Label mustChangeLabel;
-    @FXML private Button updatePasswordButton;
-    @FXML private ProgressIndicator loadingSpinner;
+    @FXML
+    private Label errorLabel;
+    @FXML
+    private Label mustChangeLabel;
+    @FXML
+    private Button updatePasswordButton;
+    @FXML
+    private ProgressIndicator loadingSpinner;
 
-    @FXML private ProgressBar passwordStrengthBar;
-    @FXML private Label passwordStrengthLabel;
-    @FXML private Label passwordMatchLabel;
+    @FXML
+    private ProgressBar passwordStrengthBar;
+    @FXML
+    private Label passwordStrengthLabel;
+    @FXML
+    private Label passwordMatchLabel;
 
-    @FXML private Label ruleLengthLabel;
-    @FXML private Label ruleUpperLabel;
-    @FXML private Label ruleLowerLabel;
-    @FXML private Label ruleDigitLabel;
-    @FXML private Label ruleSpecialLabel;
+    @FXML
+    private Label ruleLengthLabel;
+    @FXML
+    private Label ruleUpperLabel;
+    @FXML
+    private Label ruleLowerLabel;
+    @FXML
+    private Label ruleDigitLabel;
+    @FXML
+    private Label ruleSpecialLabel;
 
     private final AuthApiService authApiService = new AuthApiService();
     private final Gson gson = new Gson();
@@ -261,7 +278,6 @@ public class ChangePasswordController {
         if (!newPassword.matches(".*[^A-Za-z0-9].*")) {
             return "Password must include at least one special character.";
         }
-
 
 
         return null;

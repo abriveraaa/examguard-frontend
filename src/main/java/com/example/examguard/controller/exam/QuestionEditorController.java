@@ -7,24 +7,38 @@ import javafx.stage.Stage;
 
 public class QuestionEditorController {
 
-    @FXML private Label titleLabel;
+    @FXML
+    private Label titleLabel;
 
-    @FXML private ComboBox<String> typeComboBox;
-    @FXML private TextArea questionTextArea;
-    @FXML private TextField pointsField;
+    @FXML
+    private ComboBox<String> typeComboBox;
+    @FXML
+    private TextArea questionTextArea;
+    @FXML
+    private TextField pointsField;
 
-    @FXML private VBox choicesPane;
-    @FXML private TextField choiceAField;
-    @FXML private TextField choiceBField;
-    @FXML private TextField choiceCField;
-    @FXML private TextField choiceDField;
-    @FXML private ComboBox<String> correctChoiceComboBox;
+    @FXML
+    private VBox choicesPane;
+    @FXML
+    private TextField choiceAField;
+    @FXML
+    private TextField choiceBField;
+    @FXML
+    private TextField choiceCField;
+    @FXML
+    private TextField choiceDField;
+    @FXML
+    private ComboBox<String> correctChoiceComboBox;
 
-    @FXML private VBox shortAnswerPane;
-    @FXML private TextField correctAnswerField;
+    @FXML
+    private VBox shortAnswerPane;
+    @FXML
+    private TextField correctAnswerField;
 
-    @FXML private VBox essayPane;
-    @FXML private TextArea essayGuideArea;
+    @FXML
+    private VBox essayPane;
+    @FXML
+    private TextArea essayGuideArea;
 
     private CreateExamController.QuestionDraftRow question;
     private boolean saved = false;

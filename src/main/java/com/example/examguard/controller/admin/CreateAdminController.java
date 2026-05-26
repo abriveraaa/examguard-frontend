@@ -3,7 +3,10 @@ package com.example.examguard.controller.admin;
 import com.example.examguard.service.AdminApiService;
 import com.google.gson.Gson;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
@@ -12,17 +15,22 @@ import java.util.Map;
 
 public class CreateAdminController {
 
-    @FXML private TextField employeeIdField;
-    @FXML private TextField firstNameField;
-    @FXML private TextField lastNameField;
-    @FXML private TextField emailField;
-    @FXML private DatePicker birthDatePicker;
-    @FXML private Label errorLabel;
-    @FXML private Button saveButton;
-
     private final AdminApiService adminApiService = new AdminApiService();
     private final Gson gson = new Gson();
-
+    @FXML
+    private TextField employeeIdField;
+    @FXML
+    private TextField firstNameField;
+    @FXML
+    private TextField lastNameField;
+    @FXML
+    private TextField emailField;
+    @FXML
+    private DatePicker birthDatePicker;
+    @FXML
+    private Label errorLabel;
+    @FXML
+    private Button saveButton;
     private Runnable onSuccess;
 
     public void setOnSuccess(Runnable onSuccess) {

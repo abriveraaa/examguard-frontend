@@ -1,8 +1,8 @@
 package com.example.examguard.controller.admin;
 
 import com.example.examguard.controller.layout.ReactivationJustificationDialogController;
-import com.example.examguard.model.core.response.UserDetailsResponse;
 import com.example.examguard.model.core.UserManagementRow;
+import com.example.examguard.model.core.response.UserDetailsResponse;
 import com.example.examguard.service.AdminApiService;
 import com.google.gson.Gson;
 import javafx.application.Platform;
@@ -11,21 +11,26 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.stage.Stage;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 public class UserViewDialogController {
 
-    @FXML private ImageView photoView;
-    @FXML private Label roleLabel;
-    @FXML private Button reactivateButton;
+    @FXML
+    private ImageView photoView;
+    @FXML
+    private Label roleLabel;
+    @FXML
+    private Button reactivateButton;
 
-    @FXML private GridPane accountBox, academicBox, accountStatus;
-    @FXML private VBox academicSection;
+    @FXML
+    private GridPane accountBox, academicBox, accountStatus;
+    @FXML
+    private VBox academicSection;
     private String currentRole;
 
 
@@ -176,14 +181,18 @@ public class UserViewDialogController {
     @FXML
     private void handleReactivate() {
 
-        if (currentRow == null || currentRole == null) { return; }
+        if (currentRow == null || currentRole == null) {
+            return;
+        }
 
         String justification = openJustificationDialog(
                 "Provide justification for deactivating this account",
                 "Deactivate Reason"
         );
 
-        if (justification == null || justification.isBlank()) { return; }
+        if (justification == null || justification.isBlank()) {
+            return;
+        }
 
         reactivateButton.setDisable(true);
         reactivateButton.setText("Reactivating...");

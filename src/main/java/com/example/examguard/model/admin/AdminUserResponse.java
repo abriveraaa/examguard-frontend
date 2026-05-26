@@ -12,7 +12,8 @@ public class AdminUserResponse {
     private String registrarStatus;
     private String systemAccess;
 
-    public AdminUserResponse() {}
+    public AdminUserResponse() {
+    }
 
     public AdminUserResponse(String schoolId,
                              String username,
@@ -39,13 +40,39 @@ public class AdminUserResponse {
         return name.isBlank() ? "-" : name;
     }
 
-    public String getSchoolId() { return schoolId; }
-    public String getUsername() { return username; }
-    public String getFirstName() { return firstName; }
-    public String getLastName() { return lastName; }
-    public String getFullName() { return fullName; }
-    public String getEmail() { return email; }
-    public String getBirthDate() { return birthDate; }
-    public String getRegistrarStatus() { return registrarStatus; }
-    public String getSystemAccess() { return systemAccess; }
+    public String getSchoolId() {
+        return schoolId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getBirthDate() {
+        return birthDate;
+    }
+
+    public String getRegistrarStatus() {
+        return registrarStatus;
+    }
+
+    public String getSystemAccess() {
+        return systemAccess;
+    }
 }

@@ -12,7 +12,8 @@ public class FacultyUserResponse {
     private String registrarStatus;
     private String systemAccess;
 
-    public FacultyUserResponse() {}
+    public FacultyUserResponse() {
+    }
 
     public FacultyUserResponse(String schoolId,
                                String username,
@@ -41,15 +42,39 @@ public class FacultyUserResponse {
         return name.isBlank() ? "-" : name;
     }
 
-    public String getSchoolId() { return schoolId; }
-    public String getUsername() { return username; }
-    public String getFirstName() { return firstName; }
-    public String getLastName() { return lastName; }
-    public String getFullName() { return fullName; }
-    public String getEmail() { return email; }
+    public String getSchoolId() {
+        return schoolId;
+    }
 
-    public String getRegistrarStatus() { return registrarStatus; }
-    public String getSystemAccess() { return systemAccess; }
+    public String getUsername() {
+        return username;
+    }
 
-    public String getCollegeName() { return collegeName; }
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getRegistrarStatus() {
+        return registrarStatus;
+    }
+
+    public String getSystemAccess() {
+        return systemAccess;
+    }
+
+    public String getCollegeName() {
+        return collegeName;
+    }
 }

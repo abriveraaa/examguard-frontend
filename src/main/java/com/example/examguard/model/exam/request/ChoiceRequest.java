@@ -7,7 +7,8 @@ public class ChoiceRequest {
     private String choiceImageUrl;
     private Boolean correct;
 
-    public ChoiceRequest() {}
+    public ChoiceRequest() {
+    }
 
     public ChoiceRequest(String choiceText, Boolean correct) {
         this.choiceText = choiceText;

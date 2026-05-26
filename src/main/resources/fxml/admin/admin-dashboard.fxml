@@ -1,14 +1,136 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.ComboBox?>
+
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.control.ListView?>
 
 <VBox maxWidth="Infinity"
       maxHeight="Infinity"
-      spacing="16.0"
+      spacing="16"
+      styleClass="monitoring-page"
+      stylesheets="@../../styles/admin-monitoring.css"
       xmlns="http://javafx.com/javafx/17.0.12"
-      xmlns:fx="http://javafx.com/fxml/1">
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.examguard.controller.admin.AdminDashboardController">
 
+    <HBox spacing="10" alignment="CENTER_LEFT" styleClass="panel-card">
+        <ComboBox
+                fx:id="rangeComboBox"
+                prefWidth="150"
+                promptText="Range"/>
 
+        <DatePicker
+                fx:id="customStartDatePicker"
+                prefWidth="150"
+                visible="false"
+                managed="false"/>
 
+        <DatePicker
+                fx:id="customEndDatePicker"
+                prefWidth="150"
+                visible="false"
+                managed="false"/>
+
+    </HBox>
+
+    <GridPane hgap="16" vgap="16">
+        <rowConstraints>
+            <RowConstraints percentHeight="52"/>
+            <RowConstraints percentHeight="48"/>
+        </rowConstraints>
+        <columnConstraints>
+            <ColumnConstraints percentWidth="65"/>
+            <ColumnConstraints percentWidth="35"/>
+        </columnConstraints>
+
+        <VBox GridPane.columnIndex="0"
+              GridPane.rowIndex="0"
+              styleClass="panel-card"
+              VBox.vgrow="ALWAYS">
+
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Label text="User Activity Trends" styleClass="section-title"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <ComboBox fx:id="concurrentTimeScaleComboBox"
+                          prefWidth="130"/>
+            </HBox>
+
+            <TabPane styleClass="analytics-tab-pane"
+                     tabClosingPolicy="UNAVAILABLE"
+                     VBox.vgrow="ALWAYS">
+
+                <Tab text="Login Volume">
+                    <LineChart fx:id="loginVolumeChart"
+                               animated="false"
+                               legendVisible="true">
+                        <xAxis>
+                            <CategoryAxis/>
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis label="Logins"/>
+                        </yAxis>
+                    </LineChart>
+                </Tab>
+
+                <Tab text="Concurrent Users">
+                    <LineChart fx:id="concurrentUsersChart"
+                               animated="false"
+                               legendVisible="true">
+                        <xAxis>
+                            <CategoryAxis/>
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis label="Users"/>
+                        </yAxis>
+                    </LineChart>
+                </Tab>
+
+            </TabPane>
+
+        </VBox>
+
+        <VBox GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="panel-card">
+            <Label text="Violations by Program" styleClass="section-title"/>
+
+            <BarChart fx:id="violationsByProgramChart"
+                      prefHeight="300"
+                      animated="false">
+                <xAxis>
+                    <CategoryAxis label="Program"/>
+                </xAxis>
+                <yAxis>
+                    <NumberAxis label="Violations"/>
+                </yAxis>
+            </BarChart>
+        </VBox>
+
+        <VBox GridPane.columnIndex="1"
+              GridPane.rowIndex="0"
+              GridPane.rowSpan="2"
+              styleClass="panel-card"
+              VBox.vgrow="ALWAYS">
+
+            <Label text="Recent Slow Activities" styleClass="section-title"/>
+
+            <ListView fx:id="recentSystemEventsListView"
+                      prefHeight="650"
+                      VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </GridPane>
 </VBox>

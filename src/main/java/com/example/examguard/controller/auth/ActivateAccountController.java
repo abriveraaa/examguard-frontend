@@ -8,12 +8,7 @@ import com.google.gson.Gson;
 import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.DateCell;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 
@@ -22,12 +17,18 @@ import java.time.format.DateTimeFormatter;
 
 public class ActivateAccountController {
 
-    @FXML private TextField userIdField;
-    @FXML private TextField emailField;
-    @FXML private DatePicker birthdayField;
-    @FXML private Button signupButton;
-    @FXML private ProgressIndicator loadingSpinner;
-    @FXML private Label errorLabel;
+    @FXML
+    private TextField userIdField;
+    @FXML
+    private TextField emailField;
+    @FXML
+    private DatePicker birthdayField;
+    @FXML
+    private Button signupButton;
+    @FXML
+    private ProgressIndicator loadingSpinner;
+    @FXML
+    private Label errorLabel;
 
     private final AuthApiService authApiService = new AuthApiService();
     private final Gson gson = new Gson();
@@ -81,9 +82,9 @@ public class ActivateAccountController {
                     errorLabel.setText(apiResponse.getMessage());
 
 //                     optional redirect after success:
-                     PauseTransition pause = new PauseTransition(Duration.seconds(2));
-                     pause.setOnFinished(e -> SceneManager.switchScene("auth/login.fxml"));
-                     pause.play();
+                    PauseTransition pause = new PauseTransition(Duration.seconds(2));
+                    pause.setOnFinished(e -> SceneManager.switchScene("auth/login.fxml"));
+                    pause.play();
 
                 } else {
                     errorLabel.setStyle("-fx-text-fill: red;");

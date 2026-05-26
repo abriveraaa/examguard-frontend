@@ -11,7 +11,9 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
@@ -24,31 +26,50 @@ public class ProfileController {
     private final AuthApiService authApiService = new AuthApiService();
 
 
-    @FXML private ImageView profileImageView;
+    @FXML
+    private ImageView profileImageView;
 
-    @FXML private Label fullNameLabel;
-    @FXML private Label roleBadgeLabel;
-    @FXML private Label statusBadgeLabel;
-    @FXML private Label schoolEmailLabel;
-    @FXML private Label schoolIdLabel;
-    @FXML private Label collegeOrOfficeLabel;
-    @FXML private Label programOrPositionLabel;
+    @FXML
+    private Label fullNameLabel;
+    @FXML
+    private Label roleBadgeLabel;
+    @FXML
+    private Label statusBadgeLabel;
+    @FXML
+    private Label schoolEmailLabel;
+    @FXML
+    private Label schoolIdLabel;
+    @FXML
+    private Label collegeOrOfficeLabel;
+    @FXML
+    private Label programOrPositionLabel;
 
-    @FXML private Label usernameLabel;
-    @FXML private Label passwordStatusLabel;
-    @FXML private Label passwordLastChangedLabel;
+    @FXML
+    private Label usernameLabel;
+    @FXML
+    private Label passwordStatusLabel;
+    @FXML
+    private Label passwordLastChangedLabel;
 
-    @FXML private Label tenureStartLabel;
-    @FXML private Label tenureDurationLabel;
-    @FXML private Label accountStatusLabel;
+    @FXML
+    private Label tenureStartLabel;
+    @FXML
+    private Label tenureDurationLabel;
+    @FXML
+    private Label accountStatusLabel;
 
-    @FXML private Label classesSectionTitleLabel;
+    @FXML
+    private Label classesSectionTitleLabel;
 
-    @FXML private VBox classesList;
-    @FXML private VBox recentActivityList;
+    @FXML
+    private VBox classesList;
+    @FXML
+    private VBox recentActivityList;
 
-    @FXML private Button refreshButton;
-    @FXML private Button uploadPhotoButton;
+    @FXML
+    private Button refreshButton;
+    @FXML
+    private Button uploadPhotoButton;
 
     @FXML
     private void initialize() {

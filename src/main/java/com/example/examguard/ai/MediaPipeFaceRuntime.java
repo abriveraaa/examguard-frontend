@@ -1,7 +1,6 @@
 package com.example.examguard.ai;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -9,7 +8,8 @@ public class MediaPipeFaceRuntime {
 
     private static Process process;
 
-    private MediaPipeFaceRuntime() {}
+    private MediaPipeFaceRuntime() {
+    }
 
     public static synchronized void startIfNeeded() {
         if (isRunning()) {
@@ -17,17 +17,16 @@ public class MediaPipeFaceRuntime {
         }
 
         try {
-            File runtimeDir = new File("ai-runtime/mediapipe-face");
+            File runtimeDir = resolveRuntimeDir();
 
-            String pythonPath = new File(
-                    runtimeDir,
-                    ".venv/bin/python"
-            ).getAbsolutePath();
+            String pythonExecutable =
+                    System.getProperty("os.name").toLowerCase().contains("win")
+                            ? ".venv\\Scripts\\python.exe"
+                            : ".venv/bin/python";
 
-            File script = new File(
-                    runtimeDir,
-                    "mediapipe_face_service.py"
-            );
+            String pythonPath = new File(runtimeDir, pythonExecutable).getAbsolutePath();
+
+            File script = new File(runtimeDir, "mediapipe_face_service.py");
 
             ProcessBuilder pb = new ProcessBuilder(
                     pythonPath,
@@ -52,6 +51,43 @@ public class MediaPipeFaceRuntime {
                     e
             );
         }
+    }
+
+    private static File resolveRuntimeDir() {
+        String appPath = System.getProperty("jpackage.app-path");
+
+        if (appPath != null) {
+            File appFile = new File(appPath);
+
+            // macOS .app
+            File macDir = new File(
+                    appFile,
+                    "Contents/Resources/ai-runtime/mediapipe-face"
+            );
+            if (new File(macDir, "mediapipe_face_service.py").exists()) {
+                return macDir;
+            }
+
+            // Windows installed app
+            File windowsDir = new File(
+                    appFile.getParentFile(),
+                    "app/ai-runtime/mediapipe-face"
+            );
+            if (new File(windowsDir, "mediapipe_face_service.py").exists()) {
+                return windowsDir;
+            }
+        }
+
+        // Dev mode
+        File devDir = new File(
+                System.getProperty("user.dir"),
+                "ai-runtime/mediapipe-face"
+        );
+        if (new File(devDir, "mediapipe_face_service.py").exists()) {
+            return devDir;
+        }
+
+        throw new RuntimeException("MediaPipe runtime folder not found.");
     }
 
     public static synchronized void stop() {

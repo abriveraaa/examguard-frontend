@@ -752,3 +752,79 @@
 .results-print-button:pressed {
     -fx-background-color: #5f0000;
 }
+
+/* =========================================================
+   STUDENT EVIDENCE PREVIEW MODAL
+========================================================= */
+
+.violation-preview-root {
+    -fx-background-color: #1F1B18;
+    -fx-padding: 24;
+}
+
+.evidence-frame-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.evidence-frame-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.evidence-frame-card {
+    -fx-background-color: rgba(255,255,255,0.08);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255,255,255,0.16);
+    -fx-border-radius: 14;
+    -fx-padding: 12;
+
+    -fx-pref-width: 300;
+    -fx-min-width: 300;
+    -fx-max-width: 300;
+}
+
+.evidence-frame-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-fill: white;
+}
+
+.evidence-frame-image {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-color: rgba(255,255,255,0.15);
+    -fx-cursor: hand;
+}
+
+.evidence-frame-offset {
+    -fx-font-size: 11px;
+    -fx-text-fill: #D6D3D1;
+}
+
+.evidence-preview-root {
+    -fx-background-color: rgba(0,0,0,0.94);
+    -fx-padding: 24;
+}
+
+.evidence-preview-hint {
+    -fx-text-fill: #D6D3D1;
+    -fx-font-size: 12px;
+}
+
+.violation-preview-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.violation-preview-note {
+    -fx-font-size: 12px;
+    -fx-text-fill: rgba(255,255,255,0.75);
+}
+
+.violation-preview-empty {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-style: italic;
+}

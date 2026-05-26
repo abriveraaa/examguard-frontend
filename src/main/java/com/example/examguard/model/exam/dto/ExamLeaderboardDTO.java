@@ -17,16 +17,51 @@ public class ExamLeaderboardDTO {
     private OffsetDateTime submittedAt;
     private String integrityStatus;
 
-    public Integer getRank() { return rank; }
-    public Long getAttemptId() { return attemptId; }
-    public String getStudentId() { return studentId; }
-    public String getStudentName() { return studentName; }
-    public String getSectionName() { return sectionName; }
-    public Double getTotalScore() { return totalScore; }
-    public Double getTotalPossibleScore() { return totalPossibleScore; }
-    public Double getScorePercentage() { return scorePercentage; }
-    public Long getViolationCount() { return violationCount; }
-    public OffsetDateTime getStartedAt() { return startedAt; }
-    public OffsetDateTime getSubmittedAt() { return submittedAt; }
-    public String getIntegrityStatus() { return integrityStatus; }
+    public Integer getRank() {
+        return rank;
+    }
+
+    public Long getAttemptId() {
+        return attemptId;
+    }
+
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public String getStudentName() {
+        return studentName;
+    }
+
+    public String getSectionName() {
+        return sectionName;
+    }
+
+    public Double getTotalScore() {
+        return totalScore;
+    }
+
+    public Double getTotalPossibleScore() {
+        return totalPossibleScore;
+    }
+
+    public Double getScorePercentage() {
+        return scorePercentage;
+    }
+
+    public Long getViolationCount() {
+        return violationCount;
+    }
+
+    public OffsetDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public OffsetDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public String getIntegrityStatus() {
+        return integrityStatus;
+    }
 }

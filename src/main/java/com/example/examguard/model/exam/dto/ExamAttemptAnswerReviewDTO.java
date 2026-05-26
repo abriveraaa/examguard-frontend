@@ -31,22 +31,70 @@ public class ExamAttemptAnswerReviewDTO {
     private String reviewStatus;
     private Boolean needsChecking;
 
-    public Long getAnswerId() { return answerId; }
-    public Long getQuestionId() { return questionId; }
-    public Integer getQuestionNumber() { return questionNumber; }
-    public String getQuestionType() { return questionType; }
-    public String getQuestionText() { return questionText; }
-    public String getQuestionImageUrl() { return questionImageUrl; }
-    public String getStudentAnswer() { return studentAnswer; }
-    public String getCorrectAnswer() { return correctAnswer; }
-    public BigDecimal getPoints() { return points; }
-    public BigDecimal getEarnedPoints() { return earnedPoints; }
-    public Boolean getCorrect() { return correct; }
-    public Boolean getNeedsManualCheck() { return needsManualCheck; }
-    public Boolean getManuallyReviewed() { return manuallyReviewed; }
-    public List<ExamAttemptViolationDTO> getViolations() { return violations; }
-    public String getStudentAnswerImageUrl() { return studentAnswerImageUrl; }
-    public String getCorrectAnswerImageUrl() { return correctAnswerImageUrl; }
+    public Long getAnswerId() {
+        return answerId;
+    }
+
+    public Long getQuestionId() {
+        return questionId;
+    }
+
+    public Integer getQuestionNumber() {
+        return questionNumber;
+    }
+
+    public String getQuestionType() {
+        return questionType;
+    }
+
+    public String getQuestionText() {
+        return questionText;
+    }
+
+    public String getQuestionImageUrl() {
+        return questionImageUrl;
+    }
+
+    public String getStudentAnswer() {
+        return studentAnswer;
+    }
+
+    public String getCorrectAnswer() {
+        return correctAnswer;
+    }
+
+    public BigDecimal getPoints() {
+        return points;
+    }
+
+    public BigDecimal getEarnedPoints() {
+        return earnedPoints;
+    }
+
+    public Boolean getCorrect() {
+        return correct;
+    }
+
+    public Boolean getNeedsManualCheck() {
+        return needsManualCheck;
+    }
+
+    public Boolean getManuallyReviewed() {
+        return manuallyReviewed;
+    }
+
+    public List<ExamAttemptViolationDTO> getViolations() {
+        return violations;
+    }
+
+    public String getStudentAnswerImageUrl() {
+        return studentAnswerImageUrl;
+    }
+
+    public String getCorrectAnswerImageUrl() {
+        return correctAnswerImageUrl;
+    }
+
     public String getQuestionInstruction() {
         return questionInstruction;
     }
@@ -97,7 +145,11 @@ public class ExamAttemptAnswerReviewDTO {
         this.needsChecking = needsChecking;
     }
 
-    public void setEarnedPoints(BigDecimal earnedPoints) { this.earnedPoints = earnedPoints; }
+    public void setEarnedPoints(BigDecimal earnedPoints) {
+        this.earnedPoints = earnedPoints;
+    }
 
-    public void setManuallyReviewed(boolean manuallyReviewed) { this.manuallyReviewed = manuallyReviewed; }
+    public void setManuallyReviewed(boolean manuallyReviewed) {
+        this.manuallyReviewed = manuallyReviewed;
+    }
 }

@@ -5,7 +5,15 @@ public class ChartPointDto {
     private String category;
     private Long value;
 
-    public String getLabel() { return label; }
-    public String getCategory() { return category; }
-    public Long getValue() { return value; }
+    public String getLabel() {
+        return label;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public Long getValue() {
+        return value;
+    }
 }

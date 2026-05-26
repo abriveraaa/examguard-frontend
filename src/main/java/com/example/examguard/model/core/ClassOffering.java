@@ -18,9 +18,15 @@ public class ClassOffering {
         return getDisplayName();
     }
 
-    public String getClassOfferingId() { return classOfferingId;
+    public String getClassOfferingId() {
+        return classOfferingId;
     }
 
-    public String getCourseCode() { return courseCode; }
-    public void setCourseCode(String courseCode) { this.courseCode = courseCode; }
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
+    }
 }

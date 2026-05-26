@@ -7,8 +7,19 @@ public class UserAccess {
     private String role;
     private boolean mustChangePassword;
 
-    public String getUsername() { return username; }
-    public String getSchoolId() { return schoolId; }
-    public String getRole() { return role; }
-    public boolean isMustChangePassword() { return mustChangePassword; }
+    public String getUsername() {
+        return username;
+    }
+
+    public String getSchoolId() {
+        return schoolId;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
+    }
 }

@@ -7,9 +7,12 @@ import javafx.stage.Stage;
 
 public class ReactivationJustificationDialogController {
 
-    @FXML private Label descriptionLabel;
-    @FXML private TextArea justificationArea;
-    @FXML private Label errorLabel;
+    @FXML
+    private Label descriptionLabel;
+    @FXML
+    private TextArea justificationArea;
+    @FXML
+    private Label errorLabel;
 
     private String justification;
     private boolean confirmed = false;

@@ -1,38 +1,30 @@
 package com.example.examguard.controller.admin;
 
 import com.example.examguard.config.AppConfig;
+import com.example.examguard.controller.exam.CreateExamController;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
-import com.example.examguard.controller.exam.CreateExamController;
-import com.example.examguard.model.exam.dto.ExamActivityLogDTO;
-import com.example.examguard.model.exam.dto.ExamAttemptAnswerReviewDTO;
-import com.example.examguard.model.exam.dto.ExamAttemptViolationDTO;
-import com.example.examguard.model.exam.dto.ExamLeaderboardDTO;
+import com.example.examguard.model.exam.dto.*;
 import com.example.examguard.model.exam.request.EssayReviewRequest;
 import com.example.examguard.model.exam.request.EssayRubricRequest;
 import com.example.examguard.model.exam.request.EssayRubricScoreRequest;
 import com.example.examguard.model.exam.response.EssayRubricScoreResponse;
-import com.example.examguard.model.exam.dto.AnswerReviewTimelineDTO;
+import com.example.examguard.model.exam.response.ExamResponse;
+import com.example.examguard.model.exam.result.ExamResult;
+import com.example.examguard.model.exam.result.ExamRow;
 import com.example.examguard.model.faculty.dto.FacultyClassDTO;
 import com.example.examguard.model.faculty.dto.FacultyExamStudentDTO;
 import com.example.examguard.model.faculty.response.FacultyAttemptReviewResponse;
 import com.example.examguard.model.faculty.response.FacultyExamDetailResponse;
 import com.example.examguard.model.faculty.response.SimpleMessageResponse;
-import com.example.examguard.service.FacultyApiService;
-
-import java.awt.*;
-import java.io.File;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.nio.file.Files;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import com.example.examguard.model.exam.response.ExamResponse;
-import com.example.examguard.model.exam.result.ExamResult;
-import com.example.examguard.model.exam.result.ExamRow;
 import com.example.examguard.service.ExamApiService;
-import com.example.examguard.utility.LoadingSpinner;
+import com.example.examguard.service.FacultyApiService;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -48,61 +40,88 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.TextField;
-import javafx.beans.property.SimpleStringProperty;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import java.util.*;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-
-import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
-public class ExamManagementController implements ShellAwareController {
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.List;
 
-    @FXML private TableView<ExamRow> examTable;
-    @FXML private TableColumn<ExamRow, String> dateCreatedColumn;
-    @FXML private TableColumn<ExamRow, String> validityColumn;
-    @FXML private TableColumn<ExamRow, String> titleColumn;
-    @FXML private TableColumn<ExamRow, String> statusColumn;
-    @FXML private TableColumn<ExamRow, String> durationColumn;
-    @FXML private TableColumn<ExamRow, String> assignedColumn;
-    @FXML private TableColumn<ExamRow, String> takersColumn;
-    @FXML private TableColumn<ExamRow, String> createdByColumn;
-    @FXML private TableColumn<ExamRow, String> updatedByColumn;
-    @FXML private TableColumn<ExamRow, Void> actionsColumn;
-    @FXML private ComboBox<String> termFilterComboBox;
-    @FXML private BorderPane listModeContainer;
-    @FXML private BorderPane workspaceModeContainer;
-    @FXML private StackPane workspaceContent;
-    @FXML private Label workspaceTitleLabel;
-    @FXML private Label workspaceSubtitleLabel;
-    @FXML private Button releaseResultsButton;
-    @FXML private Button reportsTabButton;
-    @FXML private Label itemCountLabel;
-    @FXML private TextField searchField;
-    @FXML private Button reloadButton;
-    @FXML private StackPane loadingOverlay;
-    @FXML private Button overviewTabButton;
-    @FXML private Button studentsTabButton;
-    @FXML private Button activityLogTabButton;
-    @FXML private Button leaderboardTabButton;
+public class ExamManagementController implements ShellAwareController {
 
     private final ExamApiService examApiService = new ExamApiService();
     private final FacultyApiService facultyApiService = new FacultyApiService();
     private final PauseTransition searchDebounce = new PauseTransition(Duration.millis(250));
     private final ObservableList<ExamRow> examRows = FXCollections.observableArrayList();
+    @FXML
+    private TableView<ExamRow> examTable;
+    @FXML
+    private TableColumn<ExamRow, String> dateCreatedColumn;
+    @FXML
+    private TableColumn<ExamRow, String> validityColumn;
+    @FXML
+    private TableColumn<ExamRow, String> titleColumn;
+    @FXML
+    private TableColumn<ExamRow, String> statusColumn;
+    @FXML
+    private TableColumn<ExamRow, String> durationColumn;
+    @FXML
+    private TableColumn<ExamRow, String> assignedColumn;
+    @FXML
+    private TableColumn<ExamRow, String> takersColumn;
+    @FXML
+    private TableColumn<ExamRow, String> createdByColumn;
+    @FXML
+    private TableColumn<ExamRow, String> updatedByColumn;
+    @FXML
+    private TableColumn<ExamRow, Void> actionsColumn;
+    @FXML
+    private ComboBox<String> termFilterComboBox;
+    @FXML
+    private BorderPane listModeContainer;
+    @FXML
+    private BorderPane workspaceModeContainer;
+    @FXML
+    private StackPane workspaceContent;
+    @FXML
+    private Label workspaceTitleLabel;
+    @FXML
+    private Label workspaceSubtitleLabel;
+    @FXML
+    private Button releaseResultsButton;
+    @FXML
+    private Button reportsTabButton;
+    @FXML
+    private Label itemCountLabel;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private Button reloadButton;
+    @FXML
+    private StackPane loadingOverlay;
+    @FXML
+    private Button overviewTabButton;
+    @FXML
+    private Button studentsTabButton;
+    @FXML
+    private Button activityLogTabButton;
+    @FXML
+    private Button leaderboardTabButton;
     private FacultyExamStudentDTO currentReviewStudent;
     private FacultyAttemptReviewResponse currentAttemptReview;
     private FilteredList<ExamRow> filteredRows;
@@ -112,13 +131,6 @@ public class ExamManagementController implements ShellAwareController {
 
     private boolean loading = false;
     private Long selectedWorkspaceExamId;
-
-
-    private record EvidenceFrame(
-            String url,
-            String label,
-            Integer offsetMs
-    ) {}
 
     @FXML
     public void initialize() {
@@ -1055,7 +1067,7 @@ public class ExamManagementController implements ShellAwareController {
         };
     }
 
-    private VBox    createAnswerReviewCard(ExamAttemptAnswerReviewDTO answer) {
+    private VBox createAnswerReviewCard(ExamAttemptAnswerReviewDTO answer) {
         Label questionHeader = new Label();
         questionHeader.setText(
                 "Question " + defaultInt(answer.getQuestionNumber()) +
@@ -1286,7 +1298,7 @@ public class ExamManagementController implements ShellAwareController {
 
                 saveTask.setOnSucceeded(e -> {
 
-                    answer.setEarnedPoints( BigDecimal.valueOf(finalEnteredScore) );
+                    answer.setEarnedPoints(BigDecimal.valueOf(finalEnteredScore));
                     questionHeader.setText(
                             "Question " + defaultInt(answer.getQuestionNumber()) +
                                     " • " + formatStatus(safe(answer.getQuestionType())) +
@@ -1908,9 +1920,7 @@ public class ExamManagementController implements ShellAwareController {
             try {
                 double deduction = Double.parseDouble(deductionField.getText().trim());
 
-                double currentScore = answer.getEarnedPoints() == null
-                        ? 0
-                        : answer.getEarnedPoints().doubleValue();
+                double currentScore = answer.getEarnedPoints() == null ? 0 : answer.getEarnedPoints().doubleValue();
 
                 if (deduction < 0) {
                     showError("Deduction cannot be negative.");
@@ -2221,9 +2231,7 @@ public class ExamManagementController implements ShellAwareController {
                             ? "General"
                             : "Question " + log.getQuestionNumber();
 
-                    if (!q.equalsIgnoreCase(selectedQuestion)) {
-                        return false;
-                    }
+                    return q.equalsIgnoreCase(selectedQuestion);
                 }
 
                 return true;
@@ -2624,8 +2632,7 @@ public class ExamManagementController implements ShellAwareController {
         );
 
 
-
-        root.getChildren().addAll(pageHeader,reportRow);
+        root.getChildren().addAll(pageHeader, reportRow);
 
         ScrollPane scrollPane = new ScrollPane(root);
         scrollPane.setFitToWidth(true);
@@ -2862,6 +2869,7 @@ public class ExamManagementController implements ShellAwareController {
             showPortfolioSectionPicker(classes);
         });
     }
+
     private void showPortfolioSectionPicker(List<FacultyClassDTO> classes) {
 
         List<String> sectionOptions = classes.stream()
@@ -3137,7 +3145,6 @@ public class ExamManagementController implements ShellAwareController {
         }
     }
 
-
     @FXML
     private void handleReleaseResults() {
         if (selectedWorkspaceExamId == null) {
@@ -3226,7 +3233,6 @@ public class ExamManagementController implements ShellAwareController {
         thread.setDaemon(true);
         thread.start();
     }
-
 
     private void setupTableColumns() {
         dateCreatedColumn.setCellValueFactory(data -> data.getValue().dateCreatedProperty());
@@ -3899,7 +3905,6 @@ public class ExamManagementController implements ShellAwareController {
         );
     }
 
-
     private String formatTakers(String value) {
         if (value == null || value.isBlank()) {
             return "0% [0/0]";
@@ -4116,7 +4121,7 @@ public class ExamManagementController implements ShellAwareController {
                 .count();
 
         long completed = filteredRows.stream()
-                .filter(row ->"COMPLETED".equalsIgnoreCase(safe(row.getStatus())))
+                .filter(row -> "COMPLETED".equalsIgnoreCase(safe(row.getStatus())))
                 .count();
 
         shellController.setHeroCards(
@@ -4150,7 +4155,6 @@ public class ExamManagementController implements ShellAwareController {
             itemCountLabel.setText("Loading...");
         }
     }
-
 
     private void updateItemCount() {
         if (itemCountLabel == null) return;
@@ -4215,7 +4219,6 @@ public class ExamManagementController implements ShellAwareController {
     private void handleReload() {
         loadExamsFromBackend();
     }
-
 
     private void setupCenteredColumns() {
         centerColumn(statusColumn);
@@ -4351,11 +4354,20 @@ public class ExamManagementController implements ShellAwareController {
         saveButton.setFocusTraversable(false);
 
         Runnable updateTotal = () -> {
-            BigDecimal total = calculateEssayRubricTotal(rowsBox, answer);
+            BigDecimal rubricTotal = calculateEssayRubricTotal(rowsBox, answer);
+
+            BigDecimal actualEarned = answer.getEarnedPoints() == null
+                    ? BigDecimal.ZERO
+                    : answer.getEarnedPoints();
 
             totalLabel.setText(
-                    "Calculated Score: " +
-                            formatPoints(total) +
+                    "Rubric Score: " +
+                            formatPoints(rubricTotal) +
+                            " / " +
+                            formatPoints(answer.getPoints()) +
+                            " pts" +
+                            "  • Final Score: " +
+                            formatPoints(actualEarned) +
                             " / " +
                             formatPoints(answer.getPoints()) +
                             " pts"
@@ -4702,22 +4714,6 @@ public class ExamManagementController implements ShellAwareController {
         return box;
     }
 
-    private static class EssayRubricRowData {
-        private final Long rubricId;
-        private final TextField percentField;
-        private final TextField feedbackField;
-
-        private EssayRubricRowData(
-                Long rubricId,
-                TextField percentField,
-                TextField feedbackField
-        ) {
-            this.rubricId = rubricId;
-            this.percentField = percentField;
-            this.feedbackField = feedbackField;
-        }
-    }
-
     private void runExamActionAsync(String loadingText, Runnable action) {
         setLoading(true);
 
@@ -4770,7 +4766,7 @@ public class ExamManagementController implements ShellAwareController {
             button.getStyleClass().remove("workspace-tab-active");
         }
 
-        if (activeButton != null&&
+        if (activeButton != null &&
                 !activeButton.getStyleClass().contains("workspace-tab-active")) {
             activeButton.getStyleClass().add("workspace-tab-active");
         }
@@ -4954,6 +4950,16 @@ public class ExamManagementController implements ShellAwareController {
             case "ATTEMPT_MARKED_REVIEWED" -> "Attempt Marked Reviewed";
             default -> formatStatus(actionType);
         };
+    }
+
+    private record EvidenceFrame(
+            String url,
+            String label,
+            Integer offsetMs
+    ) {
+    }
+
+    private record EssayRubricRowData(Long rubricId, TextField percentField, TextField feedbackField) {
     }
 
 }

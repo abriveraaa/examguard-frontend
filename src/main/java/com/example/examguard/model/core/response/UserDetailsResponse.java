@@ -21,14 +21,38 @@ public class UserDetailsResponse {
     private Integer failedAttempts;
     private String lastLogin;
 
-    public String getSchoolId() { return schoolId; }
-    public String getUsername() { return username; }
-    public String getFullName() { return fullName; }
-    public String getEmail() { return email; }
-    public String getRole() { return role; }
-    public String getAccountStatus() { return accountStatus; }
-    public String getSystemAccess() { return systemAccess; }
-    public Integer getFailedAttempts() { return failedAttempts; }
+    public String getSchoolId() {
+        return schoolId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public String getAccountStatus() {
+        return accountStatus;
+    }
+
+    public String getSystemAccess() {
+        return systemAccess;
+    }
+
+    public Integer getFailedAttempts() {
+        return failedAttempts;
+    }
+
     public String getLastLogin() {
         return formatDateTime(lastLogin);
     }
@@ -55,8 +79,20 @@ public class UserDetailsResponse {
             return "Invalid date";
         }
     }
-    public String getCollegeName() { return collegeName; }
-    public String getProgramName() { return programName; }
-    public String getYearLevel() { return yearLevel; }
-    public String getSectionName() { return sectionName; }
+
+    public String getCollegeName() {
+        return collegeName;
+    }
+
+    public String getProgramName() {
+        return programName;
+    }
+
+    public String getYearLevel() {
+        return yearLevel;
+    }
+
+    public String getSectionName() {
+        return sectionName;
+    }
 }

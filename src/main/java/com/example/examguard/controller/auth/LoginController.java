@@ -1,31 +1,46 @@
 package com.example.examguard.controller.auth;
 
+import com.example.examguard.ai.MediaPipeFaceRuntime;
 import com.example.examguard.model.core.response.LoginApiResponse;
 import com.example.examguard.model.enums.UserType;
 import com.example.examguard.service.AuthApiService;
-import com.example.examguard.utility.SceneManager;
 import com.example.examguard.utility.LoadingSpinner;
+import com.example.examguard.utility.SceneManager;
 import com.example.examguard.utility.Session;
 import com.google.gson.Gson;
 import javafx.concurrent.Task;
 import javafx.event.Event;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 
+import java.net.URL;
+import java.util.ResourceBundle;
 
-public class LoginController {
+
+public class LoginController implements Initializable {
 
     // UI
-    @FXML private TextField usernameField;
-    @FXML private PasswordField passwordField;
-    @FXML private Label errorLabel;
-    @FXML private Button loginButton;
-    @FXML private ProgressIndicator loginSpinner;
+    @FXML
+    private TextField usernameField;
+    @FXML
+    private PasswordField passwordField;
+    @FXML
+    private Label errorLabel;
+    @FXML
+    private Button loginButton;
+    @FXML
+    private ProgressIndicator loginSpinner;
 
     // DATA
     private final AuthApiService authApiService = new AuthApiService();
     private final Gson gson = new Gson();
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        startAiRuntimeForTesting();
+    }
 
     @FXML
     public void login() {
@@ -139,6 +154,33 @@ public class LoginController {
         }
     }
 
+    private void startAiRuntimeForTesting() {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                MediaPipeFaceRuntime.startIfNeeded();
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            System.out.println("MediaPipe AI service started.");
+        });
+
+        task.setOnFailed(e -> {
+            Throwable ex = task.getException();
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+
+            // Do not block login while testing
+            System.out.println("MediaPipe AI service failed to start.");
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
 
     private void setLoadingState(boolean loading) {
         LoadingSpinner.setLoading(

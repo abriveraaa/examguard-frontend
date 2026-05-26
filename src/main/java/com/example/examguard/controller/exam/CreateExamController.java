@@ -12,8 +12,9 @@ import com.example.examguard.model.exam.result.ExamResult;
 import com.example.examguard.service.ExamApiService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -33,87 +34,133 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.List;
-import java.util.stream.Collectors;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
-
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.example.examguard.utility.LoadingSpinner.setLoading;
 
 public class CreateExamController implements ShellAwareController {
 
-    @FXML private StackPane wizardRoot; // make sure you have this in FXML
+    @FXML
+    private StackPane wizardRoot; // make sure you have this in FXML
 
-    @FXML private VBox stepOnePane;
-    @FXML private VBox stepTwoPane;
-    @FXML private VBox stepThreePane;
-    @FXML private VBox stepFourPane;
+    @FXML
+    private VBox stepOnePane;
+    @FXML
+    private VBox stepTwoPane;
+    @FXML
+    private VBox stepThreePane;
+    @FXML
+    private VBox stepFourPane;
 
-    @FXML private Label stepChipLabel;
-    @FXML private Label uploadStatusLabel;
+    @FXML
+    private Label stepChipLabel;
+    @FXML
+    private Label uploadStatusLabel;
 
-    @FXML private TextField titleField;
-    @FXML private TextArea descriptionArea;
-    @FXML private Spinner<Integer> durationSpinner;
-    @FXML private DatePicker startDatePicker;
-    @FXML private ComboBox<String> startTimeCombo;
-    @FXML private DatePicker endDatePicker;
-    @FXML private ComboBox<String> endTimeCombo;
+    @FXML
+    private TextField titleField;
+    @FXML
+    private TextArea descriptionArea;
+    @FXML
+    private Spinner<Integer> durationSpinner;
+    @FXML
+    private DatePicker startDatePicker;
+    @FXML
+    private ComboBox<String> startTimeCombo;
+    @FXML
+    private DatePicker endDatePicker;
+    @FXML
+    private ComboBox<String> endTimeCombo;
 
-    @FXML private TextField classOfferingSearchField;
-    @FXML private ListView<ClassOffering> classOfferingListView;
-    @FXML private Label selectedClassOfferingLabel;
-    @FXML private Label reviewClassOfferingLabel;
+    @FXML
+    private TextField classOfferingSearchField;
+    @FXML
+    private ListView<ClassOffering> classOfferingListView;
+    @FXML
+    private Label selectedClassOfferingLabel;
+    @FXML
+    private Label reviewClassOfferingLabel;
 
-    @FXML private Label titleErrorLabel;
-    @FXML private Label durationErrorLabel;
-    @FXML private Label startErrorLabel;
-    @FXML private Label endErrorLabel;
-    @FXML private Label classErrorLabel;
-    @FXML private Label modeErrorLabel;
-    @FXML private Label sourceErrorLabel;
+    @FXML
+    private Label titleErrorLabel;
+    @FXML
+    private Label durationErrorLabel;
+    @FXML
+    private Label startErrorLabel;
+    @FXML
+    private Label endErrorLabel;
+    @FXML
+    private Label classErrorLabel;
+    @FXML
+    private Label modeErrorLabel;
+    @FXML
+    private Label sourceErrorLabel;
 
-    @FXML private CheckBox shuffleQuestionsCheck;
-    @FXML private CheckBox shuffleChoicesCheck;
+    @FXML
+    private CheckBox shuffleQuestionsCheck;
+    @FXML
+    private CheckBox shuffleChoicesCheck;
 
-    @FXML private Button uploadButton;
+    @FXML
+    private Button uploadButton;
 
-    @FXML private RadioButton asyncModeRadio;
-    @FXML private RadioButton syncModeRadio;
-    @FXML private RadioButton manualSourceRadio;
-    @FXML private RadioButton uploadSourceRadio;
+    @FXML
+    private RadioButton asyncModeRadio;
+    @FXML
+    private RadioButton syncModeRadio;
+    @FXML
+    private RadioButton manualSourceRadio;
+    @FXML
+    private RadioButton uploadSourceRadio;
 
-    @FXML private Label stepOneMessageLabel;
-    @FXML private Label downloadTemplateLabel;
+    @FXML
+    private Label stepOneMessageLabel;
+    @FXML
+    private Label downloadTemplateLabel;
 
     // Step 2: Inline Question Builder
 
-    @FXML private ListView<QuestionDraftRow> questionListView;
-    @FXML private Label questionCountLabel;
-    @FXML private Label editorTitleLabel;
-    @FXML private Label editorSubtitleLabel;
-    @FXML private Label questionStatusBadge;
-    @FXML private ComboBox<String> questionTypeComboBox;
-    @FXML private TextField pointsField;
-    @FXML private TextArea questionTextArea;
-    @FXML private VBox dynamicAnswerContainer;
-    @FXML private Label validationLabel;
-    @FXML private CheckBox useImagesCheckBox;
-    @FXML private VBox questionImageContainer;
+    @FXML
+    private ListView<QuestionDraftRow> questionListView;
+    @FXML
+    private Label questionCountLabel;
+    @FXML
+    private Label editorTitleLabel;
+    @FXML
+    private Label editorSubtitleLabel;
+    @FXML
+    private Label questionStatusBadge;
+    @FXML
+    private ComboBox<String> questionTypeComboBox;
+    @FXML
+    private TextField pointsField;
+    @FXML
+    private TextArea questionTextArea;
+    @FXML
+    private VBox dynamicAnswerContainer;
+    @FXML
+    private Label validationLabel;
+    @FXML
+    private CheckBox useImagesCheckBox;
+    @FXML
+    private VBox questionImageContainer;
 
     private VBox choiceAImageBox;
     private VBox choiceBImageBox;
@@ -122,44 +169,77 @@ public class CreateExamController implements ShellAwareController {
 
     // Step 3: Violations
 
-    @FXML private ComboBox<String> focusLostSeverityCombo;
-    @FXML private ComboBox<String> fullscreenExitSeverityCombo;
-    @FXML private ComboBox<String> windowMinimizeSeverityCombo;
-    @FXML private ComboBox<String> restrictedKeysSeverityCombo;
-    @FXML private ComboBox<String> rightClickSeverityCombo;
-    @FXML private ComboBox<String> multipleMonitorsSeverityCombo;
+    @FXML
+    private ComboBox<String> focusLostSeverityCombo;
+    @FXML
+    private ComboBox<String> fullscreenExitSeverityCombo;
+    @FXML
+    private ComboBox<String> windowMinimizeSeverityCombo;
+    @FXML
+    private ComboBox<String> restrictedKeysSeverityCombo;
+    @FXML
+    private ComboBox<String> rightClickSeverityCombo;
+    @FXML
+    private ComboBox<String> multipleMonitorsSeverityCombo;
 
-    @FXML private Spinner<Integer> focusLostLimitSpinner;
-    @FXML private Spinner<Integer> fullscreenExitLimitSpinner;
-    @FXML private Spinner<Integer> windowMinimizeLimitSpinner;
-    @FXML private Spinner<Integer> restrictedKeysLimitSpinner;
-    @FXML private Spinner<Integer> rightClickLimitSpinner;
-    @FXML private Spinner<Integer> multipleMonitorsLimitSpinner;
+    @FXML
+    private Spinner<Integer> focusLostLimitSpinner;
+    @FXML
+    private Spinner<Integer> fullscreenExitLimitSpinner;
+    @FXML
+    private Spinner<Integer> windowMinimizeLimitSpinner;
+    @FXML
+    private Spinner<Integer> restrictedKeysLimitSpinner;
+    @FXML
+    private Spinner<Integer> rightClickLimitSpinner;
+    @FXML
+    private Spinner<Integer> multipleMonitorsLimitSpinner;
 
-    @FXML private CheckBox focusLostViolationCheck;
-    @FXML private CheckBox fullscreenExitViolationCheck;
-    @FXML private CheckBox windowMinimizeViolationCheck;
-    @FXML private CheckBox restrictedKeysViolationCheck;
-    @FXML private CheckBox rightClickViolationCheck;
-    @FXML private CheckBox multipleMonitorsViolationCheck;
-    @FXML private Spinner<Integer> warningThresholdSpinner;
-    @FXML private Spinner<Integer> majorThresholdSpinner;
-    @FXML private Spinner<Integer> autoSubmitThresholdSpinner;
+    @FXML
+    private CheckBox focusLostViolationCheck;
+    @FXML
+    private CheckBox fullscreenExitViolationCheck;
+    @FXML
+    private CheckBox windowMinimizeViolationCheck;
+    @FXML
+    private CheckBox restrictedKeysViolationCheck;
+    @FXML
+    private CheckBox rightClickViolationCheck;
+    @FXML
+    private CheckBox multipleMonitorsViolationCheck;
+    @FXML
+    private Spinner<Integer> warningThresholdSpinner;
+    @FXML
+    private Spinner<Integer> majorThresholdSpinner;
+    @FXML
+    private Spinner<Integer> autoSubmitThresholdSpinner;
 
     // STEP4:
-    @FXML private Label reviewTitleLabel;
-    @FXML private Label reviewDurationLabel;
-    @FXML private Label reviewScheduleLabel;
-    @FXML private Label reviewQuestionCountLabel;
-    @FXML private Label reviewShuffleQuestionsLabel;
-    @FXML private Label reviewShuffleChoicesLabel;
-    @FXML private VBox reviewQuestionContainer;
-    @FXML private Label reviewValidationBadge;
+    @FXML
+    private Label reviewTitleLabel;
+    @FXML
+    private Label reviewDurationLabel;
+    @FXML
+    private Label reviewScheduleLabel;
+    @FXML
+    private Label reviewQuestionCountLabel;
+    @FXML
+    private Label reviewShuffleQuestionsLabel;
+    @FXML
+    private Label reviewShuffleChoicesLabel;
+    @FXML
+    private VBox reviewQuestionContainer;
+    @FXML
+    private Label reviewValidationBadge;
 
-    @FXML private Button backButton;
-    @FXML private Button nextButton;
-    @FXML private Button draftButton;
-    @FXML private Button publishButton;
+    @FXML
+    private Button backButton;
+    @FXML
+    private Button nextButton;
+    @FXML
+    private Button draftButton;
+    @FXML
+    private Button publishButton;
 
     private final ToggleGroup examModeGroup = new ToggleGroup();
     private final ToggleGroup questionSourceGroup = new ToggleGroup();
@@ -258,21 +338,21 @@ public class CreateExamController implements ShellAwareController {
 
             Label label = new Label(message == null ? "Loading..." : message);
             label.setStyle("""
-                -fx-text-fill: white;
-                -fx-font-size: 14px;
-                -fx-font-weight: 700;
-                """);
+                    -fx-text-fill: white;
+                    -fx-font-size: 14px;
+                    -fx-font-weight: 700;
+                    """);
 
             VBox box = new VBox(14, spinner, label);
             box.setAlignment(Pos.CENTER);
             box.setMaxWidth(320);
             box.setMaxHeight(160);
             box.setStyle("""
-                -fx-background-color: rgba(48, 44, 41, 0.92);
-                -fx-background-radius: 18;
-                -fx-padding: 28;
-                -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.28), 24, 0, 0, 8);
-                """);
+                    -fx-background-color: rgba(48, 44, 41, 0.92);
+                    -fx-background-radius: 18;
+                    -fx-padding: 28;
+                    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.28), 24, 0, 0, 8);
+                    """);
 
             StackPane overlay = new StackPane(box);
             overlay.setId("wizard-loading-overlay");
@@ -975,7 +1055,7 @@ public class CreateExamController implements ShellAwareController {
 
     @FXML
     private void handleBack() {
-        if (wizardMode == WizardMode.VIEW){
+        if (wizardMode == WizardMode.VIEW) {
             handleCancel();
             return;
         }
@@ -2209,7 +2289,7 @@ public class CreateExamController implements ShellAwareController {
         selectedQuestion.setQuestionType(type);
         selectedQuestion.setQuestionText(questionTextArea.getText() == null ? "" : questionTextArea.getText().trim());
         selectedQuestion.setQuestionImagePath(questionImagePathField == null ? "" : safeText(questionImagePathField));
-        selectedQuestion.setQuestionInstruction( questionInstructionArea == null ? "" : safeText(questionInstructionArea));
+        selectedQuestion.setQuestionInstruction(questionInstructionArea == null ? "" : safeText(questionInstructionArea));
         selectedQuestion.setPoints(points);
 
         selectedQuestion.setImageStatus(hasImage(selectedQuestion.getQuestionImagePath()) ? "Has image" : "No image");

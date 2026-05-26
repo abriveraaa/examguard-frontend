@@ -2,8 +2,8 @@ package com.example.examguard.controller.student;
 
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
-import com.example.examguard.model.student.dashboard.*;
 import com.example.examguard.model.student.StudentDashboardResponse;
+import com.example.examguard.model.student.dashboard.*;
 import com.example.examguard.service.StudentApiService;
 import com.example.examguard.utility.LoadingSpinner;
 import javafx.animation.PauseTransition;
@@ -13,17 +13,22 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
+import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCombination;
-import javafx.scene.layout.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -32,21 +37,35 @@ public class StudentDashboardController implements ShellAwareController {
 
     private DashboardShellController shellController;
 
-    @FXML private ImageView studentAvatarImageView;
-    @FXML private Label studentInitialsLabel;
-    @FXML private Label studentNameLabel;
-    @FXML private Label studentEmailLabel;
-    @FXML private Label studentIDLabel;
-    @FXML private Label studentProgramLabel;
-    @FXML private Label studentCollegeLabel;
-    @FXML private Label studentCurrentTermLabel;
-    @FXML private Label viewAllUpcomingExamsLabel;
-    @FXML private Label viewAllPendingReviewLabel;
-    @FXML private Label viewAllResultsReleasedLabel;
+    @FXML
+    private ImageView studentAvatarImageView;
+    @FXML
+    private Label studentInitialsLabel;
+    @FXML
+    private Label studentNameLabel;
+    @FXML
+    private Label studentEmailLabel;
+    @FXML
+    private Label studentIDLabel;
+    @FXML
+    private Label studentProgramLabel;
+    @FXML
+    private Label studentCollegeLabel;
+    @FXML
+    private Label studentCurrentTermLabel;
+    @FXML
+    private Label viewAllUpcomingExamsLabel;
+    @FXML
+    private Label viewAllPendingReviewLabel;
+    @FXML
+    private Label viewAllResultsReleasedLabel;
 
-    @FXML private VBox upcomingExamList;
-    @FXML private VBox violationList;
-    @FXML private VBox resultSummaryList;
+    @FXML
+    private VBox upcomingExamList;
+    @FXML
+    private VBox violationList;
+    @FXML
+    private VBox resultSummaryList;
 
     private final StudentApiService dashboardApiService = new StudentApiService();
 
@@ -169,10 +188,8 @@ public class StudentDashboardController implements ShellAwareController {
             switch (part) {
                 case "upcoming" ->
                         upcomingExamList.getChildren().setAll(createEmptyRow("Unable to reload upcoming exams."));
-                case "violations" ->
-                        violationList.getChildren().setAll(createEmptyRow("Unable to reload violations."));
-                case "results" ->
-                        resultSummaryList.getChildren().setAll(createEmptyRow("Unable to reload results."));
+                case "violations" -> violationList.getChildren().setAll(createEmptyRow("Unable to reload violations."));
+                case "results" -> resultSummaryList.getChildren().setAll(createEmptyRow("Unable to reload results."));
             }
         });
 

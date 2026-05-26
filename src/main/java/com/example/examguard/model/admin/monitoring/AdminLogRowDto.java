@@ -33,26 +33,91 @@ public class AdminLogRowDto {
 
     private String severity;
 
-    public String getSource() { return source; }
-    public String getStartedAt() { return startedAt; }
-    public String getEndedAt() { return endedAt; }
-    public String getActorId() { return actorId; }
-    public String getActorRole() { return actorRole; }
-    public String getModule() { return module; }
-    public String getAction() { return action; }
-    public String getStatus() { return status; }
-    public String getMessage() { return message; }
-    public Long getExamId() { return examId; }
-    public Long getAttemptId() { return attemptId; }
-    public Long getQuestionId() { return questionId; }
-    public String getProgramCode() { return programCode; }
-    public String getProgramName() { return programName; }
-    public String getSection() { return section; }
-    public String getSeverity() { return severity; }
-    public String getTargetUserId() { return targetUserId; }
-    public String getTargetRole() { return targetRole; }
-    public Long getDurationMs() { return durationMs; }
-    public String getCourseCode() { return courseCode; }
-    public String getExamTitle() { return examTitle; }
-    public Integer getQuestionNumber() { return questionNumber; }
+    public String getSource() {
+        return source;
+    }
+
+    public String getStartedAt() {
+        return startedAt;
+    }
+
+    public String getEndedAt() {
+        return endedAt;
+    }
+
+    public String getActorId() {
+        return actorId;
+    }
+
+    public String getActorRole() {
+        return actorRole;
+    }
+
+    public String getModule() {
+        return module;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public Long getExamId() {
+        return examId;
+    }
+
+    public Long getAttemptId() {
+        return attemptId;
+    }
+
+    public Long getQuestionId() {
+        return questionId;
+    }
+
+    public String getProgramCode() {
+        return programCode;
+    }
+
+    public String getProgramName() {
+        return programName;
+    }
+
+    public String getSection() {
+        return section;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public String getTargetUserId() {
+        return targetUserId;
+    }
+
+    public String getTargetRole() {
+        return targetRole;
+    }
+
+    public Long getDurationMs() {
+        return durationMs;
+    }
+
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public String getExamTitle() {
+        return examTitle;
+    }
+
+    public Integer getQuestionNumber() {
+        return questionNumber;
+    }
 }

@@ -2,49 +2,63 @@ package com.example.examguard.controller.faculty;
 
 import com.example.examguard.model.faculty.dto.reports.*;
 import com.example.examguard.model.faculty.dto.students.FacultyAcademicPeriodDTO;
-import com.example.examguard.service.FacultyApiService;
 import com.example.examguard.model.faculty.dto.students.FacultyStudentDTO;
-
-import javafx.collections.ObservableList;
-
-import java.util.*;
-import java.util.stream.Collectors;
+import com.example.examguard.service.FacultyApiService;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.geometry.Pos;
-import javafx.scene.layout.Region;
-import javafx.application.Platform;
 import javafx.stage.FileChooser;
+
 import java.io.File;
 import java.nio.file.Files;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class FacultyReportsController {
 
-    @FXML private ComboBox<String> academicPeriodCombo;
-    @FXML private ComboBox<CourseOption> courseCombo;
-    @FXML private ComboBox<SectionOption> sectionCombo;
-    @FXML private ComboBox<String> submissionExamCombo;
+    @FXML
+    private ComboBox<String> academicPeriodCombo;
+    @FXML
+    private ComboBox<CourseOption> courseCombo;
+    @FXML
+    private ComboBox<SectionOption> sectionCombo;
+    @FXML
+    private ComboBox<String> submissionExamCombo;
 
-    @FXML private Label averageScoreLabel;
-    @FXML private Label totalViolationsLabel;
-    @FXML private Label pendingReviewLabel;
-    @FXML private Label submissionRateLabel;
-    @FXML private Label penalizedLabel;
+    @FXML
+    private Label averageScoreLabel;
+    @FXML
+    private Label totalViolationsLabel;
+    @FXML
+    private Label pendingReviewLabel;
+    @FXML
+    private Label submissionRateLabel;
+    @FXML
+    private Label penalizedLabel;
 
-    @FXML private StackPane loadingOverlay;
-    @FXML private VBox reportsContent;
+    @FXML
+    private StackPane loadingOverlay;
+    @FXML
+    private VBox reportsContent;
 
-    @FXML private PieChart submissionPieChart;
-    @FXML private BarChart<String, Number> takersCountBarChart;
-    @FXML private LineChart<String, Number> averageScoreLineChart;
-    @FXML private StackedBarChart<String, Number> violationStackedChart;
-    @FXML private StackedBarChart<String, Number> submissionStackedChart;
+    @FXML
+    private PieChart submissionPieChart;
+    @FXML
+    private BarChart<String, Number> takersCountBarChart;
+    @FXML
+    private LineChart<String, Number> averageScoreLineChart;
+    @FXML
+    private StackedBarChart<String, Number> violationStackedChart;
+    @FXML
+    private StackedBarChart<String, Number> submissionStackedChart;
 
     private List<ExamParticipationDTO> latestParticipation = List.of();
 
@@ -1008,12 +1022,12 @@ public class FacultyReportsController {
             seriesMap.get(status).setName(status);
 
             long total = data.stream()
-                            .filter(x ->
-                                    x.examTitle().equals(
-                                            row.examTitle()
-                                    )
+                    .filter(x ->
+                            x.examTitle().equals(
+                                    row.examTitle()
                             )
-                            .mapToLong(x -> x.count() == null ? 0 : x.count()).sum();
+                    )
+                    .mapToLong(x -> x.count() == null ? 0 : x.count()).sum();
 
             double percent = total == 0 ? 0 : (row.count() * 100.0 / total);
 
@@ -1298,7 +1312,7 @@ public class FacultyReportsController {
 
         for (PieChart.Data data : submissionPieChart.getData()) {
             double percentage = (data.getPieValue() / total) * 100;
-            data.setName(String.format( "%s\n%d (%.0f%%)", data.getName(), (int)data.getPieValue(), percentage));
+            data.setName(String.format("%s\n%d (%.0f%%)", data.getName(), (int) data.getPieValue(), percentage));
         }
     }
 
@@ -1744,6 +1758,7 @@ public class FacultyReportsController {
             String courseCode,
             String courseDescription,
             String classOfferingId
-    ) {}
+    ) {
+    }
 
 }

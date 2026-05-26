@@ -14,7 +14,12 @@ public class ExamGuardApplication extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        MediaPipeFaceRuntime.startIfNeeded();
+        try {
+            MediaPipeFaceRuntime.startIfNeeded();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
         SceneManager.setStage(stage);
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/auth/login.fxml"));

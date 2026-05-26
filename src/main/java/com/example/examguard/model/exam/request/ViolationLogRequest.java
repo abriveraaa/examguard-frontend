@@ -178,12 +178,20 @@ public class ViolationLogRequest {
         this.cameraSource = cameraSource;
     }
 
-    public String getEvidenceType() { return evidenceType; }
+    public String getEvidenceType() {
+        return evidenceType;
+    }
 
-    public String getEvidenceSource() { return evidenceSource; }
+    public String getEvidenceSource() {
+        return evidenceSource;
+    }
 
 
-    public void setEvidenceType(String evidenceType) { this.evidenceType = evidenceType; }
+    public void setEvidenceType(String evidenceType) {
+        this.evidenceType = evidenceType;
+    }
 
-    public void setEvidenceSource(String evidenceSource) { this.evidenceSource = evidenceSource; }
+    public void setEvidenceSource(String evidenceSource) {
+        this.evidenceSource = evidenceSource;
+    }
 }

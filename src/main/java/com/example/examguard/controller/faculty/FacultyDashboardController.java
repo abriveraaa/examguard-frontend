@@ -11,7 +11,10 @@ import javafx.scene.Cursor;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Separator;
-import javafx.scene.layout.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 
 import java.time.OffsetDateTime;
@@ -20,9 +23,12 @@ import java.util.List;
 
 public class FacultyDashboardController implements ShellAwareController {
 
-    @FXML private VBox activeExamList;
-    @FXML private VBox needsReviewList;
-    @FXML private VBox handledClassList;
+    @FXML
+    private VBox activeExamList;
+    @FXML
+    private VBox needsReviewList;
+    @FXML
+    private VBox handledClassList;
 
     private final FacultyApiService facultyApiService = new FacultyApiService();
 

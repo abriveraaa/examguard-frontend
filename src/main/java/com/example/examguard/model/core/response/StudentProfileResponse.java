@@ -15,7 +15,8 @@ public class StudentProfileResponse {
     private String yearLevel;
     private String sectionName;
 
-    public StudentProfileResponse() {}
+    public StudentProfileResponse() {
+    }
 
     public StudentProfileResponse(String schoolId,
                                   String username,
@@ -50,18 +51,51 @@ public class StudentProfileResponse {
         return name.isBlank() ? "-" : name;
     }
 
-    public String getSchoolId() { return schoolId; }
-    public String getUsername() { return username; }
-    public String getFirstName() { return firstName; }
-    public String getLastName() { return lastName; }
-    public String getFullName() { return fullName; }
-    public String getEmail() { return email; }
+    public String getSchoolId() {
+        return schoolId;
+    }
 
-    public String getRegistrarStatus() { return registrarStatus; }
-    public String getSystemAccess() { return systemAccess; }
+    public String getUsername() {
+        return username;
+    }
 
-    public String getCollegeName() { return collegeName; }
-    public String getProgramName() { return programName; }
-    public String getYearLevel() { return yearLevel; }
-    public String getSectionName() { return sectionName; }
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getRegistrarStatus() {
+        return registrarStatus;
+    }
+
+    public String getSystemAccess() {
+        return systemAccess;
+    }
+
+    public String getCollegeName() {
+        return collegeName;
+    }
+
+    public String getProgramName() {
+        return programName;
+    }
+
+    public String getYearLevel() {
+        return yearLevel;
+    }
+
+    public String getSectionName() {
+        return sectionName;
+    }
 }

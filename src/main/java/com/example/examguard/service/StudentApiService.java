@@ -1,5 +1,6 @@
 package com.example.examguard.service;
 
+import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.student.StudentDashboardResponse;
 import com.example.examguard.model.student.StudentExamResponse;
 import com.example.examguard.model.student.StudentExamResultResponse;
@@ -26,9 +27,6 @@ import java.util.stream.Collectors;
 
 public class StudentApiService {
 
-    private static final String BASE_URL =
-            "https://examguard-backend-production.up.railway.app";
-    
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .build();
@@ -88,7 +86,7 @@ public class StudentApiService {
     private String sendGetRequest(String endpoint) throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + endpoint))
+                .uri(URI.create(AppConfig.BASE_URL + endpoint))
                 .timeout(Duration.ofSeconds(8))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + Session.getSessionToken())
@@ -106,7 +104,7 @@ public class StudentApiService {
     }
 
     private String sendPostRequest(String endpoint, String json) throws Exception {
-        URL url = new URL(BASE_URL + endpoint);
+        URL url = new URL(AppConfig.BASE_URL + endpoint);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         conn.setRequestMethod("POST");
@@ -115,7 +113,7 @@ public class StudentApiService {
 
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
-        conn.setRequestProperty("Authorization", Session.getSessionToken());
+        conn.setRequestProperty("Authorization", "Bearer " + Session.getSessionToken());
 
         conn.setDoOutput(true);
 
@@ -153,31 +151,8 @@ public class StudentApiService {
         }
     }
 
-    private byte[] sendGetForBytes(String endpoint) throws Exception {
-        URL url = new URL(BASE_URL + endpoint);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("X-User-Id", Session.getSchoolId());
-        connection.setRequestProperty("X-Role", Session.getRole());
-
-        int status = connection.getResponseCode();
-
-        InputStream inputStream = status >= 200 && status < 300
-                ? connection.getInputStream()
-                : connection.getErrorStream();
-
-        byte[] response = inputStream.readAllBytes();
-
-        if (status < 200 || status >= 300) {
-            throw new RuntimeException(new String(response));
-        }
-
-        return response;
-    }
-
     private FileDownloadResponse sendGetForFileDownload(String endpoint) throws Exception {
-        URL url = new URL(BASE_URL + endpoint);
+        URL url = new URL(AppConfig.BASE_URL + endpoint);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
         connection.setRequestMethod("GET");

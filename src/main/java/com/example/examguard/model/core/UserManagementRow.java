@@ -65,9 +65,13 @@ public class UserManagementRow {
         return role;
     }
 
-    public String getBirthDate() { return birthDate; }
+    public String getBirthDate() {
+        return birthDate;
+    }
 
-    public String getRegistrarStatus() { return registrarStatus; }
+    public String getRegistrarStatus() {
+        return registrarStatus;
+    }
 
     public String getSystemAccess() {
         return systemAccess;

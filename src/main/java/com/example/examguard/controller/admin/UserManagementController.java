@@ -4,10 +4,10 @@ import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ReactivationJustificationDialogController;
 import com.example.examguard.controller.layout.ShellAwareController;
 import com.example.examguard.model.admin.AdminUserResponse;
+import com.example.examguard.model.core.UserManagementRow;
 import com.example.examguard.model.core.response.FacultyUserResponse;
 import com.example.examguard.model.core.response.ReactivationCandidateResponse;
 import com.example.examguard.model.core.response.StudentProfileResponse;
-import com.example.examguard.model.core.UserManagementRow;
 import com.example.examguard.model.enums.UserType;
 import com.example.examguard.service.AdminApiService;
 import com.example.examguard.service.AuthApiService;
@@ -41,54 +41,96 @@ import java.util.stream.Collectors;
 
 public class UserManagementController implements ShellAwareController {
 
-    @FXML private Label adminCountLabel;
-    @FXML private Label studentCountLabel;
-    @FXML private Label facultyCountLabel;
-    @FXML private Label lastSyncLabel;
-    @FXML private StackPane overlayPane;
+    @FXML
+    private Label adminCountLabel;
+    @FXML
+    private Label studentCountLabel;
+    @FXML
+    private Label facultyCountLabel;
+    @FXML
+    private Label lastSyncLabel;
+    @FXML
+    private StackPane overlayPane;
 
-    @FXML private TextField adminSearchField;
-    @FXML private ComboBox<String> adminStatusFilterComboBox;
+    @FXML
+    private TextField adminSearchField;
+    @FXML
+    private ComboBox<String> adminStatusFilterComboBox;
 
-    @FXML private TextField studentSearchField;
-    @FXML private ComboBox<String> studentStatusFilterComboBox;
-    @FXML private ComboBox<String> studentReactivationFilterComboBox;
+    @FXML
+    private TextField studentSearchField;
+    @FXML
+    private ComboBox<String> studentStatusFilterComboBox;
+    @FXML
+    private ComboBox<String> studentReactivationFilterComboBox;
 
-    @FXML private TextField facultySearchField;
-    @FXML private ComboBox<String> facultyStatusFilterComboBox;
-    @FXML private ComboBox<String> facultyReactivationFilterComboBox;
+    @FXML
+    private TextField facultySearchField;
+    @FXML
+    private ComboBox<String> facultyStatusFilterComboBox;
+    @FXML
+    private ComboBox<String> facultyReactivationFilterComboBox;
 
-    @FXML private TableView<UserManagementRow> adminTable;
-    @FXML private TableColumn<UserManagementRow, String> adminSchoolIdColumn;
-    @FXML private TableColumn<UserManagementRow, String> adminUsernameColumn;
-    @FXML private TableColumn<UserManagementRow, String> adminNameColumn;
-    @FXML private TableColumn<UserManagementRow, String> adminEmailColumn;
-    @FXML private TableColumn<UserManagementRow, String> adminRegistrarStatusColumn;
-    @FXML private TableColumn<UserManagementRow, String> adminSystemAccessColumn;
-    @FXML private TableColumn<UserManagementRow, Void> adminActionColumn;
+    @FXML
+    private TableView<UserManagementRow> adminTable;
+    @FXML
+    private TableColumn<UserManagementRow, String> adminSchoolIdColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> adminUsernameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> adminNameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> adminEmailColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> adminRegistrarStatusColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> adminSystemAccessColumn;
+    @FXML
+    private TableColumn<UserManagementRow, Void> adminActionColumn;
 
-    @FXML private TableView<UserManagementRow> studentTable;
-    @FXML private TableColumn<UserManagementRow, String> studentSchoolIdColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentUsernameColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentNameColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentEmailColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentCollegeNameColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentProgramNameColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentYearLevelColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentSectionNameColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentRegistrarColumn;
-    @FXML private TableColumn<UserManagementRow, String> studentSystemAccessColumn;
-    @FXML private TableColumn<UserManagementRow, Void> studentActionColumn;
+    @FXML
+    private TableView<UserManagementRow> studentTable;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentSchoolIdColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentUsernameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentNameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentEmailColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentCollegeNameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentProgramNameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentYearLevelColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentSectionNameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentRegistrarColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> studentSystemAccessColumn;
+    @FXML
+    private TableColumn<UserManagementRow, Void> studentActionColumn;
 
-    @FXML private TableView<UserManagementRow> facultyTable;
-    @FXML private TableColumn<UserManagementRow, String> facultySchoolIdColumn;
-    @FXML private TableColumn<UserManagementRow, String> facultyUsernameColumn;
-    @FXML private TableColumn<UserManagementRow, String> facultyNameColumn;
-    @FXML private TableColumn<UserManagementRow, String> facultyEmailColumn;
-    @FXML private TableColumn<UserManagementRow, String> facultyCollegeColumn;
-    @FXML private TableColumn<UserManagementRow, String> facultyRegistrarStatusColumn;
-    @FXML private TableColumn<UserManagementRow, String> facultySystemAccessColumn;
-    @FXML private TableColumn<UserManagementRow, Void> facultyActionColumn;
+    @FXML
+    private TableView<UserManagementRow> facultyTable;
+    @FXML
+    private TableColumn<UserManagementRow, String> facultySchoolIdColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> facultyUsernameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> facultyNameColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> facultyEmailColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> facultyCollegeColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> facultyRegistrarStatusColumn;
+    @FXML
+    private TableColumn<UserManagementRow, String> facultySystemAccessColumn;
+    @FXML
+    private TableColumn<UserManagementRow, Void> facultyActionColumn;
 
     private final AuthApiService authApiService = new AuthApiService();
     private final AdminApiService adminApiService = new AdminApiService();
@@ -582,7 +624,8 @@ public class UserManagementController implements ShellAwareController {
 
         task.setOnSucceeded(e -> {
             try {
-                Type listType = new TypeToken<List<ReactivationCandidateResponse>>() {}.getType();
+                Type listType = new TypeToken<List<ReactivationCandidateResponse>>() {
+                }.getType();
                 List<ReactivationCandidateResponse> list = gson.fromJson(task.getValue(), listType);
 
                 eligibleReactivationData.clear();
@@ -779,7 +822,7 @@ public class UserManagementController implements ShellAwareController {
                     if (lastSync == null || lastSync.isBlank()) {
                         lastSyncLabel.setText("Last Sync: Never");
                     } else {
-                        lastSyncLabel.setText("Last Sync: " +  formatDateTime(lastSync));
+                        lastSyncLabel.setText("Last Sync: " + formatDateTime(lastSync));
                     }
                 },
                 () -> lastSyncLabel.setText("Last Sync: Never")

@@ -24,14 +24,22 @@ import java.util.Optional;
 
 public class DashboardShellController {
 
-    @FXML private HBox navContainer;
-    @FXML private Label avatarLabel;
-    @FXML private Label greetingTitleLabel;
-    @FXML private Label greetingSubtitleLabel;
-    @FXML private StackPane heroPane;
-    @FXML private ImageView bannerImage;
-    @FXML private StackPane contentHolder;
-    @FXML private HBox heroCardsContainer;
+    @FXML
+    private HBox navContainer;
+    @FXML
+    private Label avatarLabel;
+    @FXML
+    private Label greetingTitleLabel;
+    @FXML
+    private Label greetingSubtitleLabel;
+    @FXML
+    private StackPane heroPane;
+    @FXML
+    private ImageView bannerImage;
+    @FXML
+    private StackPane contentHolder;
+    @FXML
+    private HBox heroCardsContainer;
 
     private String currentRole;
     private String activePage;
@@ -260,9 +268,16 @@ public class DashboardShellController {
     private void updateAdminPage() {
         switch (activePage) {
             case "Home":
-                setGreeting("Welcome, " + name, "Monitor exams, violations, and manage users and system.");
+                setGreeting("Welcome, " + name, null);
+
+                setHeroCards(
+                        new HeroCardData("Concurrent Users", "..."),
+                        new HeroCardData("Active Sessions", "..."),
+                        new HeroCardData("Violation Logs", "..."),
+                        new HeroCardData("System Logs", "...")
+                );
+
                 loadContent("/fxml/admin/admin-dashboard.fxml");
-                hideHeroCards();
                 break;
 
             case "Users":
@@ -281,20 +296,10 @@ public class DashboardShellController {
                 loadContent("/fxml/exam/exam-management.fxml");
                 break;
 
-            case "Monitoring":
-                setGreeting("Monitoring", "View system activity, violations, sessions, and concurrent usage.");
+            case "Logs":
+                setGreeting("System Logs", "View system, violations, sessions logs.");
                 hideHeroCards();
                 loadContent("/fxml/admin/admin-monitoring.fxml");
-                break;
-
-            case "Settings":
-                setGreeting("System Settings", "Configure security, thresholds, and platform behavior.");
-                setHeroCards(
-                        new HeroCardData("Policies", "6"),
-                        new HeroCardData("Thresholds", "12"),
-                        new HeroCardData("Modules", "9")
-                );
-                loadContent("/fxml/admin/admin-settings.fxml");
                 break;
 
             default:
@@ -381,8 +386,7 @@ public class DashboardShellController {
                 pages.put("Home", "");
                 pages.put("Users", "");
                 pages.put("Exams", "");
-                pages.put("Monitoring", "");
-                pages.put("Settings", "");
+                pages.put("Logs", "");
                 break;
 
             case "FACULTY":

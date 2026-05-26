@@ -22,21 +22,71 @@ public class ExamActivityLogDTO {
     private Long durationMs;
     private OffsetDateTime occurredAt;
 
-    public String getLogType() { return logType; }
-    public Long getLogId() { return logId; }
-    public Long getExamId() { return examId; }
-    public Long getAttemptId() { return attemptId; }
-    public Long getQuestionId() { return questionId; }
-    public Integer getQuestionNumber() { return questionNumber; }
-    public String getStudentId() { return studentId; }
-    public String getStudentName() { return studentName; }
-    public String getActorId() { return actorId; }
-    public String getActorName() { return actorName; }
-    public String getModule() { return module; }
-    public String getAction() { return action; }
-    public String getSeverity() { return severity; }
-    public String getMessage() { return message; }
-    public String getEvidenceUrl() { return evidenceUrl; }
-    public Long getDurationMs() { return durationMs; }
-    public OffsetDateTime getOccurredAt() { return occurredAt; }
+    public String getLogType() {
+        return logType;
+    }
+
+    public Long getLogId() {
+        return logId;
+    }
+
+    public Long getExamId() {
+        return examId;
+    }
+
+    public Long getAttemptId() {
+        return attemptId;
+    }
+
+    public Long getQuestionId() {
+        return questionId;
+    }
+
+    public Integer getQuestionNumber() {
+        return questionNumber;
+    }
+
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public String getStudentName() {
+        return studentName;
+    }
+
+    public String getActorId() {
+        return actorId;
+    }
+
+    public String getActorName() {
+        return actorName;
+    }
+
+    public String getModule() {
+        return module;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public String getEvidenceUrl() {
+        return evidenceUrl;
+    }
+
+    public Long getDurationMs() {
+        return durationMs;
+    }
+
+    public OffsetDateTime getOccurredAt() {
+        return occurredAt;
+    }
 }

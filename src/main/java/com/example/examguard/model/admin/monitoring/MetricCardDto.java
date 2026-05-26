@@ -5,7 +5,15 @@ public class MetricCardDto {
     private Long value;
     private String helperText;
 
-    public String getLabel() { return label; }
-    public Long getValue() { return value; }
-    public String getHelperText() { return helperText; }
+    public String getLabel() {
+        return label;
+    }
+
+    public Long getValue() {
+        return value;
+    }
+
+    public String getHelperText() {
+        return helperText;
+    }
 }

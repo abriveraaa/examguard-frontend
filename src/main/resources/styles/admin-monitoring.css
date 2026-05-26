@@ -91,19 +91,34 @@
     -fx-background-color: transparent;
 }
 
-.tab-pane .tab {
-    -fx-background-color: #EFE8E2;
-    -fx-background-radius: 12 12 0 0;
-    -fx-padding: 8 18;
+.analytics-tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: transparent;
 }
 
-.tab-pane .tab:selected {
-    -fx-background-color: #800000;
+.analytics-tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-padding: 6 12;
 }
 
-.tab-pane .tab:selected .tab-label {
-    -fx-text-fill: white;
+.analytics-tab-pane .tab:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #800000 transparent;
+    -fx-border-width: 0 0 3 0;
+}
+
+.analytics-tab-pane .tab-label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-text-fill: #756F6A;
+}
+
+.analytics-tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #800000;
     -fx-font-weight: bold;
+}
+
+.analytics-tab-pane:focused .tab:selected .focus-indicator {
+    -fx-border-color: transparent;
 }
 
 .tab-pane .tab-label {
@@ -342,4 +357,61 @@
 .badge-neutral {
     -fx-background-color: #EFE8E2;
     -fx-text-fill: #302C29;
+}
+
+.chart-point-label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #756F6A;
+}
+
+.menu-button.secondary-button {
+    -fx-background-color: #302C29;
+    -fx-background-radius: 10;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.menu-button.secondary-button > .label {
+    -fx-text-fill: white;
+    -fx-font-family: "Segoe UI";
+    -fx-font-weight: bold;
+    -fx-padding: 9 10 9 16;
+}
+
+.menu-button.secondary-button > .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 9 12 9 6;
+}
+
+.menu-button.secondary-button > .arrow-button > .arrow {
+    -fx-background-color: white;
+}
+
+.context-menu {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: #E8E0D8;
+    -fx-border-radius: 10;
+    -fx-padding: 6;
+}
+
+.menu-item {
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+}
+
+.menu-item .label {
+    -fx-text-fill: #302C29;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+}
+
+.menu-item:focused {
+    -fx-background-color: #F4EFEA;
+}
+
+.menu-item:focused .label {
+    -fx-text-fill: #800000;
 }
