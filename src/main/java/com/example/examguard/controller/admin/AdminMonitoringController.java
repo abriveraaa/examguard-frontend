@@ -10,6 +10,8 @@ import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -17,6 +19,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+
+import java.io.File;
+import java.io.FileOutputStream;
 
 public class AdminMonitoringController {
 
@@ -836,82 +841,229 @@ public class AdminMonitoringController {
 
     @FXML
     private void handleExportAllLogsPdf() {
-        showInfo("Export all logs coming next.");
+        exportLogs("ALL", allLogsSearchField, "PDF");
     }
 
     @FXML
     private void handleExportAllLogsExcel() {
-        showInfo("Export violation logs coming next.");
+        exportLogs("ALL", allLogsSearchField, "EXCEL");
     }
 
     @FXML
     private void handleExportViolationLogsPdf() {
-        showInfo("Export all logs coming next.");
+        exportLogs("VIOLATION", violationSearchField, "PDF");
     }
 
     @FXML
     private void handleExportViolationLogsExcel() {
-        showInfo("Export violation logs coming next.");
+        exportLogs("VIOLATION", violationSearchField, "EXCEL");
     }
 
     @FXML
     private void handleExportSystemLogsPdf() {
-        showInfo("Export all logs coming next.");
+        exportLogs("SYSTEM", systemSearchField, "PDF");
     }
 
     @FXML
     private void handleExportSystemLogsExcel() {
-        showInfo("Export violation logs coming next.");
+        exportLogs("SYSTEM", systemSearchField, "EXCEL");
     }
 
     @FXML
     private void handleExportSessionLogsPdf() {
-        showInfo("Export all logs coming next.");
+        exportLogs("SESSION", sessionSearchField, "PDF");
     }
 
     @FXML
     private void handleExportSessionLogsExcel() {
-        showInfo("Export violation logs coming next.");
+        exportLogs("SESSION", sessionSearchField, "EXCEL");
     }
 
     @FXML
     private void handleExportAccessLogsPdf() {
-        showInfo("Export all logs coming next.");
+        exportLogs("ACCESS", accessSearchField, "PDF");
     }
 
     @FXML
     private void handleExportAccessLogsExcel() {
-        showInfo("Export violation logs coming next.");
+        exportLogs("ACCESS", accessSearchField, "EXCEL");
     }
 
     @FXML
     private void handleExportAccountLogsPdf() {
-        showInfo("Export all logs coming next.");
+        exportLogs("ACCOUNT", accountSearchField, "PDF");
     }
 
     @FXML
     private void handleExportAccountLogsExcel() {
-        showInfo("Export violation logs coming next.");
+        exportLogs("ACCOUNT", accountSearchField, "EXCEL");
     }
 
     @FXML
     private void handleExportRegistrarLogsPdf() {
-        showInfo("Export all logs coming next.");
+        exportLogs("REGISTRAR", registrarSearchField, "PDF");
     }
 
     @FXML
     private void handleExportRegistrarLogsExcel() {
-        showInfo("Export violation logs coming next.");
+        exportLogs("REGISTRAR", registrarSearchField, "EXCEL");
     }
 
     @FXML
     private void handleExportCameraSessionsPdf() {
-        showInfo("Export all logs coming next.");
+        exportLogs("CAMERA", cameraSearchField, "PDF");
     }
 
     @FXML
     private void handleExportCameraSessionsExcel() {
-        showInfo("Export violation logs coming next.");
+        exportLogs("CAMERA", cameraSearchField, "EXCEL");
+    }
+
+
+    private void exportLogs(
+            String source,
+            TextField searchField,
+            String format
+    ) {
+        if (!isCustomRangeValid()) {
+            return;
+        }
+
+        Task<byte[]> task = new Task<>() {
+            @Override
+            protected byte[] call() throws Exception {
+                Map<String, Object> body =
+                        buildExportRequest(
+                                source,
+                                searchField,
+                                format
+                        );
+
+                return adminApiService.exportMonitoringLogs(body);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            byte[] bytes = task.getValue();
+
+            if (bytes == null || bytes.length == 0) {
+                showInfo("No export data received.");
+                return;
+            }
+
+            boolean saved =
+                    saveBytesToFile(
+                            bytes,
+                            buildExportFileName(source, format),
+                            "EXCEL".equalsIgnoreCase(format)
+                                    ? "Excel Files"
+                                    : "PDF Files",
+                            "EXCEL".equalsIgnoreCase(format)
+                                    ? "*.xlsx"
+                                    : "*.pdf"
+                    );
+
+            if (saved) {
+                showInfo("Export completed successfully.");
+            }
+        });
+
+        task.setOnFailed(event -> {
+            Throwable ex = task.getException();
+
+            if (ex != null) {
+                ex.printStackTrace();
+                showInfo("Export failed: " + ex.getMessage());
+            } else {
+                showInfo("Export failed.");
+            }
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private boolean saveBytesToFile(
+            byte[] bytes,
+            String defaultFileName,
+            String extensionDescription,
+            String extensionPattern
+    ) {
+        try {
+            FileChooser fileChooser = new FileChooser();
+
+            fileChooser.setTitle("Save Export");
+
+            fileChooser.setInitialFileName(defaultFileName);
+
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter(
+                            extensionDescription,
+                            extensionPattern
+                    )
+            );
+
+            Window owner = null;
+
+            if (allLogsTable != null &&
+                    allLogsTable.getScene() != null) {
+
+                owner = allLogsTable
+                        .getScene()
+                        .getWindow();
+            }
+
+            File file =
+                    fileChooser.showSaveDialog(owner);
+
+            if (file == null) {
+                return false;
+            }
+
+            try (FileOutputStream outputStream =
+                         new FileOutputStream(file)) {
+
+                outputStream.write(bytes);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showInfo("Unable to save export: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private String buildExportFileName(
+            String source,
+            String format
+    ) {
+        String normalizedSource =
+                source == null
+                        ? "all"
+                        : source.toLowerCase();
+
+        String extension =
+                "EXCEL".equalsIgnoreCase(format)
+                        ? "xlsx"
+                        : "pdf";
+
+        String timestamp =
+                java.time.ZonedDateTime.now(MANILA)
+                        .format(
+                                DateTimeFormatter.ofPattern(
+                                        "yyyyMMdd-HHmmss"
+                                )
+                        );
+
+        return "examguard-monitoring-" +
+                normalizedSource +
+                "-logs-" +
+                timestamp +
+                "." +
+                extension;
     }
 
     @FXML

@@ -450,7 +450,8 @@ public class FacultyStudentsController {
                         task.getValue().stream()
                                 .map(student -> new StudentRow(
                                         student.studentId(),
-                                        student.fullName(),
+                                        student.firstName(),
+                                        student.lastName(),
                                         student.emailAddress(),
                                         student.collegeCode(),
                                         student.collegeName(),
@@ -515,7 +516,7 @@ public class FacultyStudentsController {
             return imageView;
         }
 
-        Label fallback = new Label(getInitials(student.fullName()));
+        Label fallback = new Label(getInitials(student.firstname() + " " +  student.lastname()));
         fallback.getStyleClass().add(fallbackStyleClass);
 
         return fallback;
@@ -764,7 +765,8 @@ public class FacultyStudentsController {
         return masterStudents.stream()
                 .filter(s ->
                         safeLower(s.studentNo()).contains(keyword) ||
-                                safeLower(s.fullName()).contains(keyword) ||
+                                safeLower(s.firstname()).contains(keyword) ||
+                                safeLower(s.lastname()).contains(keyword) ||
                                 safeLower(s.email()).contains(keyword) ||
                                 safeLower(s.programCode()).contains(keyword) ||
                                 safeLower(s.programName()).contains(keyword) ||
@@ -809,7 +811,8 @@ public class FacultyStudentsController {
         nameBox.setAlignment(Pos.CENTER);
         nameBox.setFillWidth(true);
 
-        Label name = new Label(student.fullName());
+        String fullName = student.firstname() + " " + student.lastname();
+        Label name = new Label(fullName);
         name.getStyleClass().add("student-name");
 
         name.setWrapText(false);
@@ -825,10 +828,9 @@ public class FacultyStudentsController {
 
         Button profileButton = new Button("Profile");
         profileButton.getStyleClass().add("student-action-button");
-        profileButton.setOnAction(e -> openStudentProfile(student));
 
         row.getChildren().addAll(
-                createBodyCell(new Label(student.fullName()), 1.7),
+                createBodyCell(new Label(fullName), 1.7),
                 createBodyCell(new Label(student.studentNo()), 1.3),
                 createBodyCell(new Label(student.email()), 1.8),
                 createBodyCell(new Label(student.collegeName()), 2.0),
@@ -899,12 +901,7 @@ public class FacultyStudentsController {
 
             if (branding != null && branding.getLogoUrl() != null && !branding.getLogoUrl().isBlank()) {
 
-                logo.setImage(
-                        new Image(
-                                AppConfig.BASE_URL + branding.getLogoUrl(),
-                                true
-                        )
-                );
+                logo.setImage(new Image(AppConfig.BASE_URL + branding.getLogoUrl(), true));
             }
 
         } catch (Exception e) {
@@ -927,8 +924,7 @@ public class FacultyStudentsController {
                 ? branding.getSchoolName()
                 : "POLYTECHNIC UNIVERSITY OF THE PHILIPPINES";
 
-        List<javafx.scene.Node> schoolNameNodes =
-                buildSchoolNameNodes(schoolName);
+        List<javafx.scene.Node> schoolNameNodes = buildSchoolNameNodes(schoolName);
 
         schoolTextBox.getChildren().addAll(schoolNameNodes);
 
@@ -940,10 +936,10 @@ public class FacultyStudentsController {
 
         javafx.scene.Node photo = createStudentPhoto(student, 88, "student-card-photo");
 
-        Label firstName = new Label(extractFirstDisplayName(student.fullName()));
+        Label firstName = new Label(student.firstname().toUpperCase());
         firstName.getStyleClass().add("student-card-firstname");
 
-        Label surname = new Label(extractSurname(student.fullName()));
+        Label surname = new Label(student.lastname().toUpperCase());
         surname.getStyleClass().add("student-card-surname");
 
         Label studentNo = new Label(student.studentNo());
@@ -979,8 +975,6 @@ public class FacultyStudentsController {
                 program,
                 spacer
         );
-
-        card.setOnMouseClicked(e -> openStudentProfile(student));
 
         card.setCursor(javafx.scene.Cursor.HAND);
 
@@ -1132,11 +1126,6 @@ public class FacultyStudentsController {
         selectedContextLabel.setText(builder.isEmpty() ? "No class selected" : builder.toString());
     }
 
-    private void openStudentProfile(StudentRow student) {
-        // TODO: Open student profile modal/page later.
-        System.out.println("Opening profile for: " + student.fullName());
-    }
-
     private String getInitials(String name) {
         if (name == null || name.isBlank()) return "?";
 
@@ -1196,30 +1185,6 @@ public class FacultyStudentsController {
         }
     }
 
-    private String extractSurname(String fullName) {
-        if (fullName == null || fullName.isBlank()) return "";
-
-        String[] parts = fullName.trim().split("\\s+");
-        return parts[parts.length - 1].toUpperCase();
-    }
-
-    private String extractFirstDisplayName(String fullName) {
-        if (fullName == null || fullName.isBlank()) return "";
-
-        String[] parts = fullName.trim().split("\\s+");
-
-        if (parts.length == 1) return parts[0].toUpperCase();
-
-        String first = parts[0].toUpperCase();
-        String middleInitial = "";
-
-        if (parts.length > 2) {
-            middleInitial = parts[1].substring(0, 1).toUpperCase() + ".";
-        }
-
-        return middleInitial.isBlank() ? first : first + " " + middleInitial;
-    }
-
     private boolean isActiveOffering(String status) {
         return status != null && status.equalsIgnoreCase("ACTIVE");
     }
@@ -1276,7 +1241,8 @@ public class FacultyStudentsController {
 
     public record StudentRow(
             String studentNo,
-            String fullName,
+            String firstname,
+            String lastname,
             String email,
             String collegeCode,
             String collegeName,

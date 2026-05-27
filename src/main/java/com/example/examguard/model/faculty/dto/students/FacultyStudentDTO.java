@@ -2,7 +2,8 @@ package com.example.examguard.model.faculty.dto.students;
 
 public record FacultyStudentDTO(
         String studentId,
-        String fullName,
+        String firstName,
+        String lastName,
         String emailAddress,
 
         String collegeCode,

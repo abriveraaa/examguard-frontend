@@ -1112,7 +1112,8 @@ public class FacultyReportsController {
                             .stream()
                             .map(student -> new StudentRow(
                                     student.studentId(),
-                                    student.fullName(),
+                                    student.firstName(),
+                                    student.lastName(),
                                     student.emailAddress(),
                                     student.collegeCode(),
                                     student.collegeName(),
@@ -1747,7 +1748,8 @@ public class FacultyReportsController {
 
     public record StudentRow(
             String studentNo,
-            String fullName,
+            String firstName,
+            String lastName,
             String email,
             String collegeCode,
             String collegeName,

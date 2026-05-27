@@ -223,6 +223,13 @@ public class AdminApiService {
         }
     }
 
+    public byte[] exportMonitoringLogs(Map<String, Object> body) throws Exception {
+        return postForBytes(
+                "/admin/monitoring/logs/export",
+                body
+        );
+    }
+
     public String getUserDetails(String schoolId, String role) {
         try {
             String url = AppConfig.BASE_URL + "/admin/users/details?schoolId=" + schoolId + "&role=" + role;
@@ -281,6 +288,42 @@ public class AdminApiService {
         }
 
         return response;
+    }
+
+
+    private byte[] postForBytes(String endpoint, Object body) throws Exception {
+        URL url = new URL(AppConfig.BASE_URL + endpoint);
+
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        connection.setRequestMethod("POST");
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(60000);
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + Session.getSessionToken());
+        connection.setRequestProperty("X-User-Id", Session.getSchoolId());
+        connection.setRequestProperty("X-Role", "ADMIN");
+
+        String json = gson.toJson(body);
+
+        try (OutputStream os = connection.getOutputStream()) {
+            os.write(json.getBytes(StandardCharsets.UTF_8));
+        }
+
+        int status = connection.getResponseCode();
+
+        byte[] responseBytes = status >= 200 && status < 300
+                ? connection.getInputStream().readAllBytes()
+                : connection.getErrorStream().readAllBytes();
+
+        if (status < 200 || status >= 300) {
+            String response = new String(responseBytes, StandardCharsets.UTF_8);
+
+            throw new RuntimeException("Monitoring export failed: HTTP " + status + " - " + response);
+        }
+
+        return responseBytes;
     }
 
 }
