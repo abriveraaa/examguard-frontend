@@ -992,27 +992,10 @@
     -fx-alignment: center;
 }
 
-.lobby-camera-preview {
-    -fx-background-color: #111827;
-    -fx-background-radius: 18;
-    -fx-border-radius: 18;
-    -fx-border-color: rgba(255,255,255,0.20);
-    -fx-alignment: center;
-    -fx-padding: 8;
-}
-
 .lobby-camera-placeholder {
     -fx-text-fill: rgba(255,255,255,0.75);
     -fx-font-size: 13px;
     -fx-font-weight: bold;
-}
-
-.phone-camera-pairing-box {
-    -fx-background-color: #fffafa;
-    -fx-padding: 14;
-    -fx-background-radius: 16;
-    -fx-border-radius: 16;
-    -fx-border-color: #eadfd7;
 }
 
 .lobby-step-scroll {
@@ -1051,7 +1034,7 @@
     -fx-border-radius: 16;
     -fx-border-color: #eee4da;
     -fx-max-width: Infinity;
-    -fx-min-height: 150;
+    -fx-min-height: 165;
     -fx-pref-width: 160;
     -fx-alignment: top-center;
 }
@@ -1076,7 +1059,7 @@
     -fx-text-fill: #6b625c;
     -fx-text-alignment: center;
     -fx-alignment: center;
-    -fx-max-width: 100;
+    -fx-max-width: 135;
 }
 
 .lobby-verify-button {
@@ -1132,26 +1115,6 @@
 
 .text-link-button:hover {
     -fx-underline: true;
-}
-
-.phone-camera-qr-side {
-    -fx-background-color: #fffafa;
-
-    -fx-padding: 12;
-
-    -fx-background-radius: 16;
-    -fx-border-radius: 16;
-
-    -fx-border-color: #eadfd7;
-
-    -fx-pref-width: 170;
-    -fx-max-width: 170;
-}
-
-.phone-camera-title {
-    -fx-font-size: 11px;
-    -fx-font-weight: 800;
-    -fx-text-fill: #302C29;
 }
 
 .lobby-rule-bullet {
@@ -1284,4 +1247,94 @@
 .exam-critical-side-border {
     -fx-border-color: transparent transparent transparent #991b1b;
     -fx-border-width: 0 0 0 8;
+}
+
+.lobby-auto-check-status-box {
+    -fx-background-color: #faf7f2;
+    -fx-padding: 12 14;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #eee4da;
+}
+
+.lobby-auto-check-message {
+    -fx-font-size: 12px;
+    -fx-text-fill: #4b5563;
+    -fx-font-weight: 700;
+}
+
+.lobby-helper-text {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #6b625c;
+    -fx-line-spacing: 3;
+}
+
+.lobby-auto-check-status-box {
+    -fx-background-color: #faf7f2;
+    -fx-padding: 12 14;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #eee4da;
+}
+
+.lobby-auto-check-message {
+    -fx-font-size: 12px;
+    -fx-text-fill: #4b5563;
+    -fx-font-weight: 700;
+}
+
+.lobby-helper-text {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #6b625c;
+    -fx-line-spacing: 3;
+}
+
+/* =========================
+   LOBBY CAMERA + PHONE QR
+   Final layout: QR appears BESIDE the camera preview.
+========================= */
+
+.lobby-camera-row {
+    -fx-padding: 2 0 2 0;
+    -fx-alignment: center;
+}
+
+.lobby-camera-preview {
+    -fx-background-color: #111827;
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: rgba(255,255,255,0.20);
+    -fx-alignment: center;
+    -fx-padding: 8;
+    -fx-min-width: 0;
+    -fx-pref-width: 560;
+    -fx-max-width: Infinity;
+}
+
+.phone-camera-qr-side {
+    -fx-background-color: #fffafa;
+    -fx-padding: 12;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #eadfd7;
+
+    -fx-pref-width: 145;
+    -fx-min-width: 145;
+    -fx-max-width: 145;
+
+    -fx-pref-height: 300;
+    -fx-min-height: 300;
+    -fx-max-height: 300;
+}
+
+.lobby-camera-placeholder {
+    -fx-text-fill: rgba(255,255,255,0.75);
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.phone-camera-title {
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #302C29;
 }

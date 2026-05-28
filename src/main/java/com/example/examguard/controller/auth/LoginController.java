@@ -1,6 +1,5 @@
 package com.example.examguard.controller.auth;
 
-import com.example.examguard.ai.MediaPipeFaceRuntime;
 import com.example.examguard.model.core.response.LoginApiResponse;
 import com.example.examguard.model.enums.UserType;
 import com.example.examguard.service.AuthApiService;
@@ -39,7 +38,6 @@ public class LoginController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        startAiRuntimeForTesting();
     }
 
     @FXML
@@ -152,34 +150,6 @@ public class LoginController implements Initializable {
                 SceneManager.switchScene("auth/forgot-password.fxml");
                 break;
         }
-    }
-
-    private void startAiRuntimeForTesting() {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() {
-                MediaPipeFaceRuntime.startIfNeeded();
-                return null;
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            System.out.println("MediaPipe AI service started.");
-        });
-
-        task.setOnFailed(e -> {
-            Throwable ex = task.getException();
-            if (ex != null) {
-                ex.printStackTrace();
-            }
-
-            // Do not block login while testing
-            System.out.println("MediaPipe AI service failed to start.");
-        });
-
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
     }
 
     private void setLoadingState(boolean loading) {

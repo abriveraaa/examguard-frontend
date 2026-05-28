@@ -167,56 +167,57 @@
                                   styleClass="lobby-step-content">
 
                                 <VBox spacing="4">
-                                    <Label text="Camera Verification"
+                                    <Label text="Live Environment Setup"
                                            styleClass="lobby-section-title"/>
 
-                                    <Label text="Keep your face centered and fully visible in the camera before running verification."
+                                    <Label text="Place your camera at a 45-degree angle. Your face or upper body, hands, desk, and workstation must be visible."
                                            wrapText="true"
                                            styleClass="lobby-check-description"/>
                                 </VBox>
 
-                                <HBox spacing="14" alignment="TOP_CENTER">
+                                <HBox spacing="12"
+                                      alignment="CENTER"
+                                      fillHeight="false"
+                                      styleClass="lobby-camera-row">
 
                                     <StackPane fx:id="lobbyCameraPreviewPane"
                                                HBox.hgrow="ALWAYS"
-                                               prefHeight="220"
-                                               minHeight="220"
-                                               maxHeight="220"
+                                               prefHeight="300"
+                                               minHeight="300"
+                                               maxHeight="300"
+                                               maxWidth="Infinity"
                                                styleClass="lobby-camera-preview">
 
                                         <ImageView fx:id="lobbyCameraPreviewImageView"
                                                    preserveRatio="true"
-                                                   fitHeight="210"
                                                    smooth="true"/>
 
                                         <Label fx:id="lobbyCameraPreviewPlaceholder"
-                                               text="Camera preview will appear here"
+                                               text="Starting camera..."
                                                styleClass="lobby-camera-placeholder"/>
                                     </StackPane>
 
                                     <VBox fx:id="phoneCameraPairingBox"
-                                          spacing="8"
+                                          spacing="10"
                                           alignment="CENTER"
                                           visible="false"
                                           managed="false"
                                           styleClass="phone-camera-qr-side">
 
-                                        <Label text="Scan to pair phone"
-                                               styleClass="phone-camera-title"/>
+                                        <Label text="Phone Camera" styleClass="phone-camera-title"/>
 
                                         <ImageView fx:id="phoneCameraQrImageView"
-                                                   fitWidth="130"
-                                                   fitHeight="130"
-                                                   preserveRatio="true"
-                                                   smooth="true"/>
+                                                   fitWidth="115"
+                                                   fitHeight="115"
+                                                   preserveRatio="true"/>
 
                                         <Label fx:id="phoneCameraStatusLabel"
                                                text="Waiting"
                                                alignment="CENTER"
                                                styleClass="lobby-status-warning"/>
                                     </VBox>
-                                </HBox>
 
+                                </HBox>
                                 <HBox alignment="CENTER_RIGHT">
                                     <Button fx:id="pairPhoneCameraButton"
                                             text="Use phone camera instead"
@@ -224,63 +225,25 @@
                                             styleClass="text-link-button"/>
                                 </HBox>
 
-                                <HBox spacing="12"
-                                      alignment="CENTER"
-                                      fillHeight="true"
-                                      styleClass="lobby-progress-row">
+                                <VBox spacing="10"
+                                      alignment="CENTER_LEFT"
+                                      styleClass="lobby-auto-check-status-box">
 
-                                    <VBox spacing="8" alignment="TOP_CENTER" styleClass="lobby-progress-item" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                        <ImageView fitWidth="22" fitHeight="22" preserveRatio="true">
-                                            <image>
-                                                <Image url="@/icons/camera.png"/>
-                                            </image>
-                                        </ImageView>
-                                        <Label text="Camera" styleClass="lobby-progress-title"/>
-                                        <Label fx:id="cameraStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                        <Label fx:id="cameraDetailLabel" text="" wrapText="true" styleClass="lobby-progress-message"/>
-                                    </VBox>
+                                    <Label fx:id="environmentStatusLabel"
+                                           text="Checking"
+                                           styleClass="lobby-status-checking"
+                                            prefWidth="100"/>
 
-                                    <VBox spacing="8" alignment="TOP_CENTER" styleClass="lobby-progress-item" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                        <ImageView fitWidth="22" fitHeight="22" preserveRatio="true">
-                                            <image>
-                                                <Image url="@/icons/user.png"/>
-                                            </image>
-                                        </ImageView>
-                                        <Label text="Visibility" styleClass="lobby-progress-title"/>
-                                        <Label fx:id="faceStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                        <Label fx:id="faceDetailLabel" text="" wrapText="true" styleClass="lobby-progress-message"/>
-                                    </VBox>
+                                    <Label fx:id="environmentDetailLabel"
+                                           text="Checking your camera setup and desk environment..."
+                                           wrapText="true"
+                                           HBox.hgrow="ALWAYS"
+                                           styleClass="lobby-auto-check-message"/>
+                                </VBox>
 
-                                    <VBox spacing="8" alignment="TOP_CENTER" styleClass="lobby-progress-item" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                        <ImageView fitWidth="22" fitHeight="22" preserveRatio="true">
-                                            <image>
-                                                <Image url="@/icons/wi-fi.png"/>
-                                            </image>
-                                        </ImageView>
-                                        <Label text="Connection" styleClass="lobby-progress-title"/>
-                                        <Label fx:id="internetStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                        <Label fx:id="internetDetailLabel" text="" wrapText="true" styleClass="lobby-progress-message"/>
-                                    </VBox>
-
-                                    <VBox spacing="8" alignment="TOP_CENTER" styleClass="lobby-progress-item" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                        <ImageView fitWidth="22" fitHeight="22" preserveRatio="true">
-                                            <image>
-                                                <Image url="@/icons/system.png"/>
-                                            </image>
-                                        </ImageView>
-                                        <Label text="System" styleClass="lobby-progress-title"/>
-                                        <Label fx:id="systemStatusLabel" text="Pending" alignment="CENTER" styleClass="lobby-status-pending"/>
-                                        <Label fx:id="systemDetailLabel" text="" wrapText="true" styleClass="lobby-progress-message"/>
-                                    </VBox>
-
-                                </HBox>
-
-                                <HBox alignment="CENTER_RIGHT">
-                                    <Button fx:id="runChecksButton"
-                                            text="Verify"
-                                            onAction="#handleRunLobbyChecks"
-                                            styleClass="lobby-verify-button"/>
-                                </HBox>
+                                <Label text="Allowed: one examinee and one workstation setup. Not allowed: phones, tablets, extra laptops, extra keyboards, books, notes, or reviewer materials."
+                                       wrapText="true"
+                                       styleClass="lobby-helper-text"/>
 
                             </VBox>
 

@@ -15,24 +15,23 @@
 }
 
 .student-profile-avatar {
-    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #FFF6D6);
-    -fx-background-radius: 28;
-    -fx-border-radius: 28;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
     -fx-border-color: #F4D27A;
-    -fx-border-width: 4;
-    -fx-min-width: 150;
-    -fx-min-height: 150;
-    -fx-pref-width: 150;
-    -fx-pref-height: 150;
-    -fx-max-width: 150;
-    -fx-max-height: 150;
+    -fx-border-width: 2;
+    -fx-min-width: 124;
+    -fx-min-height: 124;
+    -fx-pref-width: 124;
+    -fx-pref-height: 124;
+    -fx-max-width: 124;
+    -fx-max-height: 124;
     -fx-alignment: CENTER;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 18, 0.20, 0, 6);
+    -fx-padding: 4;
 }
 
 .student-profile-avatar-text {
     -fx-font-family: "Segoe UI";
-    -fx-font-size: 50px;
+    -fx-font-size: 30px;
     -fx-font-weight: bold;
     -fx-text-fill: #800000;
 }
@@ -164,12 +163,13 @@
 
 /* RIGHT SIDE */
 .student-side-section {
-    -fx-min-width: 500;
-    -fx-pref-width: 500;
-    -fx-max-width: 500;
+    -fx-min-width: 420;
+    -fx-pref-width: 420;
+    -fx-max-width: 420;
 }
 
 .student-clean-box {
+    -fx-min-height: 0;
     -fx-background-color: white;
     -fx-background-radius: 22;
     -fx-border-color: rgba(48, 44, 41, 0.08);
@@ -465,23 +465,6 @@
     -fx-max-width: 285;
 }
 
-.student-profile-avatar {
-    -fx-translate-x: 0;
-    -fx-translate-y: 0;
-    -fx-min-width: 108;
-    -fx-min-height: 108;
-    -fx-pref-width: 108;
-    -fx-pref-height: 108;
-    -fx-max-width: 108;
-    -fx-max-height: 108;
-    -fx-background-radius: 24;
-    -fx-border-radius: 24;
-}
-
-.student-profile-avatar-text {
-    -fx-font-size: 36px;
-}
-
 .student-profile-name {
     -fx-font-size: 17px;
 }
@@ -584,4 +567,24 @@
 
 .student-risk-good {
     -fx-font-size: 16px;
+}
+
+.student-card-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+
+.student-card-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.student-card-scroll .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8;
+}
+
+.student-card-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(128, 0, 0, 0.25);
+    -fx-background-radius: 999;
 }

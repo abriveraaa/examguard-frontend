@@ -18,6 +18,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 
 import java.time.OffsetDateTime;
@@ -34,29 +35,31 @@ public class AdminDashboardController {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final AdminApiService adminApiService = new AdminApiService();
-    @FXML
-    private ComboBox<String> concurrentTimeScaleComboBox;
-    @FXML
-    private ComboBox<String> rangeComboBox;
-    @FXML
-    private DatePicker customStartDatePicker;
-    @FXML
-    private DatePicker customEndDatePicker;
-    @FXML
-    private LineChart<String, Number> loginVolumeChart;
-    @FXML
-    private LineChart<String, Number> concurrentUsersChart;
-    @FXML
-    private BarChart<String, Number> violationsByProgramChart;
-    @FXML
-    private ListView<String> recentSystemEventsListView;
+
+    @FXML private ComboBox<String> concurrentTimeScaleComboBox;
+    @FXML private ComboBox<String> rangeComboBox;
+    @FXML private DatePicker customStartDatePicker;
+    @FXML private DatePicker customEndDatePicker;
+    @FXML private LineChart<String, Number> loginVolumeChart;
+    @FXML private LineChart<String, Number> concurrentUsersChart;
+    @FXML private BarChart<String, Number> violationsByProgramChart;
+    @FXML private ListView<String> recentSystemEventsListView;
+    @FXML private HBox dashboardChartLegendBox;
 
     @FXML
     public void initialize() {
         loginVolumeChart.setCreateSymbols(true);
         concurrentUsersChart.setCreateSymbols(true);
 
+        loginVolumeChart.setLegendVisible(false);
+        concurrentUsersChart.setLegendVisible(false);
+
+        loginVolumeChart.setLegendSide(javafx.geometry.Side.BOTTOM);
+        concurrentUsersChart.setLegendSide(javafx.geometry.Side.BOTTOM);
+
         setupFilters();
+        moveFiltersToShell();
+        updateInlineLegend();
         clearDashboard();
         loadOverviewAsync();
     }
@@ -88,6 +91,61 @@ public class AdminDashboardController {
 
         setupTimeScaleOptions();
         updateCustomRangeVisibility();
+    }
+
+    private void moveFiltersToShell() {
+        rangeComboBox.setPrefWidth(135);
+        concurrentTimeScaleComboBox.setPrefWidth(120);
+        customStartDatePicker.setPrefWidth(135);
+        customEndDatePicker.setPrefWidth(135);
+        DashboardShellController shell = DashboardShellController.getInstance();
+
+        if (shell == null) {
+            return;
+        }
+
+        Label rangeLabel = new Label("Range");
+        rangeLabel.getStyleClass().add("hero-filter-label");
+
+        HBox rangeBox = new HBox(8, rangeLabel, rangeComboBox);
+        rangeBox.setAlignment(javafx.geometry.Pos.CENTER);
+
+        Label scaleLabel = new Label("Scale");
+        scaleLabel.getStyleClass().add("hero-filter-label");
+
+        HBox scaleBox = new HBox(8, scaleLabel, concurrentTimeScaleComboBox);
+        scaleBox.setAlignment(javafx.geometry.Pos.CENTER);
+
+        shell.showHeroControls(
+                rangeBox,
+                scaleBox,
+                customStartDatePicker,
+                customEndDatePicker
+        );
+    }
+
+    private void updateInlineLegend() {
+        if (dashboardChartLegendBox == null) {
+            return;
+        }
+
+        dashboardChartLegendBox.getChildren().clear();
+
+        addLegendItem("Admin", "legend-admin");
+        addLegendItem("Faculty", "legend-faculty");
+        addLegendItem("Student", "legend-student");
+    }
+
+    private void addLegendItem(String text, String dotClass) {
+        Label dot = new Label();
+        dot.getStyleClass().addAll("legend-dot", dotClass);
+
+        Label label = new Label(text);
+        label.getStyleClass().add("legend-text");
+
+        HBox item = new HBox(6, dot, label);
+        item.setAlignment(javafx.geometry.Pos.CENTER);
+        dashboardChartLegendBox.getChildren().add(item);
     }
 
     private void loadOverviewAsync() {
@@ -524,23 +582,19 @@ public class AdminDashboardController {
         if (logs != null) {
             for (AdminLogRowDto log : logs) {
 
-                if (isSlowEvent(log)) {
                     items.add(
-                            "[SLOW] " +
-                                    formatDateTime(log.getStartedAt()) + " • " +
-                                    safe(log.getModule()) + " • " +
-                                    safe(log.getAction()) + " • " +
-                                    safe(log.getActorRole()) + " • " +
-                                    safe(log.getActorId()) + " • " +
-                                    formatDuration(log.getDurationMs()) + " • " +
-                                    safe(log.getMessage())
+                        formatDateTime(log.getStartedAt()) + " • " +
+                        safe(log.getModule()) + " • " +
+                        safe(log.getAction()) + " • " +
+                        safe(log.getActorRole()) + " • " +
+                        safe(log.getActorId()) + " • " +
+                        formatDuration(log.getDurationMs())
                     );
-                }
             }
         }
 
         if (items.isEmpty()) {
-            items.add("No recent slow activities.");
+            items.add("No recent activities.");
         }
 
         recentSystemEventsListView.setItems(items);

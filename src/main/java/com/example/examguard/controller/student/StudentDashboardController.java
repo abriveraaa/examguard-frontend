@@ -1,5 +1,9 @@
 package com.example.examguard.controller.student;
 
+import com.example.examguard.config.AppConfig;
+import com.example.examguard.model.profile.ProfileResponseDTO;
+import com.example.examguard.service.AuthApiService;
+import javafx.application.Platform;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
 import com.example.examguard.model.student.StudentDashboardResponse;
@@ -12,6 +16,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -36,36 +41,20 @@ import java.util.List;
 public class StudentDashboardController implements ShellAwareController {
 
     private DashboardShellController shellController;
+    private final AuthApiService authApiService = new AuthApiService();
 
-    @FXML
-    private ImageView studentAvatarImageView;
-    @FXML
-    private Label studentInitialsLabel;
-    @FXML
-    private Label studentNameLabel;
-    @FXML
-    private Label studentEmailLabel;
-    @FXML
-    private Label studentIDLabel;
-    @FXML
-    private Label studentProgramLabel;
-    @FXML
-    private Label studentCollegeLabel;
-    @FXML
-    private Label studentCurrentTermLabel;
-    @FXML
-    private Label viewAllUpcomingExamsLabel;
-    @FXML
-    private Label viewAllPendingReviewLabel;
-    @FXML
-    private Label viewAllResultsReleasedLabel;
-
-    @FXML
-    private VBox upcomingExamList;
-    @FXML
-    private VBox violationList;
-    @FXML
-    private VBox resultSummaryList;
+    @FXML private ImageView studentAvatarImageView;
+    @FXML private Label studentInitialsLabel;
+    @FXML private Label studentNameLabel;
+    @FXML private Label studentEmailLabel;
+    @FXML private Label studentIDLabel;
+    @FXML private Label studentProgramLabel;
+    @FXML private Label studentCollegeLabel;
+    @FXML private Label studentCurrentTermLabel;
+    @FXML private Label viewAllUpcomingExamsLabel;
+    @FXML private Label viewAllResultsReleasedLabel;
+    @FXML private VBox upcomingExamList;
+    @FXML private VBox resultSummaryList;
 
     private final StudentApiService dashboardApiService = new StudentApiService();
 
@@ -84,33 +73,6 @@ public class StudentDashboardController implements ShellAwareController {
         return value.atZoneSameInstant(MANILA_ZONE).toOffsetDateTime();
     }
 
-    private boolean canEnterLobbyNow(OffsetDateTime startValue, OffsetDateTime endValue) {
-        OffsetDateTime start = toManila(startValue);
-        OffsetDateTime end = toManila(endValue);
-
-        if (start == null || end == null) {
-            return false;
-        }
-
-        OffsetDateTime now = nowManila();
-        OffsetDateTime lobbyOpenAt = start.minusMinutes(LOBBY_OPEN_MINUTES_BEFORE_START);
-
-        return !now.isBefore(lobbyOpenAt) && !now.isAfter(end);
-    }
-
-    private boolean canBeginExamNow(OffsetDateTime startValue, OffsetDateTime endValue) {
-        OffsetDateTime start = toManila(startValue);
-        OffsetDateTime end = toManila(endValue);
-
-        if (start == null || end == null) {
-            return false;
-        }
-
-        OffsetDateTime now = nowManila();
-
-        return !now.isBefore(start) && !now.isAfter(end);
-    }
-
     @Override
     public void setShellController(DashboardShellController shellController) {
         this.shellController = shellController;
@@ -118,9 +80,26 @@ public class StudentDashboardController implements ShellAwareController {
 
     @FXML
     public void initialize() {
+        setupAvatarClip();
         setupViewAllRedirects();
         showLoadingState();
         loadDashboardAsync();
+    }
+
+    private void setupAvatarClip() {
+        studentAvatarImageView.setFitWidth(120);
+        studentAvatarImageView.setFitHeight(120);
+        studentAvatarImageView.setPreserveRatio(false);
+        studentAvatarImageView.setSmooth(true);
+
+        Rectangle clip = new Rectangle();
+        clip.setArcWidth(5);
+        clip.setArcHeight(5);
+
+        clip.widthProperty().bind(studentAvatarImageView.fitWidthProperty());
+        clip.heightProperty().bind(studentAvatarImageView.fitHeightProperty());
+
+        studentAvatarImageView.setClip(clip);
     }
 
     @FXML
@@ -130,15 +109,11 @@ public class StudentDashboardController implements ShellAwareController {
             return;
         }
 
-        shellController.setGreeting(
-                "Profile Settings",
-                "Manage your account details and password."
-        );
+        shellController.setGreeting("Profile Settings", "Manage your account details and password.");
 
         shellController.hideHeroCards();
 
-        shellController.loadContent(
-                "/fxml/common/profile-view.fxml"
+        shellController.loadContent("/fxml/common/profile-view.fxml"
         );
     }
 
@@ -146,12 +121,6 @@ public class StudentDashboardController implements ShellAwareController {
     private void handleReloadUpcomingExams() {
         upcomingExamList.getChildren().setAll(createEmptyRow("Reloading upcoming exams..."));
         reloadDashboardPart("upcoming");
-    }
-
-    @FXML
-    private void handleReloadViolations() {
-        violationList.getChildren().setAll(createEmptyRow("Reloading violations..."));
-        reloadDashboardPart("violations");
     }
 
     @FXML
@@ -174,7 +143,6 @@ public class StudentDashboardController implements ShellAwareController {
             switch (part) {
                 case "profile" -> loadProfile(dashboard.getProfile());
                 case "upcoming" -> loadUpcomingExams(dashboard.getUpcomingExams());
-                case "violations" -> loadViolations(dashboard.getViolations());
                 case "results" -> loadResultSummary(
                         dashboard.getResultSummary(),
                         dashboard.getStats()
@@ -188,8 +156,8 @@ public class StudentDashboardController implements ShellAwareController {
             switch (part) {
                 case "upcoming" ->
                         upcomingExamList.getChildren().setAll(createEmptyRow("Unable to reload upcoming exams."));
-                case "violations" -> violationList.getChildren().setAll(createEmptyRow("Unable to reload violations."));
-                case "results" -> resultSummaryList.getChildren().setAll(createEmptyRow("Unable to reload results."));
+                case "results" ->
+                        resultSummaryList.getChildren().setAll(createEmptyRow("Unable to reload results."));
             }
         });
 
@@ -210,8 +178,8 @@ public class StudentDashboardController implements ShellAwareController {
             StudentDashboardResponse dashboard = task.getValue();
 
             loadProfile(dashboard.getProfile());
+            loadProfilePhotoFromAuthProfile();
             loadUpcomingExams(dashboard.getUpcomingExams());
-            loadViolations(dashboard.getViolations());
             loadResultSummary(dashboard.getResultSummary(), dashboard.getStats());
 
             hideLoadingState();
@@ -222,7 +190,6 @@ public class StudentDashboardController implements ShellAwareController {
             hideLoadingState();
 
             upcomingExamList.getChildren().setAll(createEmptyRow("Unable to load upcoming exams."));
-            violationList.getChildren().setAll(createEmptyRow("Unable to load violations."));
             resultSummaryList.getChildren().setAll(createEmptyRow("Unable to load result summary."));
         });
 
@@ -236,18 +203,12 @@ public class StudentDashboardController implements ShellAwareController {
             upcomingExamList.getChildren().setAll(createEmptyRow("Loading upcoming exams..."));
         }
 
-        if (violationList != null) {
-            violationList.getChildren().setAll(createEmptyRow("Loading violations..."));
-        }
-
         if (resultSummaryList != null) {
             resultSummaryList.getChildren().setAll(createEmptyRow("Loading result summary..."));
         }
     }
 
-    private void hideLoadingState() {
-        // no need for now because real data replaces loading rows
-    }
+    private void hideLoadingState() { }
 
     private void loadProfile(StudentProfile profile) {
         if (profile == null) {
@@ -258,25 +219,7 @@ public class StudentDashboardController implements ShellAwareController {
         String lastName = safe(profile.getLastName());
         String fullName = (firstName + " " + lastName).trim();
 
-        String imageUrl = safe(profile.getProfileImageUrl());
-
-        if (!imageUrl.isBlank()) {
-            try {
-                Image image = new Image(imageUrl, true);
-
-                studentAvatarImageView.setImage(image);
-                studentAvatarImageView.setVisible(true);
-                studentAvatarImageView.setManaged(true);
-
-                studentInitialsLabel.setVisible(false);
-                studentInitialsLabel.setManaged(false);
-
-            } catch (Exception e) {
-                showInitialsFallback(firstName, lastName);
-            }
-        } else {
-            showInitialsFallback(firstName, lastName);
-        }
+        loadStudentAvatar(profile, firstName, lastName);
 
         studentNameLabel.setText(fullName.isBlank() ? "Student" : fullName);
         studentInitialsLabel.setText(getInitials(firstName, lastName));
@@ -295,6 +238,60 @@ public class StudentDashboardController implements ShellAwareController {
 
         studentCurrentTermLabel.setText(safe(profile.getCurrentTerm()));
 
+    }
+
+    private void loadProfilePhotoFromAuthProfile() {
+        Task<ProfileResponseDTO> task = new Task<>() {
+            @Override
+            protected ProfileResponseDTO call() throws Exception {
+                return authApiService.getProfile();
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            ProfileResponseDTO profile = task.getValue();
+
+            if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
+                return;
+            }
+
+            loadAvatarImage(profile.getProfileImageUrl());
+        });
+
+        task.setOnFailed(event -> {
+            task.getException().printStackTrace();
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void loadAvatarImage(String imageUrl) {
+        String finalUrl = imageUrl.startsWith("http")
+                ? imageUrl
+                : AppConfig.BASE_URL + imageUrl;
+
+        Image image = new Image(finalUrl, true);
+
+        image.errorProperty().addListener((obs, oldValue, hasError) -> {
+            if (hasError) {
+                System.out.println("Dashboard avatar failed to load: " + finalUrl);
+            }
+        });
+
+        image.progressProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue.doubleValue() >= 1.0 && !image.isError()) {
+                Platform.runLater(() -> {
+                    studentAvatarImageView.setImage(image);
+                    studentAvatarImageView.setVisible(true);
+                    studentAvatarImageView.setManaged(true);
+
+                    studentInitialsLabel.setVisible(false);
+                    studentInitialsLabel.setManaged(false);
+                });
+            }
+        });
     }
 
     private void loadUpcomingExams(List<StudentUpcomingExam> exams) {
@@ -402,67 +399,6 @@ public class StudentDashboardController implements ShellAwareController {
 
         return row;
     }
-
-    private void loadViolations(List<StudentViolationSummary> violations) {
-        violationList.getChildren().clear();
-
-        if (violations == null || violations.isEmpty()) {
-            violationList.getChildren().add(createEmptyRow("No violations detected."));
-            return;
-        }
-
-        for (int i = 0; i < violations.size(); i++) {
-            StudentViolationSummary violation = violations.get(i);
-
-            violationList.getChildren().add(createViolationRow(violation));
-
-            if (i < violations.size() - 1) {
-                Separator separator = new Separator();
-                separator.setOpacity(0.45);
-                violationList.getChildren().add(separator);
-            }
-        }
-    }
-
-    private HBox createViolationRow(StudentViolationSummary violation) {
-
-        Label title = new Label(safe(violation.getExamTitle()));
-        title.getStyleClass().add("oracle-row-title");
-
-        Label course = new Label(safe(violation.getCourseCode()));
-        course.getStyleClass().add("oracle-row-subtitle");
-
-        VBox textBox = new VBox(3, title, course);
-        HBox.setHgrow(textBox, Priority.ALWAYS);
-
-        Label status = new Label(safe(violation.getStatus()));
-
-        if ("Decision Released".equalsIgnoreCase(violation.getStatus())) {
-            status.getStyleClass().add("result-status-released");
-        } else {
-            status.getStyleClass().add("review-text");
-        }
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        HBox row = new HBox(
-                12,
-                textBox,
-                spacer,
-                status
-        );
-
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("oracle-small-row");
-
-        row.setOnMouseClicked(event -> {
-            openViolationWorkspace(violation);
-        });
-
-        return row;
-    }
-
 
     private void loadResultSummary(
             List<StudentResultSummary> results,
@@ -636,12 +572,69 @@ public class StudentDashboardController implements ShellAwareController {
         return initials.isBlank() ? "ST" : initials;
     }
 
+    private void loadStudentAvatar(StudentProfile profile, String firstName, String lastName) {
+        String imageUrl = safe(profile.getProfileImageUrl());
+
+        if (imageUrl.isBlank()) {
+            showInitialsFallback(firstName, lastName);
+            return;
+        }
+
+        String finalUrl = buildProfileImageUrl(imageUrl);
+
+        Image image = new Image(finalUrl, true);
+
+        image.errorProperty().addListener((obs, oldValue, hasError) -> {
+            if (hasError) {
+                Platform.runLater(() -> showInitialsFallback(firstName, lastName));
+            }
+        });
+
+        image.progressProperty().addListener((obs, oldProgress, newProgress) -> {
+            if (newProgress.doubleValue() >= 1.0 && !image.isError()) {
+                Platform.runLater(() -> showImageAvatar(image));
+            }
+        });
+    }
+
+    private String buildProfileImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+            return imageUrl;
+        }
+
+        if (imageUrl.startsWith("/")) {
+            return AppConfig.BASE_URL + imageUrl;
+        }
+
+        return AppConfig.BASE_URL + "/" + imageUrl;
+    }
+
+    private void showImageAvatar(Image image) {
+        studentAvatarImageView.setImage(image);
+
+        studentAvatarImageView.setFitWidth(124);
+        studentAvatarImageView.setFitHeight(124);
+        studentAvatarImageView.setPreserveRatio(false);
+        studentAvatarImageView.setSmooth(true);
+
+        studentAvatarImageView.setVisible(true);
+        studentAvatarImageView.setManaged(true);
+
+        studentInitialsLabel.setVisible(false);
+        studentInitialsLabel.setManaged(false);
+    }
+
     private void showInitialsFallback(String firstName, String lastName) {
         studentInitialsLabel.setText(getInitials(firstName, lastName));
 
         studentInitialsLabel.setVisible(true);
         studentInitialsLabel.setManaged(true);
 
+        studentAvatarImageView.setImage(null);
         studentAvatarImageView.setVisible(false);
         studentAvatarImageView.setManaged(false);
     }
@@ -692,49 +685,6 @@ public class StudentDashboardController implements ShellAwareController {
 
         } catch (Exception e) {
             e.printStackTrace();
-//            showError("Failed to open released result.");
-        }
-    }
-
-    private void openViolationWorkspace(StudentViolationSummary violation) {
-
-        if (violation == null || violation.getExamId() == null) {
-            return;
-        }
-
-        try {
-            dashboardApiService.markViolationViewed(violation.getExamId());
-
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource(
-                            "/fxml/student/student-results-workspace.fxml"
-                    )
-            );
-
-            Parent content = loader.load();
-
-            StudentResultsWorkspaceController controller =
-                    loader.getController();
-
-            if (shellController != null) {
-                controller.setShellController(shellController);
-
-                shellController.hideHeroSection();
-                shellController.hideHeroCards();
-
-                shellController.setGreeting(
-                        "Reviewed Violation",
-                        "Review the related exam result, violation decision, and feedback."
-                );
-
-                shellController.setWorkspaceContent(content);
-            }
-
-            controller.loadResult(violation.getExamId());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-//            showError("Failed to open violation result.");
         }
     }
 
@@ -794,11 +744,6 @@ public class StudentDashboardController implements ShellAwareController {
         );
 
         setupViewAllLabel(
-                viewAllPendingReviewLabel,
-                "PENDING REVIEW"
-        );
-
-        setupViewAllLabel(
                 viewAllResultsReleasedLabel,
                 "RESULTS RELEASED"
         );
@@ -822,10 +767,5 @@ public class StudentDashboardController implements ShellAwareController {
         });
     }
 
-    private void openExamReview(StudentUpcomingExam exam) {
-        System.out.println("Open exam page. Exam ID: " + exam.getExamId());
-
-        // TODO next:
-        // redirect to exam-taking page and pass exam.getExamId()
-    }
+    private void openExamReview(StudentUpcomingExam exam) { }
 }

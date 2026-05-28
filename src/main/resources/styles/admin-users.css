@@ -81,3 +81,73 @@
 .tab-pane .tab-header-area {
     -fx-padding: 0 0 5 0;
 }
+
+.primary-button {
+    -fx-background-color: #800000;
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-padding: 9 18;
+    -fx-font-family: "Segoe UI";
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.secondary-button {
+    -fx-background-color: #302C29;
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-padding: 9 16;
+    -fx-font-family: "Segoe UI";
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.pagination-label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #756F6A;
+}
+
+.menu-button {
+    -fx-background-color: #302C29;
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.menu-button .label {
+    -fx-text-fill: white;
+}
+
+.menu-button .arrow {
+    -fx-background-color: white;
+}
+
+/* Popup menu */
+.context-menu {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: #d6d0cb;
+    -fx-border-radius: 10;
+    -fx-padding: 4;
+}
+
+/* Menu items */
+.menu-item {
+    -fx-background-color: white;
+}
+
+.menu-item .label {
+    -fx-text-fill: #302C29;
+    -fx-font-size: 13px;
+}
+
+/* Hover */
+.menu-item:focused {
+    -fx-background-color: #800000;
+}
+
+.menu-item:focused .label {
+    -fx-text-fill: white;
+}

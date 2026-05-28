@@ -97,50 +97,7 @@ public class LobbyCameraPreviewService {
                             objects = objectDetector.detect(frame);
                         }
 
-                        for (DetectedObject object : objects) {
-
-                            String name = object.getClassName();
-
-                            if (!name.equals("cell phone")) {
-                                continue;
-                            }
-
-                            Point topLeft = new Point(
-                                    object.getX(),
-                                    object.getY()
-                            );
-
-                            Point bottomRight = new Point(
-                                    object.getX() + object.getWidth(),
-                                    object.getY() + object.getHeight()
-                            );
-
-                            Imgproc.rectangle(
-                                    frame,
-                                    topLeft,
-                                    bottomRight,
-                                    new Scalar(0, 0, 255),
-                                    2
-                            );
-
-                            String label =
-                                    name + " "
-                                            + Math.round(object.getConfidence() * 100)
-                                            + "%";
-
-                            Imgproc.putText(
-                                    frame,
-                                    label,
-                                    new Point(
-                                            object.getX(),
-                                            Math.max(20, object.getY() - 8)
-                                    ),
-                                    Imgproc.FONT_HERSHEY_SIMPLEX,
-                                    0.6,
-                                    new Scalar(0, 0, 255),
-                                    2
-                            );
-                        }
+                        objectDetector.drawDebugDetections(frame, objects);
 
                         BufferedImage bufferedImage =
                                 matToBufferedImage(frame);

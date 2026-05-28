@@ -53,6 +53,11 @@ import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 
 import java.awt.image.BufferedImage;
+import javafx.application.Platform;
+import javafx.scene.SnapshotParameters;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import javax.imageio.ImageIO;
 import java.io.File;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -65,122 +70,63 @@ import java.util.Map;
 
 public class ExamTakingController {
 
-    @FXML
-    private StackPane lobbyView;
-    @FXML
-    private ImageView schoolLogoImageView;
-    @FXML
-    private Label brandSchoolNameLabel;
-    @FXML
-    private Label brandTaglineLabel;
-    @FXML
-    private Label lobbyExamTitleLabel;
-    @FXML
-    private Label lobbyExamSubtitleLabel;
-    @FXML
-    private Label lobbyStepLabel;
-    @FXML
-    private Label lobbyDurationLabel;
-    @FXML
-    private Label lobbyQuestionCountLabel;
-    @FXML
-    private Label cameraStatusLabel;
-    @FXML
-    private Label faceStatusLabel;
-    @FXML
-    private Label internetStatusLabel;
-    @FXML
-    private Label systemStatusLabel;
-    @FXML
-    private Label cameraDetailLabel;
-    @FXML
-    private Label faceDetailLabel;
-    @FXML
-    private Label internetDetailLabel;
-    @FXML
-    private Label systemDetailLabel;
-    @FXML
-    private VBox phoneCameraPairingBox;
-    @FXML
-    private ImageView phoneCameraQrImageView;
-    @FXML
-    private Label phoneCameraStatusLabel;
+    @FXML private StackPane lobbyView;
+    @FXML private ImageView schoolLogoImageView;
+    @FXML private Label brandSchoolNameLabel;
+    @FXML private Label brandTaglineLabel;
+    @FXML private Label lobbyExamTitleLabel;
+    @FXML private Label lobbyExamSubtitleLabel;
+    @FXML private Label lobbyStepLabel;
+    @FXML private Label lobbyDurationLabel;
+    @FXML private Label lobbyQuestionCountLabel;
+    @FXML private VBox phoneCameraPairingBox;
+    @FXML private ImageView phoneCameraQrImageView;
+    @FXML private Label phoneCameraStatusLabel;
 
-    @FXML
-    private VBox lobbyAgreementStep;
-    @FXML
-    private VBox lobbySystemCheckStep;
-    @FXML
-    private Button continueToChecksButton;
-    @FXML
-    private Button backToAgreementButton;
-    @FXML
-    private CheckBox agreementCheckBox;
-    @FXML
-    private Button beginExamButton;
-    @FXML
-    private Button cancelLobbyButton;
-    @FXML
-    private Button pairPhoneCameraButton;
+    @FXML private VBox lobbyAgreementStep;
+    @FXML private VBox lobbySystemCheckStep;
+    @FXML private Button continueToChecksButton;
+    @FXML private Button backToAgreementButton;
+    @FXML private CheckBox agreementCheckBox;
+    @FXML private Button beginExamButton;
+    @FXML private Button cancelLobbyButton;
+    @FXML private Button pairPhoneCameraButton;
+    @FXML private Label environmentStatusLabel;
+    @FXML private Label environmentDetailLabel;
 
-    @FXML
-    private Label examTitleLabel;
-    @FXML
-    private Label examSubtitleLabel;
-    @FXML
-    private Label timerLabel;
-    @FXML
-    private FlowPane questionNumberPane;
-    @FXML
-    private Label answeredCountLabel;
-    @FXML
-    private Label markedCountLabel;
-    @FXML
-    private Label questionNumberLabel;
-    @FXML
-    private Label questionTypeLabel;
-    @FXML
-    private Label questionTextLabel;
-    @FXML
-    private ImageView questionImageView;
-    @FXML
-    private StackPane questionImageWrapper;
-    @FXML
-    private VBox answerContainer;
-    @FXML
-    private Button previousButton;
-    @FXML
-    private Button nextButton;
-    @FXML
-    private Button markReviewButton;
-    @FXML
-    private Button runChecksButton;
-    @FXML
-    private Button submitButton;
+    @FXML private Label examTitleLabel;
+    @FXML private Label examSubtitleLabel;
+    @FXML private Label timerLabel;
+    @FXML private FlowPane questionNumberPane;
+    @FXML private Label answeredCountLabel;
+    @FXML private Label markedCountLabel;
+    @FXML private Label questionNumberLabel;
+    @FXML private Label questionTypeLabel;
+    @FXML private Label questionTextLabel;
+    @FXML private ImageView questionImageView;
+    @FXML private StackPane questionImageWrapper;
+    @FXML private VBox answerContainer;
+    @FXML private Button previousButton;
+    @FXML private Button nextButton;
+    @FXML private Button markReviewButton;
+    @FXML private Button submitButton;
 
-    @FXML
-    private StackPane examRoot;
-    @FXML
-    private BorderPane examContent;
-    @FXML
-    private StackPane violationOverlay;
-    @FXML
-    private Label violationTitleLabel;
-    @FXML
-    private Label violationMessageLabel;
+    @FXML private StackPane examRoot;
+    @FXML private BorderPane examContent;
+    @FXML private StackPane violationOverlay;
+    @FXML private Label violationTitleLabel;
+    @FXML private Label violationMessageLabel;
 
-    @FXML
-    private StackPane lobbyCameraPreviewPane;
-    @FXML
-    private ImageView lobbyCameraPreviewImageView;
-    @FXML
-    private Label lobbyCameraPreviewPlaceholder;
+    @FXML private StackPane lobbyCameraPreviewPane;
+    @FXML private ImageView lobbyCameraPreviewImageView;
+    @FXML private Label lobbyCameraPreviewPlaceholder;
 
     private Long currentAttemptId;
     private Long currentExamId;
     private Long lobbyExamId;
     private int lobbyTimeLimitMinutes;
     private boolean examLoading = false;
+    private volatile boolean examClosing = false;
 
     // DEBUG
     private boolean lobbyBehaviorDebugMode = false;
@@ -195,9 +141,10 @@ public class ExamTakingController {
     private LobbyObjectDetector lobbyObjectDetector;
     private LobbyCameraPreviewService lobbyCameraPreviewService;
     private AiRuntimeManager aiRuntimeManager;
-    private MediaPipeFaceServiceClient mediaPipeFaceServiceClient;
+//    private MediaPipeFaceServiceClient mediaPipeFaceServiceClient;
     private Timeline mediaPipePreviewTimeline;
     private Timeline phonePreviewTimeline;
+    private Timeline evidenceBufferTimeline;
 
 
     private StackPane reviewOverlay;
@@ -214,12 +161,13 @@ public class ExamTakingController {
     private boolean examStarted = false;
     private boolean examEnding = false;
     private boolean violationMonitoringEnabled = false;
-    private boolean cameraPassed = false;
-    private boolean facePassed = false;
-    private boolean internetPassed = false;
-    private boolean systemPassed = false;
-    private boolean lobbyChecksRunning = false;
-    private boolean lobbyChecksCompletedOnce = false;
+    private boolean lobbyEnvironmentPassed = false;
+    private Timeline lobbyAutoCheckTimeline;
+    private int lobbyAutoCheckPassStreak = 0;
+    private int lobbyAutoCheckFailStreak = 0;
+
+    private static final int REQUIRED_LOBBY_PASS_STREAK = 3;
+    private static final int REQUIRED_LOBBY_FAIL_STREAK = 2;
     private Timeline phoneCameraStatusTimeline;
     private String currentPhoneCameraToken;
     private boolean phoneCameraActive = false;
@@ -244,11 +192,23 @@ public class ExamTakingController {
     private long faceBehaviorStartedAt = 0L;
     private long lastFaceBehaviorViolationAt = 0L;
 
+    private Timeline examDeskMonitorTimeline;
+    private boolean examDeskMonitorRunning = false;
+
+    private final Map<String, List<Long>> repeatedViolationWindowMap = new HashMap<>();
+
+    private static final long REPEATED_VIOLATION_WINDOW_MS = 3000L;
+    private static final int REQUIRED_REPEATED_VIOLATION_COUNT = 3;
+
     private Timeline behaviorCorrelationTimeline;
 
     private static final long FACE_BEHAVIOR_REQUIRED_MS = 4000L; // between 3-5 seconds
     private static final long INPUT_INACTIVE_REQUIRED_MS = 4000L;
     private static final long FACE_BEHAVIOR_COOLDOWN_MS = 30000L;
+
+    private String baselineDeskSignature = null;
+    private List<String> baselineDeskVisibleItems = new ArrayList<>();
+    private boolean baselineDeskCaptured = false;
 
     private enum LobbyCheckStatus {
         PENDING,
@@ -298,8 +258,28 @@ public class ExamTakingController {
 
         loadBranding();
         showAgreementStep();
-        resetLobbyChecks();
+        resetLobbyEnvironmentCheck();
         initializeAiDetectors();
+
+        Platform.runLater(this::bindLobbyCameraPreviewSize);
+    }
+
+    private void bindLobbyCameraPreviewSize() {
+        if (lobbyCameraPreviewImageView == null || lobbyCameraPreviewPane == null) {
+            return;
+        }
+
+        lobbyCameraPreviewImageView.fitWidthProperty().unbind();
+        lobbyCameraPreviewImageView.fitHeightProperty().unbind();
+
+        lobbyCameraPreviewImageView.fitWidthProperty()
+                .bind(lobbyCameraPreviewPane.widthProperty().subtract(16));
+
+        lobbyCameraPreviewImageView.fitHeightProperty()
+                .bind(lobbyCameraPreviewPane.heightProperty().subtract(16));
+
+        lobbyCameraPreviewImageView.setPreserveRatio(true);
+        lobbyCameraPreviewImageView.setSmooth(true);
     }
 
     private void bufferEvidenceFrame() {
@@ -330,15 +310,6 @@ public class ExamTakingController {
         } catch (Exception e) {
             e.printStackTrace();
             lobbyObjectDetector = null;
-        }
-
-        try {
-            aiRuntimeManager = new AiRuntimeManager();
-            mediaPipeFaceServiceClient = new MediaPipeFaceServiceClient();
-        } catch (Exception e) {
-            e.printStackTrace();
-            aiRuntimeManager = null;
-            mediaPipeFaceServiceClient = null;
         }
     }
 
@@ -407,9 +378,7 @@ public class ExamTakingController {
     }
 
     private void showAgreementStep() {
-
-        runChecksButton.setVisible(false);
-        runChecksButton.setManaged(false);
+        stopLobbyAutoCheck();
 
         lobbyAgreementStep.setVisible(true);
         lobbyAgreementStep.setManaged(true);
@@ -433,7 +402,7 @@ public class ExamTakingController {
         stopMediaPipePreviewTracking();
 
         lobbyBehaviorDebugMode = false;
-        stopBehaviorCorrelationMonitoring();
+//        stopBehaviorCorrelationMonitoring();
     }
 
     private void showSystemCheckStep() {
@@ -455,19 +424,186 @@ public class ExamTakingController {
         beginExamButton.setManaged(true);
         beginExamButton.setDisable(true);
 
-        runChecksButton.setVisible(true);
-        runChecksButton.setManaged(true);
-        runChecksButton.setDisable(false);
-
         startLobbyCameraPreview();
-        startMediaPipePreviewTracking();
+        startLobbyAutoCheck();
+    }
 
-        // DEBUG
-        lobbyBehaviorDebugMode = true;
-        if (!violationMonitoringReady) {
-            Platform.runLater(this::setupViolationMonitoring);
+    private void startLobbyAutoCheck() {
+        stopLobbyAutoCheck();
+
+        lobbyEnvironmentPassed = false;
+        lobbyAutoCheckPassStreak = 0;
+        lobbyAutoCheckFailStreak = 0;
+
+        baselineDeskSignature = null;
+        baselineDeskVisibleItems.clear();
+        baselineDeskCaptured = false;
+
+        setEnvironmentStatus(
+                LobbyCheckStatus.CHECKING,
+                "Checking",
+                "Checking camera, examinee, desk, devices, connection, and display setup..."
+        );
+
+        lobbyAutoCheckTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(1), event -> runLobbyAutoCheckOnce())
+        );
+
+        lobbyAutoCheckTimeline.setCycleCount(Timeline.INDEFINITE);
+        lobbyAutoCheckTimeline.play();
+
+        runLobbyAutoCheckOnce();
+    }
+
+    private void stopLobbyAutoCheck() {
+        if (lobbyAutoCheckTimeline != null) {
+            lobbyAutoCheckTimeline.stop();
+            lobbyAutoCheckTimeline = null;
         }
-        startBehaviorCorrelationMonitoring();
+
+        lobbyAutoCheckPassStreak = 0;
+        lobbyAutoCheckFailStreak = 0;
+    }
+
+    private void runLobbyAutoCheckOnce() {
+        if (examLoading || examEnding) {
+            return;
+        }
+
+        boolean connectionOk = checkBackendConnectionSilently();
+        boolean screenOk = Screen.getScreens().size() <= 1;
+
+        LobbyObjectDetector.DeskBaselineResult deskResult = analyzeCurrentDeskFrame();
+
+        boolean passed =
+                connectionOk
+                        && screenOk
+                        && deskResult != null
+                        && deskResult.passed();
+
+        if (passed) {
+            lobbyAutoCheckPassStreak++;
+            lobbyAutoCheckFailStreak = 0;
+
+            baselineDeskSignature = deskResult.signature();
+            baselineDeskVisibleItems = new ArrayList<>(deskResult.visibleItems());
+            baselineDeskCaptured = true;
+
+            if (lobbyAutoCheckPassStreak >= REQUIRED_LOBBY_PASS_STREAK) {
+                lobbyEnvironmentPassed = true;
+
+                setEnvironmentStatus(
+                        LobbyCheckStatus.PASSED,
+                        "Ready",
+                        "Setup verified."
+                );
+
+                updateBeginExamButton();
+                return;
+            }
+
+            setEnvironmentStatus(
+                    LobbyCheckStatus.CHECKING,
+                    "Checking",
+                    "Good setup detected. Please hold steady... "
+                            + lobbyAutoCheckPassStreak
+                            + "/"
+                            + REQUIRED_LOBBY_PASS_STREAK
+            );
+
+            updateBeginExamButton();
+            return;
+        }
+
+        lobbyEnvironmentPassed = false;
+        lobbyAutoCheckFailStreak++;
+        lobbyAutoCheckPassStreak = 0;
+
+        String message;
+
+        if (!connectionOk) {
+            message = "Cannot reach the ExamGuard server. Please check your connection.";
+        } else if (!screenOk) {
+            message = "Multiple monitors detected. Use only one display.";
+        } else if (deskResult == null) {
+            message = "Camera is still starting. Keep your setup visible.";
+        } else {
+            message = deskResult.message();
+        }
+
+        setEnvironmentStatus(
+                lobbyAutoCheckFailStreak >= REQUIRED_LOBBY_FAIL_STREAK
+                        ? LobbyCheckStatus.FAILED
+                        : LobbyCheckStatus.CHECKING,
+                lobbyAutoCheckFailStreak >= REQUIRED_LOBBY_FAIL_STREAK
+                        ? "Needs Adjustment"
+                        : "Checking",
+                message
+        );
+
+        updateBeginExamButton();
+    }
+
+    private LobbyObjectDetector.DeskBaselineResult analyzeCurrentDeskFrame() {
+        if (lobbyObjectDetector == null || !lobbyObjectDetector.isAvailable()) {
+            return new LobbyObjectDetector.DeskBaselineResult(
+                    false,
+                    "Camera/object detection is not ready. Please restart the camera check.",
+                    0, 0, 0, 0, 0, 0,
+                    List.of(),
+                    "DETECTOR_UNAVAILABLE"
+            );
+        }
+
+        if (lobbyCameraPreviewService == null) {
+            return null;
+        }
+
+        Mat frame = lobbyCameraPreviewService.getActiveFrame();
+
+        if (frame == null || frame.empty()) {
+            return null;
+        }
+
+        return lobbyObjectDetector.analyzeDeskBaselineStable(frame);
+    }
+
+    private boolean checkBackendConnectionSilently() {
+        try {
+            long latency = examApiService.checkBackendLatency();
+            return latency > 0 && latency <= 3500;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void setEnvironmentStatus(
+            LobbyCheckStatus status,
+            String title,
+            String detail
+    ) {
+        if (environmentStatusLabel == null || environmentDetailLabel == null) {
+            return;
+        }
+
+        environmentStatusLabel.setText(title);
+        environmentDetailLabel.setText(detail == null ? "" : detail);
+
+        environmentStatusLabel.getStyleClass().removeAll(
+                "lobby-status-pending",
+                "lobby-status-checking",
+                "lobby-status-passed",
+                "lobby-status-failed",
+                "lobby-status-warning"
+        );
+
+        switch (status) {
+            case PASSED -> environmentStatusLabel.getStyleClass().add("lobby-status-passed");
+            case FAILED -> environmentStatusLabel.getStyleClass().add("lobby-status-failed");
+            case WARNING -> environmentStatusLabel.getStyleClass().add("lobby-status-warning");
+            case CHECKING -> environmentStatusLabel.getStyleClass().add("lobby-status-checking");
+            default -> environmentStatusLabel.getStyleClass().add("lobby-status-pending");
+        }
     }
 
     private String formatDuration(int minutes) {
@@ -668,28 +804,28 @@ public class ExamTakingController {
         loadPhonePreviewFrame(token);
     }
 
-    private void startMediaPipePreviewTracking() {
-        stopMediaPipePreviewTracking();
-
-        mediaPipePreviewTimeline = new Timeline(
-                new KeyFrame(Duration.millis(500), event -> {
-                    if (mediaPipeFaceServiceClient == null || lobbyCameraPreviewService == null) {
-                        return;
-                    }
-
-                    new Thread(() -> {
-                        try {
-                            mediaPipeFaceServiceClient.analyzeOnly(lobbyCameraPreviewService);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }, "mediapipe-preview-tracking-thread").start();
-                })
-        );
-
-        mediaPipePreviewTimeline.setCycleCount(Timeline.INDEFINITE);
-        mediaPipePreviewTimeline.play();
-    }
+//    private void startMediaPipePreviewTracking() {
+//        stopMediaPipePreviewTracking();
+//
+//        mediaPipePreviewTimeline = new Timeline(
+//                new KeyFrame(Duration.millis(500), event -> {
+//                    if (mediaPipeFaceServiceClient == null || lobbyCameraPreviewService == null) {
+//                        return;
+//                    }
+//
+//                    new Thread(() -> {
+//                        try {
+//                            mediaPipeFaceServiceClient.analyzeOnly(lobbyCameraPreviewService);
+//                        } catch (Exception e) {
+//                            e.printStackTrace();
+//                        }
+//                    }, "mediapipe-preview-tracking-thread").start();
+//                })
+//        );
+//
+//        mediaPipePreviewTimeline.setCycleCount(Timeline.INDEFINITE);
+//        mediaPipePreviewTimeline.play();
+//    }
 
     private void stopMediaPipePreviewTracking() {
         if (mediaPipePreviewTimeline != null) {
@@ -907,8 +1043,8 @@ public class ExamTakingController {
                 return;
             }
 
+            resetLobbyEnvironmentCheck();
             showSystemCheckStep();
-            resetLobbyChecks();
             updateBeginExamButton();
         });
 
@@ -938,85 +1074,12 @@ public class ExamTakingController {
 
     @FXML
     private void handleBackToAgreement() {
+        stopLobbyAutoCheck();
         showAgreementStep();
-        resetLobbyChecks();
+        resetLobbyEnvironmentCheck();
+
         phoneCameraPairingBox.setVisible(false);
         phoneCameraPairingBox.setManaged(false);
-    }
-
-    @FXML
-    private void handleRunLobbyChecks() {
-        if (lobbyChecksRunning || examLoading) {
-            return;
-        }
-
-        lobbyChecksRunning = true;
-
-        backToAgreementButton.setDisable(true);
-        runChecksButton.setDisable(true);
-        beginExamButton.setDisable(true);
-
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() {
-                try {
-                    Thread.sleep(900);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-
-                cameraPassed = false;
-                facePassed = false;
-                internetPassed = false;
-                systemPassed = false;
-
-                Platform.runLater(() -> {
-                    setLobbyStatus(cameraStatusLabel, cameraDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
-                    setLobbyStatus(faceStatusLabel, faceDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
-                    setLobbyStatus(internetStatusLabel, internetDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
-                    setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
-                });
-
-                runCameraCheck();
-                runFaceCheck();
-                runInternetCheck();
-                runSystemCheck();
-
-                return null;
-            }
-        };
-
-        task.setOnSucceeded(event -> {
-            lobbyChecksRunning = false;
-            lobbyChecksCompletedOnce = true;
-
-            runChecksButton.setText("Run Again");
-            runChecksButton.setDisable(false);
-            backToAgreementButton.setDisable(false);
-
-            updateBeginExamButton();
-
-        });
-
-        task.setOnFailed(event -> {
-            lobbyChecksRunning = false;
-            lobbyChecksCompletedOnce = true;
-
-            runChecksButton.setText("Recheck Setup");
-            runChecksButton.setDisable(false);
-            backToAgreementButton.setDisable(false);
-
-            updateBeginExamButton();
-
-            if (task.getException() != null) {
-                task.getException().printStackTrace();
-            }
-
-        });
-
-        Thread thread = new Thread(task, "lobby-system-check-thread");
-        thread.setDaemon(true);
-        thread.start();
     }
 
     @FXML
@@ -1115,7 +1178,6 @@ public class ExamTakingController {
             cancelLobbyButton.setDisable(true);
 
             lobbyBehaviorDebugMode = false;
-            stopBehaviorCorrelationMonitoring();
 
             startExam(
                     lobbyExamId,
@@ -1151,8 +1213,10 @@ public class ExamTakingController {
 
     @FXML
     private void handleCancelLobby() {
+        examClosing = true;
         stopLobbyScheduleWatcher();
-        stopBehaviorCorrelationMonitoring();
+        stopLobbyAutoCheck();
+        stopEvidenceBuffering();
         stopMediaPipePreviewTracking();
         cleanupPhoneCameraSession();
         stopLobbyCameraPreview();
@@ -1169,6 +1233,36 @@ public class ExamTakingController {
         stage.setOnCloseRequest(event -> {
             cleanupPhoneCameraSession();
         });
+    }
+
+    private void startEvidenceBuffering() {
+        stopEvidenceBuffering();
+
+        evidenceFrameBuffer.clear();
+
+        evidenceBufferTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(1), event -> bufferEvidenceFrame())
+        );
+
+        evidenceBufferTimeline.setCycleCount(Timeline.INDEFINITE);
+        evidenceBufferTimeline.play();
+
+        bufferEvidenceFrame();
+    }
+
+    private void stopEvidenceBuffering() {
+        if (evidenceBufferTimeline != null) {
+            evidenceBufferTimeline.stop();
+            evidenceBufferTimeline = null;
+        }
+
+        for (BufferedEvidenceFrame item : evidenceFrameBuffer) {
+            if (item.frame() != null) {
+                item.frame().release();
+            }
+        }
+
+        evidenceFrameBuffer.clear();
     }
 
     private void cleanupPhoneCameraSession() {
@@ -1337,189 +1431,6 @@ public class ExamTakingController {
         }
     }
 
-    private void startBehaviorCorrelationMonitoring() {
-        stopBehaviorCorrelationMonitoring();
-
-        /*
-         * Reset behavior tracking when lobby/exam monitoring starts.
-         */
-        currentFaceBehaviorDirection = null;
-        faceBehaviorStartedAt = 0L;
-        lastFaceBehaviorViolationAt = 0L;
-
-        lastMouseActivityAt = System.currentTimeMillis();
-        lastKeyboardActivityAt = System.currentTimeMillis();
-
-        behaviorCorrelationTimeline = new Timeline(
-                new KeyFrame(
-                        Duration.seconds(1),
-                        event -> checkFaceBehaviorWithInputActivity()
-                )
-        );
-
-        behaviorCorrelationTimeline.setCycleCount(Timeline.INDEFINITE);
-        behaviorCorrelationTimeline.play();
-    }
-
-    private void stopBehaviorCorrelationMonitoring() {
-        if (behaviorCorrelationTimeline != null) {
-            behaviorCorrelationTimeline.stop();
-            behaviorCorrelationTimeline = null;
-        }
-
-        currentFaceBehaviorDirection = null;
-        faceBehaviorStartedAt = 0L;
-    }
-
-    private void checkFaceBehaviorWithInputActivity() {
-        /*
-         * This detects suspicious face behavior during exam taking.
-         *
-         * Rule:
-         * - Face is present.
-         * - Only one face is visible.
-         * - Student looks down/up/left/right continuously.
-         * - No mouse or keyboard activity for around 4 seconds.
-         *
-         * This reduces false positives from normal quick glances.
-         */
-
-        if ((!examStarted && !lobbyBehaviorDebugMode) || internalDialogOpen || examEnding) {
-            return;
-        }
-
-        /*
-         * Save recent camera frames so evidence can include:
-         * before, during, and after the behavior.
-         */
-        bufferEvidenceFrame();
-
-        MediaPipeFaceResult result = MediaPipeOverlayStore.getLatestResult();
-
-        if (result == null || !result.isFacePresent() || result.isMultipleFaces()) {
-            resetFaceBehaviorTracking();
-            return;
-        }
-
-        FaceBehaviorAnalyzer.Decision decision = detectFaceBehavior(result);
-
-        if (!decision.faceBehaviorViolation()) {
-            resetFaceBehaviorTracking();
-            return;
-        }
-
-        String direction = decision.direction();
-
-        long now = System.currentTimeMillis();
-
-        if (!direction.equals(currentFaceBehaviorDirection)) {
-            currentFaceBehaviorDirection = direction;
-            faceBehaviorStartedAt = now;
-            return;
-        }
-
-        long behaviorDuration = now - faceBehaviorStartedAt;
-        long lastInputAt = Math.max(lastMouseActivityAt, lastKeyboardActivityAt);
-        long inactiveDuration = now - lastInputAt;
-        long cooldownDuration = now - lastFaceBehaviorViolationAt;
-
-        boolean behaviorLongEnough = behaviorDuration >= FACE_BEHAVIOR_REQUIRED_MS;
-        boolean inputInactiveLongEnough = inactiveDuration >= INPUT_INACTIVE_REQUIRED_MS;
-        boolean cooldownFinished =
-                lastFaceBehaviorViolationAt == 0L
-                        || cooldownDuration >= FACE_BEHAVIOR_COOLDOWN_MS;
-
-        if (!behaviorLongEnough || !inputInactiveLongEnough || !cooldownFinished) {
-            return;
-        }
-
-        lastFaceBehaviorViolationAt = now;
-
-        String violationType = "FACE_BEHAVIOR_" + direction + "_NO_INPUT";
-
-        if (lobbyBehaviorDebugMode && !examStarted) {
-            setLobbyStatus(
-                    faceStatusLabel,
-                    faceDetailLabel,
-                    LobbyCheckStatus.WARNING,
-                    "Warning",
-                    "Test detected: looking "
-                            + direction.toLowerCase()
-                            + " while no keyboard or mouse activity was recorded."
-            );
-
-            resetFaceBehaviorTracking();
-            return;
-        }
-
-        recordViolation(
-                decision.violationType(),
-                "Suspicious Face Behavior",
-                decision.reason() + " No mouse or keyboard activity was recorded.",
-                true
-        );
-
-        resetFaceBehaviorTracking();
-    }
-
-    private EvidencePayload captureFaceBehaviorEvidence(
-            String violationType,
-            Long questionId
-    ) {
-        try {
-            Mat before = getBufferedFrameBefore(System.currentTimeMillis() - 1500);
-            Mat during = lobbyCameraPreviewService == null
-                    ? null
-                    : lobbyCameraPreviewService.getActiveFrame();
-
-            Thread.sleep(900);
-
-            Mat after = lobbyCameraPreviewService == null
-                    ? null
-                    : lobbyCameraPreviewService.getActiveFrame();
-
-            List<String> urls = new ArrayList<>();
-
-            String beforeUrl = uploadFrame(before, violationType + "-before");
-            String duringUrl = uploadFrame(during, violationType + "-during");
-            String afterUrl = uploadFrame(after, violationType + "-after");
-
-            if (beforeUrl != null) urls.add(beforeUrl);
-            if (duringUrl != null) urls.add(duringUrl);
-            if (afterUrl != null) urls.add(afterUrl);
-
-            if (urls.isEmpty()) {
-                return null;
-            }
-
-            EvidencePayload payload = new EvidencePayload();
-            payload.mainUrl = duringUrl != null ? duringUrl : urls.get(0);
-            payload.evidenceType = "CAMERA_SEQUENCE";
-            payload.evidenceSource = phoneCameraActive ? "PHONE_CAMERA" : "CAMERA";
-
-            payload.metadataJson = "{"
-                    + "\"violationType\":\"" + escapeJson(violationType) + "\","
-                    + "\"questionId\":" + (questionId == null ? "null" : questionId) + ","
-                    + "\"frames\":["
-                    + frameJson("before", beforeUrl, -1500) + ","
-                    + frameJson("during", duringUrl, 0) + ","
-                    + frameJson("after", afterUrl, 900)
-                    + "],"
-                    + "\"capturedAt\":\"" + OffsetDateTime.now(ZoneOffset.UTC) + "\""
-                    + "}";
-
-            releaseQuietly(before);
-            releaseQuietly(during);
-            releaseQuietly(after);
-
-            return payload;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     private Mat getBufferedFrameBefore(long targetMs) {
         BufferedEvidenceFrame best = null;
 
@@ -1646,7 +1557,7 @@ public class ExamTakingController {
         );
 
         showAgreementStep();
-        resetLobbyChecks();
+        resetLobbyEnvironmentCheck();
 
         updateBeginExamButton();
 
@@ -1655,6 +1566,7 @@ public class ExamTakingController {
 
     public void startExam(Long examId, int timeLimitMinutes) {
         stopLobbyScheduleWatcher();
+        startEvidenceBuffering();
         try {
             if (this.remainingSeconds <= 0) {
                 showError("Your exam time has already ended.");
@@ -1681,13 +1593,14 @@ public class ExamTakingController {
             }
 
             examStarted = true;
+            stopLobbyAutoCheck();
 
             /*
              * Keep camera and MediaPipe running during the exam.
              * Face behavior violations need live camera frames and live MediaPipe results.
              */
-            startLobbyCameraPreview();
-            startMediaPipePreviewTracking();
+            startExamCameraMonitoring();
+
 
             lobbyView.setVisible(false);
             lobbyView.setManaged(false);
@@ -1707,7 +1620,7 @@ public class ExamTakingController {
             );
 
             setupTimer();
-            startBehaviorCorrelationMonitoring();
+            startExamDeskMonitoring();
             renderQuestionNavigation();
 
             showQuestion(0);
@@ -1723,128 +1636,48 @@ public class ExamTakingController {
         }
     }
 
-    private void resetLobbyChecks() {
-        cameraPassed = false;
-        facePassed = false;
-        internetPassed = false;
-        systemPassed = false;
-        lobbyChecksRunning = false;
-        lobbyChecksCompletedOnce = false;
+    private void resetLobbyEnvironmentCheck() {
+        lobbyEnvironmentPassed = false;
+        lobbyAutoCheckPassStreak = 0;
+        lobbyAutoCheckFailStreak = 0;
 
-        if (runChecksButton != null) {
-            runChecksButton.setText("Check Now");
-            runChecksButton.setDisable(false);
-        }
+        baselineDeskSignature = null;
+        baselineDeskVisibleItems.clear();
+        baselineDeskCaptured = false;
 
-        setLobbyStatus(cameraStatusLabel, cameraDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
-        setLobbyStatus(faceStatusLabel, faceDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
-        setLobbyStatus(internetStatusLabel, internetDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
-        setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.PENDING, "Pending", "");
+        setEnvironmentStatus(
+                LobbyCheckStatus.PENDING,
+                "Pending",
+                "Camera setup check has not started yet."
+        );
 
         updateBeginExamButton();
     }
 
-    private void runCameraCheck() {
-        setLobbyStatus(cameraStatusLabel, cameraDetailLabel, LobbyCheckStatus.CHECKING, "Checking", "Checking camera feed...");
-
-        LobbyCheckResult result = lobbyCameraVerifier.checkCamera();
-
-        cameraPassed = result.isPassed();
-
-        setLobbyStatus(
-                cameraStatusLabel,
-                cameraDetailLabel,
-                cameraPassed ? LobbyCheckStatus.PASSED : LobbyCheckStatus.FAILED,
-                cameraPassed ? "Passed" : "Failed",
-                result.getMessage()
-        );
+    private boolean shouldUsePhoneCamera() {
+        return currentPhoneCameraToken != null
+                && !currentPhoneCameraToken.isBlank()
+                && phoneCameraActive;
     }
 
-    private void runFaceCheck() {
-        setLobbyStatus(
-                faceStatusLabel,
-                faceDetailLabel,
-                LobbyCheckStatus.CHECKING,
-                "Checking",
-                "Checking if your face is visible..."
-        );
+    private void startExamCameraMonitoring() {
 
-        MediaPipeFaceResult result = MediaPipeOverlayStore.getLatestResult();
+        if (shouldUsePhoneCamera()) {
 
-        if (result == null) {
-            facePassed = false;
-            setLobbyStatus(
-                    faceStatusLabel,
-                    faceDetailLabel,
-                    LobbyCheckStatus.FAILED,
-                    "Failed",
-                    "Face verification is still loading. Please wait a moment and try again."
-            );
+            System.out.println("Exam monitoring source: PHONE CAMERA");
+
+            stopLobbyCameraPreview();
+
+            startPhonePreviewPolling(currentPhoneCameraToken);
+
             return;
         }
 
-        boolean strictViolation =
-                !result.isFacePresent()
-                        || result.isMultipleFaces()
-                        || result.isLookingAway()
-                        || result.isLookingDown();
+        System.out.println("Exam monitoring source: LOCAL WEBCAM");
 
-        if (strictViolation) {
-            facePassed = false;
+        stopPhonePreviewPolling();
 
-            setLobbyStatus(
-                    faceStatusLabel,
-                    faceDetailLabel,
-                    LobbyCheckStatus.FAILED,
-                    "Failed",
-                    toStudentFriendlyPreviewMessage(result)
-            );
-            return;
-        }
-
-        facePassed = true;
-
-        boolean warning =
-                result.isTooDark()
-                        || result.isTooBright()
-                        || result.isTooBlurry()
-                        || result.isEyesProbablyCovered()
-                        || result.isMouthProbablyCovered()
-                        || result.isFacePartiallyObstructed()
-                        || result.isFaceTooFar()
-                        || result.isFaceTooClose()
-                        || result.isFaceNotCentered()
-                        || result.isWarning();
-
-        setLobbyStatus(
-                faceStatusLabel,
-                faceDetailLabel,
-                warning ? LobbyCheckStatus.WARNING : LobbyCheckStatus.PASSED,
-                warning ? "Warning" : "Passed",
-                warning
-                        ? "Face is visible, but please adjust your camera for a clearer view."
-                        : "Face is centered and clearly visible."
-        );
-    }
-
-    private String toStudentFriendlyPreviewMessage(MediaPipeFaceResult result) {
-        if (result == null || !result.isFacePresent()) {
-            return "Your face is not clearly visible. Please center your face in the camera.";
-        }
-
-        if (result.isMultipleFaces()) {
-            return "More than one face was detected. Only the examinee should be visible.";
-        }
-
-        if (result.isLookingAway()) {
-            return "Please face the camera directly.";
-        }
-
-        if (result.isLookingDown()) {
-            return "Please keep your face visible and avoid looking down.";
-        }
-
-        return "Please make sure your face is centered and clearly visible.";
+        startLobbyCameraPreview();
     }
 
     private void startLobbyCameraPreview() {
@@ -1869,89 +1702,10 @@ public class ExamTakingController {
         }
     }
 
-    private void runInternetCheck() {
-        setLobbyStatus(
-                internetStatusLabel,
-                internetDetailLabel,
-                LobbyCheckStatus.CHECKING,
-                "Checking",
-                "Connecting to the ExamGuard server..."
-        );
-
-        try {
-            long latencyMs = examApiService.checkBackendLatency();
-
-            if (latencyMs <= 1000) {
-                internetPassed = true;
-                setLobbyStatus(
-                        internetStatusLabel,
-                        internetDetailLabel,
-                        LobbyCheckStatus.PASSED,
-                        "Passed",
-                        "Server connection is stable. Latency: " + latencyMs + " ms."
-                );
-            } else if (latencyMs <= 2500) {
-                internetPassed = true;
-                setLobbyStatus(
-                        internetStatusLabel,
-                        internetDetailLabel,
-                        LobbyCheckStatus.WARNING,
-                        "Warning",
-                        "Connection is slow but usable. Latency: " + latencyMs + " ms."
-                );
-            } else {
-                internetPassed = false;
-                setLobbyStatus(
-                        internetStatusLabel,
-                        internetDetailLabel,
-                        LobbyCheckStatus.FAILED,
-                        "Failed",
-                        "Connection is too slow. Latency: " + latencyMs + " ms."
-                );
-            }
-
-        } catch (Exception e) {
-            internetPassed = false;
-            setLobbyStatus(
-                    internetStatusLabel,
-                    internetDetailLabel,
-                    LobbyCheckStatus.FAILED,
-                    "Failed",
-                    "This device cannot reach the ExamGuard server."
-            );
-        }
-    }
-
-    private void runSystemCheck() {
-        setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.CHECKING, "Checking", "Checking system...");
-
-        try {
-            Thread.sleep(400);
-
-            int screenCount = Screen.getScreens().size();
-
-            if (screenCount > 1) {
-                systemPassed = false;
-                setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.FAILED, "Failed", "Multiple monitors detected.");
-
-                return;
-            }
-
-            systemPassed = true;
-            setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.PASSED, "Passed", "System Ready.");
-        } catch (Exception e) {
-            systemPassed = false;
-            setLobbyStatus(systemStatusLabel, systemDetailLabel, LobbyCheckStatus.FAILED, "Failed", "System check failed.");
-        }
-    }
-
     private void updateBeginExamButton() {
         boolean checksReady =
                 agreementCheckBox.isSelected()
-                        && cameraPassed
-                        && facePassed
-                        && internetPassed
-                        && systemPassed;
+                        && lobbyEnvironmentPassed;
 
         boolean scheduleReady = canBeginExamNow();
 
@@ -1959,18 +1713,17 @@ public class ExamTakingController {
                 !checksReady
                         || !scheduleReady
                         || examLoading
-                        || lobbyChecksRunning
         );
 
         if (!scheduleReady && lobbyStartDateTime != null) {
             beginExamButton.setText("Begin Exam");
             lobbyExamSubtitleLabel.setText(
-                    "Lobby is open. You may complete the checks now, but the exam can only begin at the scheduled start time."
+                    "Lobby is open. Complete the camera setup now. The exam can only begin at the scheduled start time."
             );
         } else {
             beginExamButton.setText("Begin Exam");
             lobbyExamSubtitleLabel.setText(
-                    "Run the required system checks before starting. Timer will begin only after you click Begin Exam."
+                    "Keep your environment visible. ExamGuard will continue monitoring during the exam."
             );
         }
     }
@@ -2440,14 +2193,16 @@ public class ExamTakingController {
         examEnding = true;
         internalDialogOpen = true;
         examStarted = false;
+        examClosing = true;
 
         if (timerTimeline != null) {
             timerTimeline.stop();
         }
 
         stopQuestionTimer();
-        stopBehaviorCorrelationMonitoring();
+        stopEvidenceBuffering();
         stopMediaPipePreviewTracking();
+        stopExamDeskMonitoring();
         stopLobbyCameraPreview();
         saveCurrentAnswer();
 
@@ -2480,10 +2235,12 @@ public class ExamTakingController {
         examEnding = true;
         internalDialogOpen = true;
         examStarted = false;
+        examClosing = true;
 
         stopQuestionTimer();
-        stopBehaviorCorrelationMonitoring();
+        stopEvidenceBuffering();
         stopMediaPipePreviewTracking();
+        stopExamDeskMonitoring();
         stopLobbyCameraPreview();
         saveCurrentAnswer();
 
@@ -2511,9 +2268,10 @@ public class ExamTakingController {
     }
 
     private void returnToDashboard() {
+        examClosing = true;
         stopLobbyScheduleWatcher();
-        stopBehaviorCorrelationMonitoring();
-
+        stopEvidenceBuffering();
+        stopExamDeskMonitoring();
         stopMediaPipePreviewTracking();
         stopLobbyCameraPreview();
         try {
@@ -2606,15 +2364,6 @@ public class ExamTakingController {
                 OffsetDateTime.now(ZoneId.of("Asia/Manila"))
                         .format(VIOLATION_TIME_FORMAT);
 
-        System.out.println(
-                "[VIOLATION RECORDED] " +
-                        violationType +
-                        " | Severity: " + severity +
-                        " | Attempts: " + currentAttempts +
-                        " | Allowed: " + allowedAttempts +
-                        " | Total Violations: " + violationCount +
-                        " | Time: " + timestamp
-        );
 
         if (shouldShowViolationOverlay(violationType)) {
             showViolationWarning(
@@ -2631,9 +2380,6 @@ public class ExamTakingController {
                 currentAttempts
         );
 
-        if ("CRITICAL".equalsIgnoreCase(severity)) {
-            System.out.println("[CRITICAL VIOLATION] " + violationType);
-        }
     }
 
     private boolean shouldShowViolationOverlay(String violationType) {
@@ -2657,8 +2403,8 @@ public class ExamTakingController {
                  "RESTRICTED_KEY",
                  "RIGHT_CLICK",
                  "MULTIPLE_MONITORS",
-                 "FACE_BEHAVIOR_NO_FACE",
-                 "FACE_BEHAVIOR_MULTIPLE_FACES" -> true;
+                 "NO_PERSON_DETECTED",
+                 "MULTIPLE_PERSONS" -> true;
 
             default -> false;
         };
@@ -2678,6 +2424,8 @@ public class ExamTakingController {
             case "RESTRICTED_KEY" -> "Restricted Key";
             case "RIGHT_CLICK" -> "Right Click Blocked";
             case "MULTIPLE_MONITORS" -> "Multiple Monitors Detected";
+            case "NO_PERSON_DETECTED" -> "No Examinee Detected";
+            case "MULTIPLE_PERSONS" -> "Multiple Persons Detected";
             default -> fallbackTitle;
         };
     }
@@ -2690,7 +2438,7 @@ public class ExamTakingController {
         return switch (violationType.trim().toUpperCase()) {
             case "FACE_BEHAVIOR_NO_FACE" -> "Please keep your face visible.";
 
-            case "FACE_BEHAVIOR_MULTIPLE_FACES" -> "Only the examinee should be visible.";
+            case "FACE_BEHAVIOR_MULTIPLE_FACES", "MULTIPLE_PERSONS" -> "Only the examinee should be visible.";
 
             case "FOCUS_LOST" -> "Please stay on the exam screen.";
 
@@ -2703,6 +2451,8 @@ public class ExamTakingController {
             case "RIGHT_CLICK" -> "Right click is disabled during the exam.";
 
             case "MULTIPLE_MONITORS" -> "Please use only one display during the exam.";
+
+            case "NO_PERSON_DETECTED" -> "Please keep yourself visible during the exam.";
 
             default -> fallbackMessage;
         };
@@ -2912,6 +2662,113 @@ public class ExamTakingController {
         return choice;
     }
 
+    private void startExamDeskMonitoring() {
+        stopExamDeskMonitoring();
+
+        repeatedViolationWindowMap.clear();
+        examDeskMonitorRunning = false;
+
+        examDeskMonitorTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(1), event -> checkExamDeskOnce())
+        );
+
+        examDeskMonitorTimeline.setCycleCount(Timeline.INDEFINITE);
+        examDeskMonitorTimeline.play();
+    }
+
+    private void stopExamDeskMonitoring() {
+        if (examDeskMonitorTimeline != null) {
+            examDeskMonitorTimeline.stop();
+            examDeskMonitorTimeline = null;
+        }
+
+        examDeskMonitorRunning = false;
+        repeatedViolationWindowMap.clear();
+    }
+
+    private void checkExamDeskOnce() {
+        if (examDeskMonitorRunning) {
+            return;
+        }
+
+        if (!examStarted || examEnding || internalDialogOpen) {
+            return;
+        }
+
+        if (lobbyObjectDetector == null || lobbyCameraPreviewService == null) {
+            return;
+        }
+
+        Mat frame = lobbyCameraPreviewService.getActiveFrame();
+
+        if (frame == null || frame.empty()) {
+            return;
+        }
+
+        examDeskMonitorRunning = true;
+
+        try {
+            LobbyObjectDetector.DeskBaselineResult result =
+                    lobbyObjectDetector.analyzeDeskBaselineStable(frame);
+
+            if (result == null || result.passed()) {
+                return;
+            }
+
+            String violationType = mapDeskResultToViolationType(result.message());
+
+            if (!shouldLogRepeatedViolation(violationType)) {
+                return;
+            }
+
+            repeatedViolationWindowMap.remove(violationType);
+
+            recordViolation(
+                    violationType,
+                    "Camera / Desk Violation",
+                    result.message(),
+                    true
+            );
+
+        } finally {
+            examDeskMonitorRunning = false;
+        }
+    }
+
+    private String mapDeskResultToViolationType(String message) {
+        if (message == null) {
+            return "DESK_SETUP_CHANGED";
+        }
+
+        String text = message.toLowerCase();
+
+        if (text.contains("multiple persons")) {
+            return "MULTIPLE_PERSONS";
+        }
+
+        if (text.contains("no examinee")) {
+            return "NO_PERSON_DETECTED";
+        }
+
+        if (text.contains("phone") || text.contains("tablet")) {
+            return "PHONE_DETECTED";
+        }
+
+        if (text.contains("reviewer") || text.contains("book") || text.contains("paper")) {
+            return "REVIEWER_MATERIAL_DETECTED";
+        }
+
+        if (text.contains("monitor")
+                || text.contains("keyboard")
+                || text.contains("laptop")
+                || text.contains("device")
+                || text.contains("computer setup")) {
+            return "DEVICE_SETUP_CHANGED";
+        }
+
+        return "DESK_SETUP_CHANGED";
+    }
+
     private void renderIdentificationField(ExamTakeQuestion question) {
         TextField answerField = new TextField();
         answerField.setPromptText("Type your answer here");
@@ -2969,6 +2826,10 @@ public class ExamTakingController {
 
             new Thread(() -> {
                 try {
+                    if (examClosing) {
+                        return;
+                    }
+
                     EvidencePayload evidence =
                             captureAndUploadEvidence(violationType, questionId);
 
@@ -3214,50 +3075,76 @@ public class ExamTakingController {
             String violationType,
             Long questionId
     ) {
-        if (violationType != null
-                && violationType.toUpperCase().startsWith("FACE_BEHAVIOR")) {
-            return captureFaceBehaviorEvidence(violationType, questionId);
-        }
-
         try {
-            EvidenceCaptureMode captureMode = resolveEvidenceCaptureMode(violationType);
+            boolean screenDuring = shouldUseScreenDuringEvidence(violationType);
 
-            File evidenceFile = captureEvidenceFrameToFile(violationType, captureMode);
+            Mat beforeCamera = getBufferedFrameBefore(System.currentTimeMillis() - 2000);
 
-            if (evidenceFile == null || !evidenceFile.exists()) {
-                return null;
+            File beforeFile = matToTempFile(beforeCamera, violationType + "-before-camera");
+
+            File duringFile;
+
+            if (screenDuring) {
+                duringFile = captureScreenToTempFile(violationType + "-during-screen");
+            } else {
+                Mat duringCamera = lobbyCameraPreviewService == null
+                        ? null
+                        : lobbyCameraPreviewService.getActiveFrame();
+
+                duringFile = matToTempFile(duringCamera, violationType + "-during-camera");
             }
 
-            ImageUploadResponse uploadResponse =
-                    examApiService.uploadViolationEvidence(evidenceFile);
+            sleepQuietly(1000);
 
-            if (uploadResponse == null
-                    || !uploadResponse.isSuccess()
-                    || uploadResponse.getImageUrl() == null) {
+            Mat afterCamera = lobbyCameraPreviewService == null
+                    ? null
+                    : lobbyCameraPreviewService.getActiveFrame();
+
+            File afterFile = matToTempFile(afterCamera, violationType + "-after-camera");
+
+            String beforeUrl = uploadEvidenceFile(beforeFile);
+            String duringUrl = uploadEvidenceFile(duringFile);
+            String afterUrl = uploadEvidenceFile(afterFile);
+
+            deleteQuietly(beforeFile);
+            deleteQuietly(duringFile);
+            deleteQuietly(afterFile);
+
+            releaseQuietly(beforeCamera);
+            releaseQuietly(afterCamera);
+
+            if (beforeUrl == null && duringUrl == null && afterUrl == null) {
                 return null;
             }
 
             EvidencePayload payload = new EvidencePayload();
-            payload.mainUrl = uploadResponse.getImageUrl();
-            payload.evidenceType = captureMode.evidenceType;
-            payload.evidenceSource = captureMode.evidenceSource;
+
+            payload.mainUrl =
+                    duringUrl != null
+                            ? duringUrl
+                            : beforeUrl != null
+                              ? beforeUrl
+                              : afterUrl;
+
+            payload.evidenceType = screenDuring
+                    ? "MIXED_SCREEN_CAMERA_SEQUENCE"
+                    : "CAMERA_SEQUENCE";
+
+            payload.evidenceSource = screenDuring
+                    ? "SCREEN_AND_CAMERA"
+                    : (phoneCameraActive ? "PHONE_CAMERA" : "CAMERA");
 
             payload.metadataJson = "{"
-                    + "\"evidenceType\":\"" + escapeJson(captureMode.evidenceType) + "\","
-                    + "\"source\":\"" + escapeJson(captureMode.evidenceSource) + "\","
                     + "\"violationType\":\"" + escapeJson(violationType) + "\","
                     + "\"questionId\":" + (questionId == null ? "null" : questionId) + ","
+                    + "\"evidenceMode\":\"" + (screenDuring ? "SYSTEM_SCREEN_DURING" : "CAMERA_DURING") + "\","
                     + "\"frames\":["
-                    + "{"
-                    + "\"label\":\"during\","
-                    + "\"url\":\"" + escapeJson(uploadResponse.getImageUrl()) + "\","
-                    + "\"offsetMs\":0"
-                    + "}"
+                    + frameJson("before", beforeUrl, -2000) + ","
+                    + frameJson(screenDuring ? "during" : "during", duringUrl, 0) + ","
+                    + frameJson("after", afterUrl, 1000)
                     + "],"
                     + "\"capturedAt\":\"" + OffsetDateTime.now(ZoneOffset.UTC) + "\""
                     + "}";
-
-            evidenceFile.delete();
 
             return payload;
 
@@ -3265,6 +3152,170 @@ public class ExamTakingController {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private boolean shouldUseScreenDuringEvidence(String violationType) {
+        if (violationType == null) {
+            return false;
+        }
+
+        return switch (violationType.trim().toUpperCase()) {
+            case "FOCUS_LOST",
+                 "FULLSCREEN_EXIT",
+                 "WINDOW_MINIMIZED",
+                 "RESTRICTED_KEY",
+                 "RIGHT_CLICK",
+                 "MULTIPLE_MONITORS" -> true;
+
+            default -> false;
+        };
+    }
+
+    private File matToTempFile(Mat frame, String label) {
+        if (frame == null || frame.empty()) {
+            return null;
+        }
+
+        try {
+            File file = File.createTempFile("examguard-" + safeFileLabel(label) + "-", ".jpg");
+            Imgcodecs.imwrite(file.getAbsolutePath(), frame);
+            return file;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private File captureScreenToTempFile(String label) {
+
+        try {
+
+            if (examClosing) {
+                System.out.println("Skipping screen evidence capture because exam is closing.");
+                return null;
+            }
+
+            if (examRoot == null) {
+                System.out.println("Skipping screen evidence capture because examRoot is null.");
+                return null;
+            }
+
+            if (examRoot.getScene() == null || examRoot.getScene().getWindow() == null) {
+                System.out.println("Skipping screen evidence capture because scene/window is unavailable.");
+                return null;
+            }
+
+            if (!examRoot.getScene().getWindow().isShowing()) {
+                System.out.println("Skipping screen evidence capture because exam window is not showing.");
+                return null;
+            }
+
+            if (Platform.isFxApplicationThread()) {
+                return doScreenSnapshot(label);
+            }
+
+            CompletableFuture<File> future = new CompletableFuture<>();
+
+            Platform.runLater(() -> {
+
+                try {
+
+                    if (examClosing || examRoot == null) {
+                        future.complete(null);
+                        return;
+                    }
+
+                    if (examRoot.getScene() == null || examRoot.getScene().getWindow() == null) {
+                        future.complete(null);
+                        return;
+                    }
+
+                    if (!examRoot.getScene().getWindow().isShowing()) {
+                        future.complete(null);
+                        return;
+                    }
+
+                    File file = doScreenSnapshot(label);
+                    future.complete(file);
+
+                } catch (Exception e) {
+
+                    future.completeExceptionally(e);
+                }
+            });
+
+            return future.get(5, TimeUnit.SECONDS);
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private File doScreenSnapshot(String label) throws Exception {
+
+        WritableImage snapshot = examRoot.snapshot(
+                new SnapshotParameters(),
+                null
+        );
+
+        BufferedImage bufferedImage =
+                SwingFXUtils.fromFXImage(snapshot, null);
+
+        File file = File.createTempFile(
+                "examguard-" + safeFileLabel(label) + "-",
+                ".jpg"
+        );
+
+        ImageIO.write(bufferedImage, "jpg", file);
+
+        return file;
+    }
+
+    private String uploadEvidenceFile(File file) {
+        if (file == null || !file.exists()) {
+            return null;
+        }
+
+        try {
+            ImageUploadResponse response = examApiService.uploadViolationEvidence(file);
+
+            if (response == null || !response.isSuccess()) {
+                return null;
+            }
+
+            return response.getImageUrl();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void deleteQuietly(File file) {
+        if (file != null && file.exists()) {
+            try {
+                file.delete();
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private String safeFileLabel(String value) {
+        if (value == null || value.isBlank()) {
+            return "evidence";
+        }
+
+        return value.replaceAll("[^a-zA-Z0-9-_]", "-");
     }
 
     private File captureEvidenceFrameToFile(
@@ -3428,6 +3479,19 @@ public class ExamTakingController {
     private void resetFaceBehaviorTracking() {
         currentFaceBehaviorDirection = null;
         faceBehaviorStartedAt = 0L;
+    }
+
+    private boolean shouldLogRepeatedViolation(String violationType) {
+        long now = System.currentTimeMillis();
+
+        List<Long> hits = repeatedViolationWindowMap
+                .computeIfAbsent(violationType, key -> new ArrayList<>());
+
+        hits.add(now);
+
+        hits.removeIf(time -> now - time > REPEATED_VIOLATION_WINDOW_MS);
+
+        return hits.size() >= REQUIRED_REPEATED_VIOLATION_COUNT;
     }
 
     private FaceBehaviorAnalyzer.Decision detectFaceBehavior(MediaPipeFaceResult result) {

@@ -415,3 +415,56 @@
 .menu-item:focused .label {
     -fx-text-fill: #800000;
 }
+
+.chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 8 0 0 0;
+}
+
+.chart-legend-item {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #302C29;
+}
+
+.chart-legend-item-symbol {
+    -fx-background-radius: 999;
+    -fx-padding: 4;
+}
+
+.chart-inline-legend {
+    -fx-padding: 0 4 0 0;
+}
+
+.legend-dot {
+    -fx-min-width: 9;
+    -fx-min-height: 9;
+    -fx-max-width: 9;
+    -fx-max-height: 9;
+    -fx-background-radius: 999;
+}
+
+.legend-admin {
+    -fx-background-color: #800000;
+}
+
+.legend-faculty {
+    -fx-background-color: #C9A227;
+}
+
+.legend-student {
+    -fx-background-color: #302C29;
+}
+
+.legend-text {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #756F6A;
+}
+
+.hero-filter-label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: rgba(255,255,255,0.85);
+}

@@ -69,10 +69,6 @@ public class StudentApiService {
         sendPostRequest("/student/dashboard/results/" + examId + "/view", "");
     }
 
-    public void markViolationViewed(Long examId) throws Exception {
-        sendPostRequest("/student/dashboard/violations/" + examId + "/view", "");
-    }
-
     public FileDownloadResponse downloadStudentAnswerSheetReport(Long examId) throws Exception {
         return sendGetForFileDownload(
                 "/student/exams/" + examId + "/answer-sheet-report"

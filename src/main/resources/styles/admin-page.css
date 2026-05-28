@@ -351,3 +351,91 @@
     -fx-font-weight: bold;
     -fx-text-fill: #800000;
 }
+
+/* =========================
+   HERO FILTERS - SHELL MATCH
+========================= */
+
+.hero-controls-row {
+    -fx-padding: 20 0 0 0;
+}
+
+.hero-filter-label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: rgba(255,255,255,0.78);
+}
+
+.hero-controls-row .combo-box,
+.hero-controls-row .date-picker {
+    -fx-background-color: rgba(255,255,255,0.14);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255,255,255,0.22);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 2 8;
+    -fx-pref-height: 34;
+    -fx-max-height: 34;
+    -fx-min-width: 130;
+}
+
+.hero-controls-row .combo-box:hover,
+.hero-controls-row .date-picker:hover {
+    -fx-background-color: rgba(255,255,255,0.20);
+    -fx-border-color: rgba(244,210,122,0.55);
+}
+
+.hero-controls-row .combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+.hero-controls-row .combo-box-popup .list-view {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #E8E0D8;
+    -fx-border-radius: 12;
+    -fx-padding: 4;
+}
+
+.hero-controls-row .combo-box-popup .list-view .list-cell {
+    -fx-background-color: white;
+    -fx-text-fill: #302C29;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-padding: 8 10;
+}
+
+.hero-controls-row .combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #F4EFEA;
+    -fx-text-fill: #800000;
+}
+
+.hero-controls-row .date-picker .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: rgba(255,255,255,0.65);
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-padding: 0;
+}
+
+.hero-controls-row .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 6;
+}
+
+.hero-controls-row .arrow {
+    -fx-background-color: #F4D27A;
+}
+
+.hero-controls-row .date-picker .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.hero-controls-row .date-picker .arrow-button .arrow {
+    -fx-background-color: #F4D27A;
+}

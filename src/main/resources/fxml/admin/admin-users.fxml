@@ -1,72 +1,107 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-
-<StackPane style="-fx-background-color: transparent;" stylesheets="/styles/admin-users.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.examguard.controller.admin.UserManagementController">
+<StackPane xmlns:fx="http://javafx.com/fxml/1" style="-fx-background-color: transparent;"
+           stylesheets="/styles/admin-users.css" xmlns="http://javafx.com/javafx/17.0.12"
+           fx:controller="com.example.examguard.controller.admin.UserManagementController">
 
     <!-- MAIN CONTENT -->
     <VBox spacing="18" style="-fx-background-color: transparent;">
 
         <padding>
-            <Insets bottom="8" left="8" right="8" top="8" />
+            <Insets bottom="8" left="8" right="8" top="8"/>
         </padding>
 
         <!-- TOP ACTION -->
         <VBox alignment="CENTER_RIGHT" spacing="5">
             <children>
 
-                <Button onAction="#handleRefreshAndSyncAccess" prefHeight="42.0" prefWidth="191.0" style="                     -fx-background-color: #800000;                     -fx-text-fill: white;                     -fx-background-radius: 10;                     -fx-padding: 8 16;                     -fx-cursor: hand;                 " text="Refresh &amp; Sync Registrar API" />
+                <Button onAction="#handleRefreshAndSyncAccess" prefHeight="42.0" prefWidth="191.0"
+                        style=" -fx-background-color: #800000; -fx-text-fill: white; -fx-background-radius: 10; -fx-padding: 8 16; -fx-cursor: hand;   "
+                        text="Refresh &amp; Sync Registrar API"/>
 
-                <Label fx:id="lastSyncLabel" prefHeight="15.0" prefWidth="190.0" style="-fx-text-fill: #6b7280; -fx-font-size: 12px;" text="Last Sync: Never" />
+                <Label fx:id="lastSyncLabel" prefHeight="15.0" prefWidth="190.0"
+                       style="-fx-text-fill: #6b7280; -fx-font-size: 12px;" text="Last Sync: Never"/>
 
             </children>
         </VBox>
 
         <!-- MAIN SECTION -->
 
-        <TabPane fx:id="userTabPane" style="-fx-background-color: transparent;" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <TabPane fx:id="userTabPane" style="-fx-background-color: transparent;" tabClosingPolicy="UNAVAILABLE"
+                 VBox.vgrow="ALWAYS">
 
             <tabs>
 
                 <!-- ADMIN TAB -->
                 <Tab text="Admin">
                     <content>
-                        <VBox spacing="20.0" style="-fx-background-color: #fcfbfa;                                          -fx-background-radius: 0 16 16 16;                                          -fx-padding: 18;">
+                        <VBox spacing="20.0"
+                              style="-fx-background-color: #fcfbfa;  -fx-background-radius: 0 16 16 16; -fx-padding: 18;">
 
                             <HBox alignment="CENTER_LEFT">
                                 <VBox spacing="4">
-                                    <Label style="-fx-font-size: 16px;                                                       -fx-font-weight: bold;                                                       -fx-text-fill: #302C29;" text="System Administrators" />
-                                    <Label style="-fx-font-size: 12px;                                                       -fx-text-fill: #7b7470;" text="Manage platform maintainers, access owners, and administrative accounts." wrapText="true" />
+                                    <Label style="-fx-font-size: 12px; -fx-text-fill: #7b7470;"
+                                           text="Manage platform maintainers, access owners, and administrative accounts."
+                                           wrapText="true"/>
                                 </VBox>
-                                <Region HBox.hgrow="ALWAYS" />
-                                <Button onAction="#handleAddAdmin" prefHeight="38" style="-fx-background-color: #C9A227;                                                    -fx-text-fill: #302C29;                                                    -fx-font-weight: bold;                                                    -fx-background-radius: 10;                                                    -fx-cursor: hand;                                                    -fx-padding: 0 16;" text="+ Add Admin" />
                             </HBox>
 
-                            <HBox alignment="CENTER_RIGHT" spacing="10" style="-fx-background-color: white;                                              -fx-background-radius: 14;                                              -fx-padding: 14;                                              -fx-border-color: #ece7e4;                                              -fx-border-radius: 14;">
+                            <HBox alignment="CENTER_RIGHT" spacing="10"
+                                  style="-fx-background-color: white;  -fx-background-radius: 14;  -fx-padding: 14;  -fx-border-color: #ece7e4;  -fx-border-radius: 14;">
 
-                                <TextField fx:id="adminSearchField" prefHeight="40" prefWidth="350.0" promptText="Search admin by school ID, username, name, or email" style="-fx-background-radius: 10;                                                       -fx-border-radius: 10;                                                       -fx-border-color: #ddd6d1;                                                       -fx-padding: 0 12;" />
+                                <Button onAction="#handleAddAdmin" prefHeight="38"
+                                        style="-fx-background-color: #C9A227; -fx-text-fill: #302C29; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 16;"
+                                        text="+ Add Admin"/>
 
-                                <ComboBox fx:id="adminStatusFilterComboBox" prefHeight="40" prefWidth="150.0" promptText="Status" style="-fx-background-radius: 10;                                                      -fx-border-radius: 10;" />
+                                <Region HBox.hgrow="ALWAYS"/>
 
-                                <Button onAction="#handleAdminSearch" prefHeight="40" style="-fx-background-color: #650000;                                                    -fx-text-fill: white;                                                    -fx-font-weight: bold;                                                    -fx-background-radius: 10;                                                    -fx-cursor: hand;                                                    -fx-padding: 0 18;" text="Search" />
+                                <TextField fx:id="adminSearchField" prefHeight="40" prefWidth="350.0"
+                                           promptText="Search admin by school ID, username, name, or email"
+                                           style="-fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #ddd6d1; -fx-padding: 0 12;"/>
 
-                                <Button onAction="#handleClearFilters" prefHeight="40" style="-fx-background-color: #302C29;                                                    -fx-text-fill: white;                                                    -fx-font-weight: bold;                                                    -fx-background-radius: 10;                                                    -fx-cursor: hand;                                                    -fx-padding: 0 18;" text="Clear" />
+                                <ComboBox fx:id="adminStatusFilterComboBox" prefHeight="40" prefWidth="150.0"
+                                          promptText="Status"
+                                          style="-fx-background-radius: 10; -fx-border-radius: 10;"/>
+
+                                <Button onAction="#handleAdminSearch" prefHeight="40"
+                                        style="-fx-background-color: #650000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 18;"
+                                        text="Search"/>
+
+                                <Button onAction="#handleClearFilters" prefHeight="40"
+                                        style="-fx-background-color: #302C29; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 18;"
+                                        text="Clear"/>
+                                <MenuButton text="Export" styleClass="secondary-button">
+                                    <items>
+                                        <MenuItem text="Export PDF" onAction="#handleExportAdminsPdf"/>
+                                        <MenuItem text="Export Excel" onAction="#handleExportAdminsExcel"/>
+                                    </items>
+                                </MenuButton>
                             </HBox>
-                            <TableView fx:id="adminTable" style="-fx-background-radius: 12;                                                       -fx-border-radius: 12;" VBox.vgrow="ALWAYS">
+                            <TableView fx:id="adminTable" style="-fx-background-radius: 12; -fx-border-radius: 12;"
+                                       VBox.vgrow="ALWAYS">
 
                                 <columns>
-                                    <TableColumn fx:id="adminSchoolIdColumn" prefWidth="150" text="School ID" />
-                                    <TableColumn fx:id="adminUsernameColumn" prefWidth="150" text="Username" />
-                                    <TableColumn fx:id="adminNameColumn" prefWidth="210" text="Full Name" />
-                                    <TableColumn fx:id="adminEmailColumn" prefWidth="220" text="Email" />
-                                    <TableColumn fx:id="adminRegistrarStatusColumn" prefWidth="110" text="Profile" />
-                                    <TableColumn fx:id="adminSystemAccessColumn" prefWidth="110" text="Access" />
-                                    <TableColumn fx:id="adminActionColumn" prefWidth="170" text="Actions" />
+                                    <TableColumn fx:id="adminSchoolIdColumn" prefWidth="150" text="School ID"/>
+                                    <TableColumn fx:id="adminUsernameColumn" prefWidth="150" text="Username"/>
+                                    <TableColumn fx:id="adminNameColumn" prefWidth="210" text="Full Name"/>
+                                    <TableColumn fx:id="adminEmailColumn" prefWidth="220" text="Email"/>
+                                    <TableColumn fx:id="adminRegistrarStatusColumn" prefWidth="110" text="Profile"/>
+                                    <TableColumn fx:id="adminSystemAccessColumn" prefWidth="110" text="Access"/>
+                                    <TableColumn fx:id="adminActionColumn" prefWidth="170" text="Actions"/>
                                 </columns>
 
                             </TableView>
+                            <HBox spacing="10" alignment="CENTER_RIGHT">
+                                <Label fx:id="adminPageLabel" text="Page 1 of 1 • 0 records"
+                                       styleClass="pagination-label"/>
+                                <Button fx:id="adminPrevButton" text="Previous" onAction="#handleAdminPrevious"
+                                        styleClass="secondary-button"/>
+                                <Button fx:id="adminNextButton" text="Next" onAction="#handleAdminNext"
+                                        styleClass="primary-button"/>
+                            </HBox>
                         </VBox>
                     </content>
                 </Tab>
@@ -74,53 +109,79 @@
                 <!-- STUDENT TAB -->
                 <Tab text="Students">
                     <content>
-                        <VBox spacing="14" style="-fx-background-color: #fcfbfa;                                          -fx-background-radius: 0 16 16 16;                                          -fx-padding: 18;">
+                        <VBox spacing="14"
+                              style="-fx-background-color: #fcfbfa; -fx-background-radius: 0 16 16 16; -fx-padding: 18;">
 
                             <HBox alignment="CENTER_LEFT">
                                 <VBox spacing="4">
-                                    <Label style="-fx-font-size: 16px;                                                       -fx-font-weight: bold;                                                       -fx-text-fill: #302C29;" text="Student Accounts" />
-                                    <Label style="-fx-font-size: 12px;                                                       -fx-text-fill: #7b7470;" text="Review student access, academic details, and account conditions." wrapText="true" />
+                                    <Label style="-fx-font-size: 12px; -fx-text-fill: #7b7470;"
+                                           text="Review student access, academic details, and account conditions."
+                                           wrapText="true"/>
                                 </VBox>
-                                <Region HBox.hgrow="ALWAYS" />
-                                <Button onAction="#handleStudentExport" prefHeight="38" style="-fx-background-color: #C9A227;                                                    -fx-text-fill: #302C29;                                                    -fx-font-weight: bold;                                                    -fx-background-radius: 10;                                                    -fx-cursor: hand;                                                    -fx-padding: 0 16;" text="Export List" />
+                                <Region HBox.hgrow="ALWAYS"/>
                             </HBox>
 
-                            <VBox alignment="TOP_RIGHT" spacing="10" style="-fx-background-color: white;                                              -fx-background-radius: 14;                                              -fx-padding: 14;                                              -fx-border-color: #ece7e4;                                              -fx-border-radius: 14;">
+                            <VBox alignment="TOP_RIGHT" spacing="10"
+                                  style="-fx-background-color: white;  -fx-background-radius: 14;  -fx-padding: 14;  -fx-border-color: #ece7e4;  -fx-border-radius: 14;">
 
                                 <HBox alignment="CENTER_LEFT" spacing="10">
 
-                                    <!-- 🔹 LEFT GROUP -->
+                                    <!-- LEFT GROUP -->
                                     <HBox alignment="CENTER_RIGHT" spacing="10" HBox.hgrow="ALWAYS">
-                                        <TextField fx:id="studentSearchField" prefHeight="40" prefWidth="350.0" promptText="Search student by school ID, username, name, or email" style="-fx-background-radius: 10;                           -fx-border-radius: 10;                           -fx-border-color: #ddd6d1;                           -fx-padding: 0 12;" />
+                                        <TextField fx:id="studentSearchField" prefHeight="40" prefWidth="350.0"
+                                                   promptText="Search student by school ID, username, name, or email"
+                                                   style="-fx-background-radius: 10;-fx-border-radius: 10;-fx-border-color: #ddd6d1;-fx-padding: 0 12;"/>
 
-                                        <ComboBox fx:id="studentStatusFilterComboBox" prefHeight="40" prefWidth="150.0" promptText="Status" style="-fx-background-radius: 10;                          -fx-border-radius: 10;" />
+                                        <ComboBox fx:id="studentStatusFilterComboBox" prefHeight="40" prefWidth="150.0"
+                                                  promptText="Status"
+                                                  style="-fx-background-radius: 10; -fx-border-radius: 10;"/>
 
-                                        <Button onAction="#handleStudentSearch" prefHeight="40" style="-fx-background-color: #650000;                        -fx-text-fill: white;                        -fx-font-weight: bold;                        -fx-background-radius: 10;                        -fx-cursor: hand;                        -fx-padding: 0 18;" text="Search" />
+                                        <Button onAction="#handleStudentSearch" prefHeight="40"
+                                                style="-fx-background-color: #650000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 18;"
+                                                text="Search"/>
 
-                                        <Button onAction="#handleClearFilters" prefHeight="40" style="-fx-background-color: #302C29;                        -fx-text-fill: white;                        -fx-font-weight: bold;                        -fx-background-radius: 10;                        -fx-cursor: hand;                        -fx-padding: 0 18;" text="Clear" />
+                                        <Button onAction="#handleClearFilters" prefHeight="40"
+                                                style="-fx-background-color: #302C29; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 18;"
+                                                text="Clear"/>
+                                        <MenuButton text="Export" styleClass="secondary-button">
+                                            <items>
+                                                <MenuItem text="Export PDF" onAction="#handleExportStudentsPdf"/>
+                                                <MenuItem text="Export Excel" onAction="#handleExportStudentsExcel"/>
+                                            </items>
+                                        </MenuButton>
                                     </HBox>
 
                                 </HBox>
                             </VBox>
 
 
-                            <TableView fx:id="studentTable" style="-fx-background-radius: 12;                                                       -fx-border-radius: 12;" VBox.vgrow="ALWAYS">
+                            <TableView fx:id="studentTable" style="-fx-background-radius: 12; -fx-border-radius: 12;"
+                                       VBox.vgrow="ALWAYS">
 
                                 <columns>
-                                    <TableColumn fx:id="studentSchoolIdColumn" prefWidth="150" text="School ID" />
-                                    <TableColumn fx:id="studentUsernameColumn" prefWidth="140" text="Username" />
-                                    <TableColumn fx:id="studentNameColumn" prefWidth="180" text="Full Name" />
-                                    <TableColumn fx:id="studentEmailColumn" prefWidth="200" text="Email" />
-                                    <TableColumn fx:id="studentCollegeNameColumn" prefWidth="170" text="College" />
-                                    <TableColumn fx:id="studentProgramNameColumn" prefWidth="190" text="Program" />
-                                    <TableColumn fx:id="studentYearLevelColumn" prefWidth="85" text="Year" />
-                                    <TableColumn fx:id="studentSectionNameColumn" prefWidth="90" text="Section" />
-                                    <TableColumn fx:id="studentRegistrarColumn" prefWidth="110" text="Registrar" />
-                                    <TableColumn fx:id="studentSystemAccessColumn" prefWidth="110" text="Access" />
-                                    <TableColumn fx:id="studentActionColumn" prefWidth="160" text="Actions" />
+                                    <TableColumn fx:id="studentSchoolIdColumn" prefWidth="150" text="School ID"/>
+                                    <TableColumn fx:id="studentUsernameColumn" prefWidth="140" text="Username"/>
+                                    <TableColumn fx:id="studentNameColumn" prefWidth="180" text="Full Name"/>
+                                    <TableColumn fx:id="studentEmailColumn" prefWidth="200" text="Email"/>
+                                    <TableColumn fx:id="studentCollegeNameColumn" prefWidth="170" text="College"/>
+                                    <TableColumn fx:id="studentProgramNameColumn" prefWidth="190" text="Program"/>
+                                    <TableColumn fx:id="studentYearLevelColumn" prefWidth="85" text="Year"/>
+                                    <TableColumn fx:id="studentSectionNameColumn" prefWidth="90" text="Section"/>
+                                    <TableColumn fx:id="studentRegistrarColumn" prefWidth="110" text="Registrar"/>
+                                    <TableColumn fx:id="studentSystemAccessColumn" prefWidth="110" text="Access"/>
+                                    <TableColumn fx:id="studentActionColumn" prefWidth="160" text="Actions"/>
                                 </columns>
 
                             </TableView>
+
+                            <HBox spacing="10" alignment="CENTER_RIGHT">
+                                <Label fx:id="studentPageLabel" text="Page 1 of 1 • 0 records"
+                                       styleClass="pagination-label"/>
+                                <Button fx:id="studentPrevButton" text="Previous" onAction="#handleStudentPrevious"
+                                        styleClass="secondary-button"/>
+                                <Button fx:id="studentNextButton" text="Next" onAction="#handleStudentNext"
+                                        styleClass="primary-button"/>
+                            </HBox>
                         </VBox>
                     </content>
                 </Tab>
@@ -128,66 +189,72 @@
                 <!-- FACULTY TAB -->
                 <Tab text="Faculty">
                     <content>
-                        <VBox spacing="14" style="-fx-background-color: #fcfbfa;                                          -fx-background-radius: 0 16 16 16;                                          -fx-padding: 18;">
+                        <VBox spacing="14"
+                              style="-fx-background-color: #fcfbfa; -fx-background-radius: 0 16 16 16; -fx-padding: 18;">
 
                             <HBox alignment="CENTER_LEFT">
                                 <VBox spacing="4">
-                                    <Label style="-fx-font-size: 16px;                                                       -fx-font-weight: bold;                                                       -fx-text-fill: #302C29;" text="Faculty Accounts" />
-                                    <Label style="-fx-font-size: 12px;                                                       -fx-text-fill: #7b7470;" text="Monitor faculty access, teaching-unit identity, and account restrictions." wrapText="true" />
+                                    <Label style="-fx-font-size: 12px; -fx-text-fill: #7b7470;"
+                                           text="Monitor faculty access, teaching-unit identity, and account restrictions."
+                                           wrapText="true"/>
                                 </VBox>
-                                <Region HBox.hgrow="ALWAYS" />
-                                <Button onAction="#handleFacultyExport" prefHeight="38" style="-fx-background-color: #C9A227;                                                    -fx-text-fill: #302C29;                                                    -fx-font-weight: bold;                                                    -fx-background-radius: 10;                                                    -fx-cursor: hand;                                                    -fx-padding: 0 16;" text="Export List" />
                             </HBox>
 
-                            <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color: white;              -fx-background-radius: 14;              -fx-padding: 14;              -fx-border-color: #ece7e4;              -fx-border-radius: 14;">
+                            <HBox alignment="CENTER_LEFT" spacing="10"
+                                  style="-fx-background-color: white;-fx-background-radius: 14;-fx-padding: 14;-fx-border-color: #ece7e4;-fx-border-radius: 14;">
 
                                 <!-- LEFT GROUP -->
                                 <HBox alignment="CENTER_RIGHT" spacing="10" HBox.hgrow="ALWAYS">
-                                    <TextField fx:id="facultySearchField" prefHeight="40" prefWidth="350.0" promptText="Search faculty by school ID, username, name, or email" style="-fx-background-radius: 10;                           -fx-border-radius: 10;                           -fx-border-color: #ddd6d1;                           -fx-padding: 0 12;" />
+                                    <TextField fx:id="facultySearchField" prefHeight="40" prefWidth="350.0"
+                                               promptText="Search faculty by school ID, username, name, or email"
+                                               style="-fx-background-radius: 10;-fx-border-radius: 10;-fx-border-color: #ddd6d1;-fx-padding: 0 12;"/>
 
-                                    <ComboBox fx:id="facultyStatusFilterComboBox" prefHeight="40" prefWidth="150.0" promptText="Status" style="-fx-background-radius: 10;                          -fx-border-radius: 10;" />
+                                    <ComboBox fx:id="facultyStatusFilterComboBox" prefHeight="40" prefWidth="150.0"
+                                              promptText="Status"
+                                              style="-fx-background-radius: 10; -fx-border-radius: 10;"/>
 
-                                    <Button onAction="#handleFacultySearch" prefHeight="40" style="-fx-background-color: #650000;                        -fx-text-fill: white;                        -fx-font-weight: bold;                        -fx-background-radius: 10;                        -fx-cursor: hand;                        -fx-padding: 0 18;" text="Search" />
+                                    <Button onAction="#handleFacultySearch" prefHeight="40"
+                                            style="-fx-background-color: #650000; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 18;"
+                                            text="Search"/>
 
-                                    <Button onAction="#handleClearFilters" prefHeight="40" style="-fx-background-color: #302C29;                        -fx-text-fill: white;                        -fx-font-weight: bold;                        -fx-background-radius: 10;                        -fx-cursor: hand;                        -fx-padding: 0 18;" text="Clear" />
+                                    <Button onAction="#handleClearFilters" prefHeight="40"
+                                            style="-fx-background-color: #302C29; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 18;"
+                                            text="Clear"/>
+                                    <MenuButton text="Export" styleClass="secondary-button">
+                                        <items>
+                                            <MenuItem text="Export PDF" onAction="#handleExportFacultyPdf"/>
+                                            <MenuItem text="Export Excel" onAction="#handleExportFacultyExcel"/>
+                                        </items>
+                                    </MenuButton>
                                 </HBox>
-
-                                <!-- RIGHT GROUP -->
-<!--                                <HBox spacing="10" alignment="CENTER_RIGHT">-->
-<!--                                    <ComboBox fx:id="facultyReactivationFilterComboBox"-->
-<!--                                              prefHeight="40" prefWidth="180"-->
-<!--                                              promptText="Reactivation"-->
-<!--                                              style="-fx-background-radius: 10;-->
-<!--                         -fx-border-radius: 10;"/>-->
-
-<!--                                    <Button text="Bulk Reactivate"-->
-<!--                                            onAction="#handleBulkReactivate"-->
-<!--                                            prefHeight="40"-->
-<!--                                            style="-fx-background-color: #800000;-->
-<!--                       -fx-text-fill: white;-->
-<!--                       -fx-font-weight: bold;-->
-<!--                       -fx-background-radius: 10;-->
-<!--                       -fx-cursor: hand;-->
-<!--                       -fx-padding: 0 18;"/>-->
-<!--                                </HBox>-->
 
                             </HBox>
 
 
-                            <TableView fx:id="facultyTable" style="-fx-background-radius: 12;                                                       -fx-border-radius: 12;" VBox.vgrow="ALWAYS">
+                            <TableView fx:id="facultyTable" style="-fx-background-radius: 12; -fx-border-radius: 12;"
+                                       VBox.vgrow="ALWAYS">
 
                                 <columns>
-                                    <TableColumn fx:id="facultySchoolIdColumn" prefWidth="155" text="School ID" />
-                                    <TableColumn fx:id="facultyUsernameColumn" prefWidth="150" text="Username" />
-                                    <TableColumn fx:id="facultyNameColumn" prefWidth="210" text="Full Name" />
-                                    <TableColumn fx:id="facultyEmailColumn" prefWidth="220" text="Email" />
-                                    <TableColumn fx:id="facultyCollegeColumn" prefWidth="180" text="College" />
-                                    <TableColumn fx:id="facultyRegistrarStatusColumn" prefWidth="110" text="Registrar" />
-                                    <TableColumn fx:id="facultySystemAccessColumn" prefWidth="110" text="Access" />
-                                    <TableColumn fx:id="facultyActionColumn" prefWidth="170" text="Actions" />
+                                    <TableColumn fx:id="facultySchoolIdColumn" prefWidth="155" text="School ID"/>
+                                    <TableColumn fx:id="facultyUsernameColumn" prefWidth="150" text="Username"/>
+                                    <TableColumn fx:id="facultyNameColumn" prefWidth="210" text="Full Name"/>
+                                    <TableColumn fx:id="facultyEmailColumn" prefWidth="220" text="Email"/>
+                                    <TableColumn fx:id="facultyCollegeColumn" prefWidth="180" text="College"/>
+                                    <TableColumn fx:id="facultyRegistrarStatusColumn" prefWidth="110" text="Registrar"/>
+                                    <TableColumn fx:id="facultySystemAccessColumn" prefWidth="110" text="Access"/>
+                                    <TableColumn fx:id="facultyActionColumn" prefWidth="170" text="Actions"/>
                                 </columns>
 
                             </TableView>
+
+                            <HBox spacing="10" alignment="CENTER_RIGHT">
+                                <Label fx:id="facultyPageLabel" text="Page 1 of 1 • 0 records"
+                                       styleClass="pagination-label"/>
+                                <Button fx:id="facultyPrevButton" text="Previous" onAction="#handleFacultyPrevious"
+                                        styleClass="secondary-button"/>
+                                <Button fx:id="facultyNextButton" text="Next" onAction="#handleFacultyNext"
+                                        styleClass="primary-button"/>
+                            </HBox>
                         </VBox>
                     </content>
                 </Tab>
@@ -199,9 +266,11 @@
     <!-- FULL PAGE OVERLAY -->
     <StackPane fx:id="overlayPane" managed="false" style="-fx-background-color: rgba(0,0,0,0.35);" visible="false">
 
-        <VBox alignment="CENTER" spacing="16" style="-fx-background-color: rgba(48,44,41,0.92);                      -fx-background-radius: 18;                      -fx-padding: 28 36;">
-            <ProgressIndicator prefHeight="54" prefWidth="54" />
-            <Label style="-fx-text-fill: white;                           -fx-font-size: 14px;                           -fx-font-weight: bold;" text="Refreshing registrar data..." />
+        <VBox alignment="CENTER" spacing="16"
+              style="-fx-background-color: rgba(48,44,41,0.92);  -fx-background-radius: 18;  -fx-padding: 28 36;">
+            <ProgressIndicator prefHeight="54" prefWidth="54"/>
+            <Label style="-fx-text-fill: white;-fx-font-size: 14px;-fx-font-weight: bold;"
+                   text="Refreshing registrar data..."/>
         </VBox>
 
     </StackPane>

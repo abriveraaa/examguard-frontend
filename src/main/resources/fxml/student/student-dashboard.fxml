@@ -4,42 +4,42 @@
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 
-<StackPane styleClass="student-dashboard-root"
-           stylesheets="@/styles/student-home.css"
-           xmlns="http://javafx.com/javafx/17.0.12"
-           xmlns:fx="http://javafx.com/fxml/1"
-           fx:controller="com.example.examguard.controller.student.StudentDashboardController">
+<StackPane styleClass="student-dashboard-root" stylesheets="@/styles/student-home.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.examguard.controller.student.StudentDashboardController">
 
     <HBox spacing="0" styleClass="student-dashboard-shell">
 
         <!-- LEFT PROFILE -->
         <VBox spacing="14" styleClass="student-profile-panel">
 
-            <StackPane styleClass="student-profile-avatar">
-                <ImageView fx:id="studentAvatarImageView"
-                           fitHeight="72"
-                           fitWidth="72"
-                           managed="false"
-                           preserveRatio="true"
-                           visible="false" />
+            <StackPane
+                    alignment="CENTER"
+                    maxWidth="Infinity">
 
-                <Label fx:id="studentInitialsLabel"
-                       styleClass="student-profile-avatar-text"
-                       text="ST" />
+                <StackPane
+                        fx:id="studentAvatarContainer"
+                        alignment="CENTER"
+                        styleClass="student-profile-avatar">
+
+                    <ImageView
+                            fx:id="studentAvatarImageView"
+                            fitWidth="124"
+                            fitHeight="124"
+                            managed="false"
+                            pickOnBounds="true"
+                            visible="false" />
+
+                    <Label
+                            fx:id="studentInitialsLabel"
+                            styleClass="student-profile-avatar-text" />
+                </StackPane>
             </StackPane>
 
             <VBox alignment="CENTER" spacing="3">
-                <Label fx:id="studentNameLabel"
-                       styleClass="student-profile-name"
-                       text=" " />
+                <Label fx:id="studentNameLabel" styleClass="student-profile-name" text=" " />
 
-                <Label fx:id="studentEmailLabel"
-                       styleClass="student-profile-email"
-                       text=" " />
+                <Label fx:id="studentEmailLabel" styleClass="student-profile-email" text=" " />
 
-                <Label fx:id="studentIDLabel"
-                       styleClass="student-profile-id"
-                       text=" " />
+                <Label fx:id="studentIDLabel" styleClass="student-profile-id" text=" " />
             </VBox>
 
             <Separator />
@@ -47,26 +47,17 @@
             <VBox spacing="10" styleClass="student-info-box">
                 <VBox spacing="3">
                     <Label styleClass="student-school-label" text="Program" />
-                    <Label fx:id="studentProgramLabel"
-                           styleClass="student-school-value"
-                           text="Program"
-                           wrapText="true" />
+                    <Label fx:id="studentProgramLabel" styleClass="student-school-value" text="Program" wrapText="true" />
                 </VBox>
 
                 <VBox spacing="3">
                     <Label styleClass="student-school-label" text="College" />
-                    <Label fx:id="studentCollegeLabel"
-                           styleClass="student-school-value"
-                           text="College"
-                           wrapText="true" />
+                    <Label fx:id="studentCollegeLabel" styleClass="student-school-value" text="College" wrapText="true" />
                 </VBox>
 
                 <VBox spacing="3">
                     <Label styleClass="student-school-label" text="Current Term" />
-                    <Label fx:id="studentCurrentTermLabel"
-                           styleClass="student-school-value"
-                           text="Current Term"
-                           wrapText="true" />
+                    <Label fx:id="studentCurrentTermLabel" styleClass="student-school-value" text="Current Term" wrapText="true" />
                 </VBox>
             </VBox>
 
@@ -91,57 +82,22 @@
                         </VBox>
 
                         <Region HBox.hgrow="ALWAYS" />
-                        <Button onAction="#handleReloadUpcomingExams"
-                                styleClass="student-reload-button"
-                                text="↻" />
+                        <Button onAction="#handleReloadUpcomingExams" styleClass="student-reload-button" text="↻" />
 
-                        <Label
-                                fx:id="viewAllUpcomingExamsLabel"
-                                styleClass="student-view-all"
-                                text="View All →"
-                        />
+                        <Label fx:id="viewAllUpcomingExamsLabel" styleClass="student-view-all" text="View All →" />
 
                     </HBox>
 
                     <Pane styleClass="student-gold-line" />
 
-                    <VBox fx:id="upcomingExamList"
-                          spacing="0"
-                          styleClass="oracle-list"
-                          VBox.vgrow="ALWAYS" />
+                    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="student-card-scroll" VBox.vgrow="ALWAYS">
+                        <VBox fx:id="upcomingExamList" spacing="0" styleClass="oracle-list" />
+                    </ScrollPane>
 
                 </VBox>
 
                 <!-- RIGHT COLUMN -->
                 <VBox spacing="18" styleClass="student-side-section">
-
-                    <VBox spacing="12" styleClass="student-clean-box" VBox.vgrow="ALWAYS">
-                        <HBox alignment="CENTER_LEFT">
-                            <VBox spacing="2">
-                                <Label styleClass="student-section-title-small" text="Violations" />
-                                <Label styleClass="student-muted-text" text="Recent integrity alerts." />
-                            </VBox>
-
-                            <Region HBox.hgrow="ALWAYS" />
-
-                            <Button onAction="#handleReloadViolations"
-                                    styleClass="student-reload-button"
-                                    text="↻" />
-
-                            <Label
-                                    fx:id="viewAllPendingReviewLabel"
-                                    styleClass="student-view-all"
-                                    text="View All →"
-                            />
-                        </HBox>
-
-                        <Pane styleClass="student-gold-line" />
-
-                        <VBox fx:id="violationList"
-                              spacing="6"
-                              styleClass="oracle-list" />
-
-                    </VBox>
 
                     <VBox spacing="12" styleClass="student-clean-box" VBox.vgrow="ALWAYS">
                         <HBox alignment="CENTER_LEFT">
@@ -152,22 +108,16 @@
 
                             <Region HBox.hgrow="ALWAYS" />
 
-                            <Button onAction="#handleReloadResults"
-                                    styleClass="student-reload-button"
-                                    text="↻" />
+                            <Button onAction="#handleReloadResults" styleClass="student-reload-button" text="↻" />
 
-                            <Label
-                                    fx:id="viewAllResultsReleasedLabel"
-                                    styleClass="student-view-all"
-                                    text="View All →"
-                            />
+                            <Label fx:id="viewAllResultsReleasedLabel" styleClass="student-view-all" text="View All →" />
                         </HBox>
 
                         <Pane styleClass="student-gold-line" />
 
-                        <VBox fx:id="resultSummaryList"
-                              spacing="6"
-                              styleClass="oracle-list" />
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="student-card-scroll" VBox.vgrow="ALWAYS">
+                            <VBox fx:id="resultSummaryList" spacing="6" styleClass="oracle-list" />
+                        </ScrollPane>
                     </VBox>
 
                 </VBox>

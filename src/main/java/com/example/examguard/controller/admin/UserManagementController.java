@@ -28,6 +28,15 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
+import java.util.*;
+
 import javafx.stage.Stage;
 
 import java.lang.reflect.Type;
@@ -35,102 +44,84 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class UserManagementController implements ShellAwareController {
 
-    @FXML
-    private Label adminCountLabel;
-    @FXML
-    private Label studentCountLabel;
-    @FXML
-    private Label facultyCountLabel;
-    @FXML
-    private Label lastSyncLabel;
-    @FXML
-    private StackPane overlayPane;
+    @FXML private Label adminCountLabel;
+    @FXML private Label studentCountLabel;
+    @FXML private Label facultyCountLabel;
+    @FXML private Label lastSyncLabel;
+    @FXML private StackPane overlayPane;
 
-    @FXML
-    private TextField adminSearchField;
-    @FXML
-    private ComboBox<String> adminStatusFilterComboBox;
+    @FXML private TextField adminSearchField;
+    @FXML private ComboBox<String> adminStatusFilterComboBox;
 
-    @FXML
-    private TextField studentSearchField;
-    @FXML
-    private ComboBox<String> studentStatusFilterComboBox;
-    @FXML
-    private ComboBox<String> studentReactivationFilterComboBox;
+    @FXML private TextField studentSearchField;
+    @FXML private ComboBox<String> studentStatusFilterComboBox;
+    @FXML private ComboBox<String> studentReactivationFilterComboBox;
 
-    @FXML
-    private TextField facultySearchField;
-    @FXML
-    private ComboBox<String> facultyStatusFilterComboBox;
-    @FXML
-    private ComboBox<String> facultyReactivationFilterComboBox;
+    @FXML private TextField facultySearchField;
+    @FXML private ComboBox<String> facultyStatusFilterComboBox;
+    @FXML private ComboBox<String> facultyReactivationFilterComboBox;
 
-    @FXML
-    private TableView<UserManagementRow> adminTable;
-    @FXML
-    private TableColumn<UserManagementRow, String> adminSchoolIdColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> adminUsernameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> adminNameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> adminEmailColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> adminRegistrarStatusColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> adminSystemAccessColumn;
-    @FXML
-    private TableColumn<UserManagementRow, Void> adminActionColumn;
+    @FXML private TableView<UserManagementRow> adminTable;
+    @FXML private TableColumn<UserManagementRow, String> adminSchoolIdColumn;
+    @FXML private TableColumn<UserManagementRow, String> adminUsernameColumn;
+    @FXML private TableColumn<UserManagementRow, String> adminNameColumn;
+    @FXML private TableColumn<UserManagementRow, String> adminEmailColumn;
+    @FXML private TableColumn<UserManagementRow, String> adminRegistrarStatusColumn;
+    @FXML private TableColumn<UserManagementRow, String> adminSystemAccessColumn;
+    @FXML private TableColumn<UserManagementRow, Void> adminActionColumn;
 
-    @FXML
-    private TableView<UserManagementRow> studentTable;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentSchoolIdColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentUsernameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentNameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentEmailColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentCollegeNameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentProgramNameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentYearLevelColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentSectionNameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentRegistrarColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> studentSystemAccessColumn;
-    @FXML
-    private TableColumn<UserManagementRow, Void> studentActionColumn;
+    @FXML private TableView<UserManagementRow> studentTable;
+    @FXML private TableColumn<UserManagementRow, String> studentSchoolIdColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentUsernameColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentNameColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentEmailColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentCollegeNameColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentProgramNameColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentYearLevelColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentSectionNameColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentRegistrarColumn;
+    @FXML private TableColumn<UserManagementRow, String> studentSystemAccessColumn;
+    @FXML private TableColumn<UserManagementRow, Void> studentActionColumn;
 
-    @FXML
-    private TableView<UserManagementRow> facultyTable;
-    @FXML
-    private TableColumn<UserManagementRow, String> facultySchoolIdColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> facultyUsernameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> facultyNameColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> facultyEmailColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> facultyCollegeColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> facultyRegistrarStatusColumn;
-    @FXML
-    private TableColumn<UserManagementRow, String> facultySystemAccessColumn;
-    @FXML
-    private TableColumn<UserManagementRow, Void> facultyActionColumn;
+    @FXML private TableView<UserManagementRow> facultyTable;
+    @FXML private TableColumn<UserManagementRow, String> facultySchoolIdColumn;
+    @FXML private TableColumn<UserManagementRow, String> facultyUsernameColumn;
+    @FXML private TableColumn<UserManagementRow, String> facultyNameColumn;
+    @FXML private TableColumn<UserManagementRow, String> facultyEmailColumn;
+    @FXML private TableColumn<UserManagementRow, String> facultyCollegeColumn;
+    @FXML private TableColumn<UserManagementRow, String> facultyRegistrarStatusColumn;
+    @FXML private TableColumn<UserManagementRow, String> facultySystemAccessColumn;
+    @FXML private TableColumn<UserManagementRow, Void> facultyActionColumn;
+
+    @FXML private Label adminPageLabel;
+    @FXML private Button adminPrevButton;
+    @FXML private Button adminNextButton;
+
+    @FXML private Label studentPageLabel;
+    @FXML private Button studentPrevButton;
+    @FXML private Button studentNextButton;
+
+    @FXML private Label facultyPageLabel;
+    @FXML private Button facultyPrevButton;
+    @FXML private Button facultyNextButton;
+
+    private static final int PAGE_SIZE = 7;
+
+    private int adminPage = 0;
+    private int studentPage = 0;
+    private int facultyPage = 0;
+
+    private int adminTotalPages = 1;
+    private int studentTotalPages = 1;
+    private int facultyTotalPages = 1;
+
+    private final ObservableList<UserManagementRow> filteredAdminData = FXCollections.observableArrayList();
+    private final ObservableList<UserManagementRow> filteredStudentData = FXCollections.observableArrayList();
+    private final ObservableList<UserManagementRow> filteredFacultyData = FXCollections.observableArrayList();
 
     private final AuthApiService authApiService = new AuthApiService();
     private final AdminApiService adminApiService = new AdminApiService();
@@ -156,7 +147,7 @@ public class UserManagementController implements ShellAwareController {
         setupTableItems();
         setupResizePolicies();
         setupFilterActions();
-
+        initializePaginationLabels();
         refreshAllUsers();
         loadEligibleReactivationUsers();
     }
@@ -300,43 +291,7 @@ public class UserManagementController implements ShellAwareController {
     }
 
     private void filterByRole(UserType role) {
-        ObservableList<UserManagementRow> source = getDataByRole(role);
-        TableView<UserManagementRow> table = getTableByRole(role);
-        TextField searchField = getSearchFieldByRole(role);
-        ComboBox<String> statusComboBox = getStatusComboBoxByRole(role);
-        ComboBox<String> reactivationComboBox = getReactivationComboBoxByRole(role);
-
-        String key = searchField == null || searchField.getText() == null
-                ? ""
-                : searchField.getText().toLowerCase(Locale.ROOT);
-
-        String status = statusComboBox == null || statusComboBox.getValue() == null
-                ? "All"
-                : statusComboBox.getValue();
-
-        String reactivation = reactivationComboBox == null || reactivationComboBox.getValue() == null
-                ? "All"
-                : reactivationComboBox.getValue();
-
-        boolean hasReactivationFilter = role != UserType.ADMIN;
-
-        if (key.isEmpty()
-                && "All".equals(status)
-                && (!hasReactivationFilter || "All".equals(reactivation))) {
-            table.setItems(source);
-            table.refresh();
-            return;
-        }
-
-        table.setItems(FXCollections.observableArrayList(
-                source.stream()
-                        .filter(row -> matchesKeyword(row, key, role))
-                        .filter(row -> matchesStatus(row, status))
-                        .filter(row -> !hasReactivationFilter || matchesReactivation(row, reactivation, role))
-                        .collect(Collectors.toList())
-        ));
-
-        table.refresh();
+        applyFiltersAndPaginate(role, true);
     }
 
     private boolean matchesKeyword(UserManagementRow row, String key, UserType role) {
@@ -390,11 +345,9 @@ public class UserManagementController implements ShellAwareController {
         resetComboBox(studentReactivationFilterComboBox);
         resetComboBox(facultyReactivationFilterComboBox);
 
-        adminTable.setItems(adminData);
-        studentTable.setItems(studentData);
-        facultyTable.setItems(facultyData);
-
-        refreshTables();
+        filterByRole(UserType.ADMIN);
+        filterByRole(UserType.STUDENT);
+        filterByRole(UserType.FACULTY);
     }
 
     private void clearTextField(TextField textField) {
@@ -403,12 +356,6 @@ public class UserManagementController implements ShellAwareController {
 
     private void resetComboBox(ComboBox<String> comboBox) {
         if (comboBox != null) comboBox.setValue("All");
-    }
-
-    private void refreshTables() {
-        adminTable.refresh();
-        studentTable.refresh();
-        facultyTable.refresh();
     }
 
     @FXML
@@ -433,6 +380,150 @@ public class UserManagementController implements ShellAwareController {
                 }
         );
     }
+
+    @FXML
+    private void handleExportAdminsPdf() {
+        exportUsers(UserType.ADMIN, "PDF");
+    }
+
+    @FXML
+    private void handleExportAdminsExcel() {
+        exportUsers(UserType.ADMIN, "EXCEL");
+    }
+
+    @FXML
+    private void handleExportStudentsPdf() {
+        exportUsers(UserType.STUDENT, "PDF");
+    }
+
+    @FXML
+    private void handleExportStudentsExcel() {
+        exportUsers(UserType.STUDENT, "EXCEL");
+    }
+
+    @FXML
+    private void handleExportFacultyPdf() {
+        exportUsers(UserType.FACULTY, "PDF");
+    }
+
+    @FXML
+    private void handleExportFacultyExcel() {
+        exportUsers(UserType.FACULTY, "EXCEL");
+    }
+
+    private void exportUsers(UserType role, String format) {
+        Task<byte[]> task = new Task<>() {
+            @Override
+            protected byte[] call() throws Exception {
+                Map<String, Object> body = new HashMap<>();
+
+                body.put("role", role.name());
+                body.put("format", format);
+                body.put("keyword", getSearchTextByRole(role));
+                body.put("status", getStatusValueByRole(role));
+                body.put("reactivation", getReactivationValueByRole(role));
+
+                return adminApiService.exportUserManagement(body);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            byte[] bytes = task.getValue();
+
+            if (bytes == null || bytes.length == 0) {
+                showAlert("No export data received.");
+                return;
+            }
+
+            saveBytesToFile(
+                    bytes,
+                    buildUserExportFileName(role, format),
+                    "EXCEL".equalsIgnoreCase(format) ? "Excel Files" : "PDF Files",
+                    "EXCEL".equalsIgnoreCase(format) ? "*.xlsx" : "*.pdf"
+            );
+        });
+
+        task.setOnFailed(e -> {
+            if (task.getException() != null) {
+                task.getException().printStackTrace();
+            }
+
+            showAlert("Export failed.");
+        });
+
+        startDaemonThread(task);
+    }
+
+    private String getSearchTextByRole(UserType role) {
+        TextField field = getSearchFieldByRole(role);
+        return field == null || field.getText() == null ? "" : field.getText().trim();
+    }
+
+    private String getStatusValueByRole(UserType role) {
+        ComboBox<String> comboBox = getStatusComboBoxByRole(role);
+        return comboBox == null || comboBox.getValue() == null ? "All" : comboBox.getValue();
+    }
+
+    private String getReactivationValueByRole(UserType role) {
+        ComboBox<String> comboBox = getReactivationComboBoxByRole(role);
+        return comboBox == null || comboBox.getValue() == null ? "All" : comboBox.getValue();
+    }
+
+    private String buildUserExportFileName(UserType role, String format) {
+        String extension = "EXCEL".equalsIgnoreCase(format) ? "xlsx" : "pdf";
+
+        String timestamp = ZonedDateTime.now(ZoneId.of("Asia/Manila"))
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+
+        return "examguard-user-management-" +
+                role.name().toLowerCase(Locale.ROOT) +
+                "-" +
+                timestamp +
+                "." +
+                extension;
+    }
+
+    private boolean saveBytesToFile(
+            byte[] bytes,
+            String defaultFileName,
+            String extensionDescription,
+            String extensionPattern
+    ) {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save Export");
+            fileChooser.setInitialFileName(defaultFileName);
+
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter(extensionDescription, extensionPattern)
+            );
+
+            Window owner = null;
+
+            if (adminTable != null && adminTable.getScene() != null) {
+                owner = adminTable.getScene().getWindow();
+            }
+
+            File file = fileChooser.showSaveDialog(owner);
+
+            if (file == null) {
+                return false;
+            }
+
+            try (FileOutputStream outputStream = new FileOutputStream(file)) {
+                outputStream.write(bytes);
+            }
+
+            showAlert("Export completed successfully.");
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Unable to save export: " + e.getMessage());
+            return false;
+        }
+    }
+
 
     private String formatDateTime(String isoDate) {
         try {
@@ -888,6 +979,194 @@ public class UserManagementController implements ShellAwareController {
             case ADMIN -> null;
             case STUDENT -> studentReactivationFilterComboBox;
             case FACULTY -> facultyReactivationFilterComboBox;
+        };
+    }
+
+    private void initializePaginationLabels() {
+        updatePaginationControls(UserType.ADMIN, 0, 1, 0);
+        updatePaginationControls(UserType.STUDENT, 0, 1, 0);
+        updatePaginationControls(UserType.FACULTY, 0, 1, 0);
+    }
+
+    private void applyFiltersAndPaginate(UserType role, boolean resetPage) {
+        ObservableList<UserManagementRow> source = getDataByRole(role);
+        ObservableList<UserManagementRow> filtered = getFilteredDataByRole(role);
+
+        TextField searchField = getSearchFieldByRole(role);
+        ComboBox<String> statusComboBox = getStatusComboBoxByRole(role);
+        ComboBox<String> reactivationComboBox = getReactivationComboBoxByRole(role);
+
+        String key = searchField == null || searchField.getText() == null
+                ? ""
+                : searchField.getText().toLowerCase(Locale.ROOT).trim();
+
+        String status = statusComboBox == null || statusComboBox.getValue() == null
+                ? "All"
+                : statusComboBox.getValue();
+
+        String reactivation = reactivationComboBox == null || reactivationComboBox.getValue() == null
+                ? "All"
+                : reactivationComboBox.getValue();
+
+        boolean hasReactivationFilter = role != UserType.ADMIN;
+
+        filtered.setAll(
+                source.stream()
+                        .filter(row -> matchesKeyword(row, key, role))
+                        .filter(row -> matchesStatus(row, status))
+                        .filter(row -> !hasReactivationFilter || matchesReactivation(row, reactivation, role))
+                        .collect(Collectors.toList())
+        );
+
+        if (resetPage) {
+            setPageByRole(role, 0);
+        }
+
+        showPage(role);
+    }
+
+    private void showPage(UserType role) {
+        ObservableList<UserManagementRow> filtered = getFilteredDataByRole(role);
+        TableView<UserManagementRow> table = getTableByRole(role);
+
+        int totalRecords = filtered.size();
+        int totalPages = Math.max(1, (int) Math.ceil(totalRecords / (double) PAGE_SIZE));
+
+        int page = Math.min(getPageByRole(role), totalPages - 1);
+        page = Math.max(page, 0);
+        setPageByRole(role, page);
+
+        int fromIndex = page * PAGE_SIZE;
+        int toIndex = Math.min(fromIndex + PAGE_SIZE, totalRecords);
+
+        if (totalRecords == 0) {
+            table.setItems(FXCollections.observableArrayList());
+        } else {
+            table.setItems(FXCollections.observableArrayList(filtered.subList(fromIndex, toIndex)));
+        }
+
+        table.refresh();
+        updatePaginationControls(role, page, totalPages, totalRecords);
+    }
+
+    private void updatePaginationControls(
+            UserType role,
+            int currentPage,
+            int totalPages,
+            int totalRecords
+    ) {
+        Label label = getPageLabelByRole(role);
+        Button prev = getPrevButtonByRole(role);
+        Button next = getNextButtonByRole(role);
+
+        String text = "Page " + (currentPage + 1) + " of " + totalPages + " • " + totalRecords + " records";
+
+        if (label != null) {
+            label.setText(text);
+        }
+
+        if (prev != null) {
+            prev.setDisable(currentPage <= 0);
+        }
+
+        if (next != null) {
+            next.setDisable(currentPage + 1 >= totalPages);
+        }
+
+        switch (role) {
+            case ADMIN -> adminTotalPages = totalPages;
+            case STUDENT -> studentTotalPages = totalPages;
+            case FACULTY -> facultyTotalPages = totalPages;
+        }
+    }
+
+    @FXML
+    private void handleAdminPrevious() {
+        if (adminPage <= 0) return;
+        adminPage--;
+        showPage(UserType.ADMIN);
+    }
+
+    @FXML
+    private void handleAdminNext() {
+        if (adminPage + 1 >= adminTotalPages) return;
+        adminPage++;
+        showPage(UserType.ADMIN);
+    }
+
+    @FXML
+    private void handleStudentPrevious() {
+        if (studentPage <= 0) return;
+        studentPage--;
+        showPage(UserType.STUDENT);
+    }
+
+    @FXML
+    private void handleStudentNext() {
+        if (studentPage + 1 >= studentTotalPages) return;
+        studentPage++;
+        showPage(UserType.STUDENT);
+    }
+
+    @FXML
+    private void handleFacultyPrevious() {
+        if (facultyPage <= 0) return;
+        facultyPage--;
+        showPage(UserType.FACULTY);
+    }
+
+    @FXML
+    private void handleFacultyNext() {
+        if (facultyPage + 1 >= facultyTotalPages) return;
+        facultyPage++;
+        showPage(UserType.FACULTY);
+    }
+
+    private ObservableList<UserManagementRow> getFilteredDataByRole(UserType role) {
+        return switch (role) {
+            case ADMIN -> filteredAdminData;
+            case STUDENT -> filteredStudentData;
+            case FACULTY -> filteredFacultyData;
+        };
+    }
+
+    private int getPageByRole(UserType role) {
+        return switch (role) {
+            case ADMIN -> adminPage;
+            case STUDENT -> studentPage;
+            case FACULTY -> facultyPage;
+        };
+    }
+
+    private void setPageByRole(UserType role, int page) {
+        switch (role) {
+            case ADMIN -> adminPage = page;
+            case STUDENT -> studentPage = page;
+            case FACULTY -> facultyPage = page;
+        }
+    }
+
+    private Label getPageLabelByRole(UserType role) {
+        return switch (role) {
+            case ADMIN -> adminPageLabel;
+            case STUDENT -> studentPageLabel;
+            case FACULTY -> facultyPageLabel;
+        };
+    }
+
+    private Button getPrevButtonByRole(UserType role) {
+        return switch (role) {
+            case ADMIN -> adminPrevButton;
+            case STUDENT -> studentPrevButton;
+            case FACULTY -> facultyPrevButton;
+        };
+    }
+
+    private Button getNextButtonByRole(UserType role) {
+        return switch (role) {
+            case ADMIN -> adminNextButton;
+            case STUDENT -> studentNextButton;
+            case FACULTY -> facultyNextButton;
         };
     }
 }

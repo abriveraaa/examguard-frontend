@@ -24,22 +24,15 @@ import java.util.Optional;
 
 public class DashboardShellController {
 
-    @FXML
-    private HBox navContainer;
-    @FXML
-    private Label avatarLabel;
-    @FXML
-    private Label greetingTitleLabel;
-    @FXML
-    private Label greetingSubtitleLabel;
-    @FXML
-    private StackPane heroPane;
-    @FXML
-    private ImageView bannerImage;
-    @FXML
-    private StackPane contentHolder;
-    @FXML
-    private HBox heroCardsContainer;
+    @FXML private HBox navContainer;
+    @FXML private Label avatarLabel;
+    @FXML private Label greetingTitleLabel;
+    @FXML private Label greetingSubtitleLabel;
+    @FXML private StackPane heroPane;
+    @FXML private ImageView bannerImage;
+    @FXML private StackPane contentHolder;
+    @FXML private HBox heroCardsContainer;
+    @FXML private HBox heroControlsContainer;
 
     private String currentRole;
     private String activePage;
@@ -75,6 +68,7 @@ public class DashboardShellController {
 
     public Object loadContent(String fxmlPath) {
         try {
+            hideHeroControls();
             var resource = getClass().getResource(fxmlPath);
 
             if (resource == null) {
@@ -629,6 +623,29 @@ public class DashboardShellController {
     public void showHeroSection() {
         heroPane.setVisible(true);
         heroPane.setManaged(true);
+    }
+
+    public void showHeroControls(Node... controls) {
+        if (heroControlsContainer == null) return;
+
+        heroControlsContainer.getChildren().clear();
+
+        if (controls == null || controls.length == 0) {
+            hideHeroControls();
+            return;
+        }
+
+        heroControlsContainer.getChildren().addAll(controls);
+        heroControlsContainer.setVisible(true);
+        heroControlsContainer.setManaged(true);
+    }
+
+    public void hideHeroControls() {
+        if (heroControlsContainer == null) return;
+
+        heroControlsContainer.getChildren().clear();
+        heroControlsContainer.setVisible(false);
+        heroControlsContainer.setManaged(false);
     }
 
     public void updateHeroCards(HeroCardData... cards) {
