@@ -37,7 +37,7 @@ jobs:
             --type exe ^
             --name ExamGuard ^
             --app-version 1.0.0 ^
-            --vendor "PUP | OUS | BSITOUMN 22" ^
+            --vendor "PUP BSITOUMN 22" ^
             --description "ExamGuard Secure Examination System" ^
             --input target\installer-input ^
             --main-jar ExamGuard-1.0-SNAPSHOT.jar ^
