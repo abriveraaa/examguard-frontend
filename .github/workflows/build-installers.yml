@@ -38,7 +38,7 @@ jobs:
             --type exe ^
             --name ExamGuard ^
             --app-version 1.0.0 ^
-            --vendor "BSITOUMN22" ^
+            --vendor "BSITOUMN22 PUP" ^
             --description "ExamGuard Secure Examination System" ^
             --input target\installer-input ^
             --main-jar ExamGuard-1.0-SNAPSHOT.jar ^
@@ -86,7 +86,7 @@ jobs:
             --type dmg \
             --name ExamGuard \
             --app-version 1.0.0 \
-            --vendor "BSITOUMN22" \
+            --vendor "BSITOUMN22 PUP" \
             --description "ExamGuard Secure Examination System" \
             --input target/installer-input \
             --main-jar ExamGuard-1.0-SNAPSHOT.jar \
