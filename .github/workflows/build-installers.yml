@@ -1,0 +1,102 @@
+name: Build ExamGuard Installers
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-windows:
+    name: Build Windows EXE
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build app and copy dependencies
+        run: mvn clean package dependency:copy-dependencies
+
+      - name: Prepare installer input
+        shell: cmd
+        run: |
+          if exist target\installer-input rmdir /s /q target\installer-input
+          mkdir target\installer-input
+          copy target\ExamGuard-1.0-SNAPSHOT.jar target\installer-input\
+          copy target\dependency\*.jar target\installer-input\
+
+      - name: Build Windows EXE installer
+        shell: cmd
+        run: |
+          jpackage ^
+            --type exe ^
+            --name ExamGuard ^
+            --app-version 1.0.0 ^
+            --vendor "BSITOUMN22" ^
+            --description "ExamGuard Secure Examination System" ^
+            --input target\installer-input ^
+            --main-jar ExamGuard-1.0-SNAPSHOT.jar ^
+            --main-class com.example.examguard.Launcher ^
+            --icon src\main\resources\images\examguard.ico ^
+            --dest installer ^
+            --win-menu ^
+            --win-shortcut ^
+            --win-dir-chooser ^
+            --java-options "-Dfile.encoding=UTF-8"
+
+      - name: Upload Windows EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExamGuard-Windows-Installer
+          path: installer/*.exe
+
+  build-macos:
+    name: Build macOS DMG
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build app and copy dependencies
+        run: mvn clean package dependency:copy-dependencies
+
+      - name: Prepare installer input
+        run: |
+          rm -rf target/installer-input
+          mkdir -p target/installer-input
+          cp target/ExamGuard-1.0-SNAPSHOT.jar target/installer-input/
+          cp target/dependency/*.jar target/installer-input/
+
+      - name: Build macOS DMG installer
+        run: |
+          jpackage \
+            --type dmg \
+            --name ExamGuard \
+            --app-version 1.0.0 \
+            --vendor "BSITOUMN22" \
+            --description "ExamGuard Secure Examination System" \
+            --input target/installer-input \
+            --main-jar ExamGuard-1.0-SNAPSHOT.jar \
+            --main-class com.example.examguard.Launcher \
+            --icon src/main/resources/images/examguard.icns \
+            --dest installer \
+            --java-options "-Dfile.encoding=UTF-8"
+
+      - name: Upload macOS DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExamGuard-macOS-DMG
+          path: installer/*.dmg
