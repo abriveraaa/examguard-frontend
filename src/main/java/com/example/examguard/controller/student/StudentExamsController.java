@@ -1,6 +1,9 @@
 package com.example.examguard.controller.student;
 
 import com.example.examguard.controller.layout.DashboardShellController;
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.cache.StudentLocalCacheKeys;
+import com.example.examguard.utility.Session;
 import com.example.examguard.controller.layout.ShellAwareController;
 import com.example.examguard.model.student.StudentExamResponse;
 import com.example.examguard.model.student.dashboard.ExamCardVM;
@@ -40,29 +43,20 @@ public class StudentExamsController implements ShellAwareController {
 
     private DashboardShellController shellController;
 
-    @FXML
-    private ComboBox<String> termComboBox;
-    @FXML
-    private ScrollPane examScrollPane;
-    @FXML
-    private Label pageInfoLabel;
-    @FXML
-    private TextField searchField;
-    @FXML
-    private TilePane examCardGrid;
+    @FXML private ComboBox<String> termComboBox;
+    @FXML private ScrollPane examScrollPane;
+    @FXML private Label pageInfoLabel;
+    @FXML private TextField searchField;
+    @FXML private TilePane examCardGrid;
 
-    @FXML
-    private Button allButton;
-    @FXML
-    private Button upcomingButton;
-    @FXML
-    private Button inProgressButton;
-    @FXML
-    private Button submittedButton;
-    @FXML
-    private Button resultsButton;
-    @FXML
-    private Button missedButton;
+    @FXML private Button allButton;
+    @FXML private Button upcomingButton;
+    @FXML private Button inProgressButton;
+    @FXML private Button submittedButton;
+    @FXML private Button resultsButton;
+    @FXML private Button missedButton;
+
+    private boolean examsCacheShown = false;
 
     private static final int PAGE_SIZE = 10;
     private int currentPage = 0;
@@ -73,6 +67,7 @@ public class StudentExamsController implements ShellAwareController {
     private final Image defaultExamImage = new Image(getClass().getResourceAsStream("/images/exam-card-default.png"));
 
     private final StudentApiService studentApiService = new StudentApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
 
     private static final ZoneId MANILA_ZONE = ZoneId.of("Asia/Manila");
     private static final int LOBBY_OPEN_MINUTES_BEFORE_START = 15;
@@ -123,7 +118,10 @@ public class StudentExamsController implements ShellAwareController {
             updateResponsiveColumns(newBounds.getWidth());
         });
 
-        Platform.runLater(this::loadStudentExams);
+        Platform.runLater(() -> {
+            examsCacheShown = loadCachedStudentExamsFirst();
+            loadStudentExams();
+        });
         termComboBox.setOnAction(event -> applyCombinedFilters());
         searchField.textProperty().addListener((obs, oldValue, newValue) -> {
             applyCombinedFilters();
@@ -170,6 +168,34 @@ public class StudentExamsController implements ShellAwareController {
         };
     }
 
+    private boolean loadCachedStudentExamsFirst() {
+        String schoolId = Session.getSchoolId();
+
+        if (schoolId == null || schoolId.isBlank()) {
+            return false;
+        }
+
+        List<StudentExamResponse> cachedExams =
+                localCacheService.loadList(
+                        StudentLocalCacheKeys.exams(schoolId),
+                        StudentExamResponse.class
+                );
+
+        if (cachedExams == null || cachedExams.isEmpty()) {
+            return false;
+        }
+
+        List<ExamCardVM> cards = cachedExams.stream()
+                .map(this::mapToExamCardVM)
+                .toList();
+
+        renderExamCards(cards);
+        updateHeroCards(cards);
+        populateTermDropdown(cards);
+
+        return true;
+    }
+
     private void loadStudentExams() {
 
         Task<List<StudentExamResponse>> task = new Task<>() {
@@ -188,13 +214,26 @@ public class StudentExamsController implements ShellAwareController {
             renderExamCards(cards);
             updateHeroCards(cards);
             populateTermDropdown(cards);
+
+            String schoolId = Session.getSchoolId();
+
+            if (schoolId != null && !schoolId.isBlank()) {
+                localCacheService.save(
+                        StudentLocalCacheKeys.exams(schoolId),
+                        String.valueOf(System.currentTimeMillis()),
+                        task.getValue()
+                );
+            }
         });
 
 
         task.setOnFailed(event -> {
             Throwable ex = task.getException();
             ex.printStackTrace();
-            showError("Failed to load exams.");
+
+            if (!examsCacheShown) {
+                showError("Failed to load exams.");
+            }
         });
 
         Thread thread = new Thread(task);

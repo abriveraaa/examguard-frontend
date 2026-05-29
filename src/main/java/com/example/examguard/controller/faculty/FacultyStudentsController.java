@@ -1,5 +1,13 @@
 package com.example.examguard.controller.faculty;
 
+import com.example.examguard.cache.LocalImageCacheService;
+import javafx.application.Platform;
+
+import java.io.InputStream;
+import java.net.URL;
+import com.example.examguard.cache.FacultyLocalCacheKeys;
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.utility.Session;
 import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.core.response.BrandingResponse;
 import com.example.examguard.model.faculty.dto.students.FacultyAcademicPeriodDTO;
@@ -27,32 +35,19 @@ import java.util.Locale;
 
 public class FacultyStudentsController {
 
-    @FXML
-    private ComboBox<AcademicPeriodOption> academicPeriodCombo;
-    @FXML
-    private ComboBox<CourseOption> courseCombo;
-    @FXML
-    private ComboBox<SectionOption> sectionCombo;
-    @FXML
-    private TextField searchField;
-    @FXML
-    private ToggleButton listViewToggle;
-    @FXML
-    private ToggleButton cardViewToggle;
-    @FXML
-    private Label totalStudentsLabel;
-    @FXML
-    private Label selectedContextLabel;
-    @FXML
-    private VBox contentContainer;
-    @FXML
-    private Label pageInfoLabel;
-    @FXML
-    private ScrollPane studentsScrollPane;
-    @FXML
-    private HBox paginationBox;
-    @FXML
-    private MenuButton exportMenuButton;
+    @FXML private ComboBox<AcademicPeriodOption> academicPeriodCombo;
+    @FXML private ComboBox<CourseOption> courseCombo;
+    @FXML private ComboBox<SectionOption> sectionCombo;
+    @FXML private TextField searchField;
+    @FXML private ToggleButton listViewToggle;
+    @FXML private ToggleButton cardViewToggle;
+    @FXML private Label totalStudentsLabel;
+    @FXML private Label selectedContextLabel;
+    @FXML private VBox contentContainer;
+    @FXML private Label pageInfoLabel;
+    @FXML private ScrollPane studentsScrollPane;
+    @FXML private HBox paginationBox;
+    @FXML private MenuButton exportMenuButton;
 
 
     private static final int PAGE_SIZE = 10;
@@ -60,6 +55,9 @@ public class FacultyStudentsController {
     private int currentPage = 0;
     private List<StudentRow> currentFilteredStudents = new ArrayList<>();
     private final FacultyApiService facultyApiService = new FacultyApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
+    private final LocalImageCacheService localImageCacheService = new LocalImageCacheService();
+
     private final ObservableList<StudentRow> masterStudents = FXCollections.observableArrayList();
     private final ObservableList<StudentRow> allPeriodStudents = FXCollections.observableArrayList();
     private boolean loadingDropdowns = false;
@@ -362,7 +360,11 @@ public class FacultyStudentsController {
     }
 
     private void loadAcademicPeriodsAsync() {
-        showLoading(true);
+        boolean hasCache = loadAcademicPeriodsFromCache();
+
+        if (!hasCache) {
+            showLoading(true);
+        }
 
         Task<List<FacultyAcademicPeriodDTO>> task = new Task<>() {
             @Override
@@ -375,64 +377,115 @@ public class FacultyStudentsController {
             try {
                 List<FacultyAcademicPeriodDTO> periods = task.getValue();
 
-                List<AcademicPeriodOption> options = periods.stream()
-                        .sorted((a, b) -> {
-                            int activeCompare = Boolean.compare(
-                                    isActiveOffering(b.classOfferingStatus()),
-                                    isActiveOffering(a.classOfferingStatus())
-                            );
-
-                            if (activeCompare != 0) return activeCompare;
-
-                            int ayCompare = academicYearStart(b.academicYear())
-                                    .compareTo(academicYearStart(a.academicYear()));
-
-                            if (ayCompare != 0) return ayCompare;
-
-                            return Integer.compare(
-                                    termRank(a.term()),
-                                    termRank(b.term())
-                            );
-                        })
-                        .map(p -> new AcademicPeriodOption(
-                                p.academicYear(),
-                                p.term(),
-                                p.term() + ", AY " + p.academicYear(),
-                                p.classOfferingStatus(),
-                                false
-                        ))
-                        .distinct()
-                        .toList();
-
-                academicPeriodCombo.setItems(FXCollections.observableArrayList(options));
-
-                if (!options.isEmpty()) {
-                    academicPeriodCombo.getSelectionModel().selectFirst();
-                } else {
-                    showLoading(false);
-                    renderEmptyState("No academic periods found.");
+                if (periods == null) {
+                    periods = List.of();
                 }
+
+                localCacheService.save(
+                        FacultyLocalCacheKeys.studentAcademicPeriods(facultyId()),
+                        FacultyLocalCacheKeys.VERSION,
+                        periods
+                );
+
+                applyAcademicPeriods(periods);
 
             } catch (Exception e) {
                 e.printStackTrace();
+
+                if (!hasCache) {
+                    renderEmptyState("Failed to load academic periods.");
+                }
+
+            } finally {
                 showLoading(false);
-                renderEmptyState("Failed to load academic periods.");
             }
         });
 
         task.setOnFailed(event -> {
-            task.getException().printStackTrace();
-            showLoading(false);
-            renderEmptyState("Failed to load academic periods.");
+            Throwable ex = task.getException();
+
+            if (ex != null) {
+                System.out.println(
+                        "Faculty students academic periods refresh skipped: "
+                                + ex.getMessage()
+                );
+            }
+
+            if (!hasCache) {
+                showLoading(false);
+                renderEmptyState("Failed to load academic periods.");
+            } else {
+                showLoading(false);
+            }
         });
 
-        Thread thread = new Thread(task);
+        Thread thread = new Thread(task, "faculty-students-periods-loader");
         thread.setDaemon(true);
         thread.start();
     }
 
+    private boolean loadAcademicPeriodsFromCache() {
+        List<FacultyAcademicPeriodDTO> cached =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys.studentAcademicPeriods(facultyId()),
+                        FacultyAcademicPeriodDTO.class
+                );
+
+        if (cached == null) {
+            return false;
+        }
+
+        applyAcademicPeriods(cached);
+        return true;
+    }
+
+    private void applyAcademicPeriods(List<FacultyAcademicPeriodDTO> periods) {
+        List<AcademicPeriodOption> options = periods.stream()
+                .sorted((a, b) -> {
+                    int activeCompare = Boolean.compare(
+                            isActiveOffering(b.classOfferingStatus()),
+                            isActiveOffering(a.classOfferingStatus())
+                    );
+
+                    if (activeCompare != 0) return activeCompare;
+
+                    int ayCompare = academicYearStart(b.academicYear())
+                            .compareTo(academicYearStart(a.academicYear()));
+
+                    if (ayCompare != 0) return ayCompare;
+
+                    return Integer.compare(
+                            termRank(a.term()),
+                            termRank(b.term())
+                    );
+                })
+                .map(p -> new AcademicPeriodOption(
+                        p.academicYear(),
+                        p.term(),
+                        p.term() + ", AY " + p.academicYear(),
+                        p.classOfferingStatus(),
+                        false
+                ))
+                .distinct()
+                .toList();
+
+        academicPeriodCombo.setItems(FXCollections.observableArrayList(options));
+
+        if (!options.isEmpty()) {
+            if (academicPeriodCombo.getValue() == null) {
+                academicPeriodCombo.getSelectionModel().selectFirst();
+            }
+        } else {
+            renderEmptyState("No academic periods found.");
+        }
+    }
+
     private void loadStudentsForPeriod(AcademicPeriodOption period) {
-        showLoading(true);
+        boolean hasCache = loadStudentsForPeriodFromCache(period);
+
+        if (!hasCache) {
+            showLoading(true);
+        }
 
         Task<List<FacultyStudentDTO>> task = new Task<>() {
             @Override
@@ -446,63 +499,158 @@ public class FacultyStudentsController {
 
         task.setOnSucceeded(event -> {
             try {
-                allPeriodStudents.setAll(
-                        task.getValue().stream()
-                                .map(student -> new StudentRow(
-                                        student.studentId(),
-                                        student.firstName(),
-                                        student.lastName(),
-                                        student.emailAddress(),
-                                        student.collegeCode(),
-                                        student.collegeName(),
-                                        student.programCode(),
-                                        student.programName(),
-                                        student.yearLevel(),
-                                        student.sectionName(),
-                                        student.courseCode(),
-                                        student.courseDescription(),
-                                        student.classOfferingId(),
-                                        student.profileImageUrl()
-                                ))
-                                .toList()
+                List<FacultyStudentDTO> students = task.getValue();
+
+                if (students == null) {
+                    students = List.of();
+                }
+
+                localCacheService.save(
+                        FacultyLocalCacheKeys.studentsByPeriod(
+                                facultyId(),
+                                period.academicYear(),
+                                period.term()
+                        ),
+                        FacultyLocalCacheKeys.VERSION,
+                        students
                 );
 
-                populateCoursesFromLoadedStudents();
-                populateSectionsFromLoadedStudents();
-                applyLocalFilters();
-                updateContextLabel();
+                applyStudents(students);
 
             } catch (Exception e) {
                 e.printStackTrace();
-                renderEmptyState("Failed to load students.");
+
+                if (!hasCache) {
+                    renderEmptyState("Failed to load students.");
+                }
+
             } finally {
                 showLoading(false);
             }
         });
 
         task.setOnFailed(event -> {
-            task.getException().printStackTrace();
+            Throwable ex = task.getException();
+
+            if (ex != null) {
+                System.out.println(
+                        "Faculty students refresh skipped: "
+                                + ex.getMessage()
+                );
+            }
+
+            if (!hasCache) {
+                renderEmptyState("Failed to load students.");
+            }
+
             showLoading(false);
-            renderEmptyState("Failed to load students.");
         });
 
-        Thread thread = new Thread(task);
+        Thread thread = new Thread(task, "faculty-students-loader");
         thread.setDaemon(true);
         thread.start();
     }
 
-    private javafx.scene.Node createStudentPhoto(StudentRow student, double size, String fallbackStyleClass) {
+    private boolean loadStudentsForPeriodFromCache(AcademicPeriodOption period) {
+        if (period == null) {
+            return false;
+        }
 
+        List<FacultyStudentDTO> cached =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys.studentsByPeriod(
+                                facultyId(),
+                                period.academicYear(),
+                                period.term()
+                        ),
+                        FacultyStudentDTO.class
+                );
+
+        if (cached == null) {
+            return false;
+        }
+
+        applyStudents(cached);
+        return true;
+    }
+
+    private void applyStudents(List<FacultyStudentDTO> students) {
+        allPeriodStudents.setAll(
+                students.stream()
+                        .map(student -> new StudentRow(
+                                student.studentId(),
+                                student.firstName(),
+                                student.lastName(),
+                                student.emailAddress(),
+                                student.collegeCode(),
+                                student.collegeName(),
+                                student.programCode(),
+                                student.programName(),
+                                student.yearLevel(),
+                                student.sectionName(),
+                                student.courseCode(),
+                                student.courseDescription(),
+                                student.classOfferingId(),
+                                student.profileImageUrl()
+                        ))
+                        .toList()
+        );
+
+        populateCoursesFromLoadedStudents();
+        populateSectionsFromLoadedStudents();
+        applyLocalFilters();
+        updateContextLabel();
+    }
+
+    private javafx.scene.Node createStudentPhoto(
+            StudentRow student,
+            double size,
+            String fallbackStyleClass
+    ) {
         String imageUrl = student.profileImageUrl();
 
         if (imageUrl != null && !imageUrl.isBlank()) {
-            ImageView imageView = new ImageView();
+
+            String studentId = student.studentNo();
+
+            if (localImageCacheService.hasAvatar(studentId)) {
+
+                ImageView imageView = new ImageView(
+                        new Image(
+                                localImageCacheService.getAvatarUri(studentId),
+                                true
+                        )
+                );
+
+                imageView.setFitWidth(size);
+                imageView.setFitHeight(size);
+                imageView.setPreserveRatio(false);
+                imageView.setSmooth(true);
+
+                Rectangle clip = new Rectangle(size, size);
+                clip.setArcWidth(18);
+                clip.setArcHeight(18);
+
+                imageView.setClip(clip);
+
+                return imageView;
+            }
 
             String finalUrl = imageUrl.startsWith("http")
                     ? imageUrl
                     : AppConfig.BASE_URL + imageUrl;
 
-            imageView.setImage(new Image(finalUrl, true));
+            Thread.ofVirtual().start(() ->
+                    localImageCacheService.saveAvatarFromUrl(
+                            studentId,
+                            finalUrl
+                    )
+            );
+
+            ImageView imageView = new ImageView(
+                    new Image(finalUrl, true)
+            );
+
             imageView.setFitWidth(size);
             imageView.setFitHeight(size);
             imageView.setPreserveRatio(false);
@@ -511,15 +659,74 @@ public class FacultyStudentsController {
             Rectangle clip = new Rectangle(size, size);
             clip.setArcWidth(18);
             clip.setArcHeight(18);
+
             imageView.setClip(clip);
 
             return imageView;
         }
 
-        Label fallback = new Label(getInitials(student.firstname() + " " +  student.lastname()));
+        Label fallback = new Label(
+                getInitials(
+                        student.firstname() + " " + student.lastname()
+                )
+        );
+
         fallback.getStyleClass().add(fallbackStyleClass);
 
         return fallback;
+    }
+
+    private ImageView createClippedImageView(Image image, double size) {
+        ImageView imageView = new ImageView(image);
+
+        imageView.setFitWidth(size);
+        imageView.setFitHeight(size);
+        imageView.setPreserveRatio(false);
+        imageView.setSmooth(true);
+
+        Rectangle clip = new Rectangle(size, size);
+        clip.setArcWidth(18);
+        clip.setArcHeight(18);
+
+        imageView.setClip(clip);
+
+        return imageView;
+    }
+
+    private void loadStudentImageAsync(
+            String studentId,
+            String imageUrl,
+            double size,
+            StackPane photoPane
+    ) {
+        Thread thread = new Thread(() -> {
+            try (InputStream inputStream = new URL(imageUrl).openStream()) {
+
+                Image image = new Image(inputStream);
+
+                localImageCacheService.saveAvatarFromUrl(
+                        studentId,
+                        imageUrl
+                );
+
+                Platform.runLater(() ->
+                        photoPane.getChildren().setAll(
+                                createClippedImageView(image, size)
+                        )
+                );
+
+            } catch (Exception e) {
+                System.out.println(
+                        "Student avatar skipped for " +
+                                studentId +
+                                ": " +
+                                e.getMessage()
+                );
+            }
+        }, "faculty-student-avatar-loader");
+
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void populateCoursesFromLoadedStudents() {
@@ -830,7 +1037,7 @@ public class FacultyStudentsController {
         profileButton.getStyleClass().add("student-action-button");
 
         row.getChildren().addAll(
-                createBodyCell(new Label(fullName), 1.7),
+                createBodyCell(studentCell, 1.7),
                 createBodyCell(new Label(student.studentNo()), 1.3),
                 createBodyCell(new Label(student.email()), 1.8),
                 createBodyCell(new Label(student.collegeName()), 2.0),
@@ -1237,6 +1444,16 @@ public class FacultyStudentsController {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    private String facultyId() {
+        String id = Session.getSchoolId();
+
+        if (id == null || id.isBlank()) {
+            return "unknown-faculty";
+        }
+
+        return id;
     }
 
     public record StudentRow(

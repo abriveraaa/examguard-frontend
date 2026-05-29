@@ -29,7 +29,6 @@
                             onAction="#reloadActiveExams"
                             styleClass="faculty-reload-button"/>
 
-                    <Label text="View All" styleClass="faculty-view-all"/>
                 </HBox>
 
                 <ScrollPane fitToWidth="true"

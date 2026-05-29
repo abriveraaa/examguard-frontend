@@ -1,5 +1,8 @@
 package com.example.examguard.controller.faculty;
 
+import com.example.examguard.cache.FacultyLocalCacheKeys;
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.utility.Session;
 import com.example.examguard.model.faculty.dto.reports.*;
 import com.example.examguard.model.faculty.dto.students.FacultyAcademicPeriodDTO;
 import com.example.examguard.model.faculty.dto.students.FacultyStudentDTO;
@@ -24,52 +27,179 @@ import java.util.stream.Collectors;
 
 public class FacultyReportsController {
 
-    @FXML
-    private ComboBox<String> academicPeriodCombo;
-    @FXML
-    private ComboBox<CourseOption> courseCombo;
-    @FXML
-    private ComboBox<SectionOption> sectionCombo;
-    @FXML
-    private ComboBox<String> submissionExamCombo;
+    @FXML private ComboBox<String> academicPeriodCombo;
+    @FXML private ComboBox<CourseOption> courseCombo;
+    @FXML private ComboBox<SectionOption> sectionCombo;
+    @FXML private ComboBox<String> submissionExamCombo;
 
-    @FXML
-    private Label averageScoreLabel;
-    @FXML
-    private Label totalViolationsLabel;
-    @FXML
-    private Label pendingReviewLabel;
-    @FXML
-    private Label submissionRateLabel;
-    @FXML
-    private Label penalizedLabel;
+    @FXML private Label averageScoreLabel;
+    @FXML private Label totalViolationsLabel;
+    @FXML private Label pendingReviewLabel;
+    @FXML private Label submissionRateLabel;
+    @FXML private Label penalizedLabel;
 
-    @FXML
-    private StackPane loadingOverlay;
-    @FXML
-    private VBox reportsContent;
+    @FXML private StackPane loadingOverlay;
+    @FXML private VBox reportsContent;
 
-    @FXML
-    private PieChart submissionPieChart;
-    @FXML
-    private BarChart<String, Number> takersCountBarChart;
-    @FXML
-    private LineChart<String, Number> averageScoreLineChart;
-    @FXML
-    private StackedBarChart<String, Number> violationStackedChart;
-    @FXML
-    private StackedBarChart<String, Number> submissionStackedChart;
+    @FXML private PieChart submissionPieChart;
+    @FXML private BarChart<String, Number> takersCountBarChart;
+    @FXML private LineChart<String, Number> averageScoreLineChart;
+    @FXML private StackedBarChart<String, Number> violationStackedChart;
+    @FXML private StackedBarChart<String, Number> submissionStackedChart;
 
     private List<ExamParticipationDTO> latestParticipation = List.of();
 
     private final ObservableList<StudentRow> allPeriodStudents = FXCollections.observableArrayList();
     private final FacultyApiService facultyApiService = new FacultyApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
 
     private boolean loadingDropdowns = false;
+    private boolean reportsReloading = false;
 
     @FXML
     public void initialize() {
-        loadFilters();
+        loadAcademicPeriodsAsync();
+    }
+
+    private void loadAcademicPeriodsAsync() {
+        boolean hasCache = loadAcademicPeriodsFromCache();
+
+        Task<List<FacultyAcademicPeriodDTO>> task =
+                new Task<>() {
+                    @Override
+                    protected List<FacultyAcademicPeriodDTO> call()
+                            throws Exception {
+
+                        return facultyApiService
+                                .getStudentAcademicPeriods();
+                    }
+                };
+
+        task.setOnSucceeded(event -> {
+
+            List<FacultyAcademicPeriodDTO> periods =
+                    task.getValue();
+
+            localCacheService.save(
+                    FacultyLocalCacheKeys.reportsAcademicPeriods(
+                            facultyId()
+                    ),
+                    FacultyLocalCacheKeys.VERSION,
+                    periods
+            );
+
+            applyAcademicPeriods(periods);
+        });
+
+        task.setOnFailed(event -> {
+
+            System.out.println("Reports academic periods refresh skipped: " + task.getException().getMessage());
+
+            if (!hasCache) {
+                showAlert(
+                        "Reports Offline",
+                        "No cached report academic periods found."
+                );
+            }
+        });
+
+        Thread thread =
+                new Thread(task, "reports-period-loader");
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void applyAcademicPeriods(List<FacultyAcademicPeriodDTO> periods) {
+
+        List<String> periodItems = periods.stream()
+                .filter(p -> isActiveOffering(p.classOfferingStatus()))
+                .sorted((a, b) -> {
+                    int ayCompare = academicYearStart(b.academicYear())
+                            .compareTo(academicYearStart(a.academicYear()));
+
+                    if (ayCompare != 0) return ayCompare;
+
+                    return Integer.compare(
+                            termRank(a.term()),
+                            termRank(b.term())
+                    );
+                })
+                .map(p -> p.term() + ", AY " + p.academicYear())
+                .distinct()
+                .toList();
+
+        academicPeriodCombo.getItems().clear();
+        academicPeriodCombo.getItems().addAll(periodItems);
+
+        if (!periodItems.isEmpty()) {
+            academicPeriodCombo.getSelectionModel().selectFirst();
+        }
+
+        courseCombo.setItems(FXCollections.observableArrayList(
+                new CourseOption("ALL", "All Courses", true)
+        ));
+        courseCombo.getSelectionModel().selectFirst();
+
+        sectionCombo.setItems(FXCollections.observableArrayList(
+                new SectionOption(
+                        "ALL",
+                        "ALL",
+                        null,
+                        "ALL",
+                        "All Sections",
+                        true
+                )
+        ));
+        sectionCombo.getSelectionModel().selectFirst();
+
+        submissionExamCombo.setItems(FXCollections.observableArrayList("All Exams"));
+        submissionExamCombo.getSelectionModel().selectFirst();
+
+        loadStudentsForSelectedPeriodAsync();
+        loadExamDropdownsAsync();
+
+        academicPeriodCombo.setOnAction(e -> {
+            loadStudentsForSelectedPeriodAsync();
+            loadExamDropdownsAsync();
+        });
+
+        courseCombo.setOnAction(e -> {
+            if (loadingDropdowns) return;
+
+            populateSectionsFromLoadedStudents();
+            loadExamDropdownsAsync();
+        });
+
+        sectionCombo.setOnAction(e -> {
+            if (loadingDropdowns) return;
+
+            loadExamDropdownsAsync();
+        });
+
+        submissionExamCombo.setOnAction(e -> {
+            if (loadingDropdowns) return;
+            reloadSubmissionStatusAsync();
+        });
+    }
+
+    private boolean loadAcademicPeriodsFromCache() {
+
+        List<FacultyAcademicPeriodDTO> cached =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys.reportsAcademicPeriods(
+                                        facultyId()
+                                ),
+                        FacultyAcademicPeriodDTO.class
+                );
+
+        if (cached == null) {
+            return false;
+        }
+
+        applyAcademicPeriods(cached);
+
+        return true;
     }
 
     @FXML
@@ -839,113 +969,101 @@ public class FacultyReportsController {
                 .toUpperCase();
     }
 
-    private void loadFilters() {
-        try {
-            List<FacultyAcademicPeriodDTO> periods =
-                    facultyApiService.getStudentAcademicPeriods();
-
-            List<String> periodItems = periods.stream()
-                    .filter(p -> isActiveOffering(p.classOfferingStatus()))
-                    .sorted((a, b) -> {
-                        int ayCompare = academicYearStart(b.academicYear())
-                                .compareTo(academicYearStart(a.academicYear()));
-
-                        if (ayCompare != 0) return ayCompare;
-
-                        return Integer.compare(
-                                termRank(a.term()),
-                                termRank(b.term())
-                        );
-                    })
-                    .map(p -> p.term() + ", AY " + p.academicYear())
-                    .distinct()
-                    .toList();
-
-            academicPeriodCombo.getItems().clear();
-            academicPeriodCombo.getItems().addAll(periodItems);
-
-            if (!periodItems.isEmpty()) {
-                academicPeriodCombo.getSelectionModel().selectFirst();
-            }
-
-            loadStudentsForSelectedPeriodAsync();
-
-            courseCombo.setItems(FXCollections.observableArrayList(
-                    new CourseOption("ALL", "All Courses", true)
-            ));
-            courseCombo.getSelectionModel().selectFirst();
-
-            sectionCombo.setItems(FXCollections.observableArrayList(
-                    new SectionOption(
-                            "ALL",
-                            "ALL",
-                            null,
-                            "ALL",
-                            "All Sections",
-                            true
-                    )
-            ));
-            sectionCombo.getSelectionModel().selectFirst();
-
-            submissionExamCombo.setItems(FXCollections.observableArrayList("All Exams"));
-            submissionExamCombo.getSelectionModel().selectFirst();
-
-            loadExamDropdownsAsync();
-
-            academicPeriodCombo.setOnAction(e -> {
-                loadStudentsForSelectedPeriodAsync();
-                loadExamDropdownsAsync();
-            });
-
-            courseCombo.setOnAction(e -> {
-                if (loadingDropdowns) return;
-
-                populateSectionsFromLoadedStudents();
-                loadExamDropdownsAsync();
-            });
-
-            sectionCombo.setOnAction(e -> {
-                if (loadingDropdowns) return;
-
-                loadExamDropdownsAsync();
-            });
-
-            submissionExamCombo.setOnAction(e -> {
-                if (loadingDropdowns) return;
-                reloadSubmissionStatusAsync();
-            });
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Reports Error", "Failed to load report filters.");
-        }
-    }
-
     private void reloadReportsAsync() {
-
         FacultyReportFilter filter = getBaseFilter();
 
         if (filter.academicYear() == null || filter.term() == null) {
             return;
         }
 
-        showLoading(true);
+        if (reportsReloading) {
+            return;
+        }
+
+        reportsReloading = true;
+
+        boolean hasCache = loadReportsFromCache(filter);
+
+        if (!hasCache) {
+            showLoading(true);
+        }
 
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
                 FacultyReportSummaryDTO summary = facultyApiService.getFacultyReportSummary(filter);
 
+                localCacheService.save(
+                        FacultyLocalCacheKeys.reportsSummary(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        FacultyLocalCacheKeys.VERSION,
+                        summary
+                );
+
                 List<ExamParticipationDTO> participation = facultyApiService.getFacultyReportParticipation(filter);
+
+                localCacheService.save(
+                        FacultyLocalCacheKeys.reportsParticipation(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        FacultyLocalCacheKeys.VERSION,
+                        participation
+                );
 
                 List<SubmissionStatusDTO> submissions =
                         facultyApiService.getFacultyReportSubmissionStatus(filter);
 
+                localCacheService.save(
+                        FacultyLocalCacheKeys.reportsSubmissionStatus(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId(),
+                                filter.examId()
+                        ),
+                        FacultyLocalCacheKeys.VERSION,
+                        submissions
+                );
+
                 List<ExamSubmissionBreakdownDTO> submissionBreakdown =
                         facultyApiService.getFacultyReportSubmissionBreakdown(filter);
 
+                localCacheService.save(
+                        FacultyLocalCacheKeys.reportsSubmissionBreakdown(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        FacultyLocalCacheKeys.VERSION,
+                        submissionBreakdown
+                );
+
                 List<ViolationTypeDTO> violations =
                         facultyApiService.getFacultyReportViolations(filter);
+
+                localCacheService.save(
+                        FacultyLocalCacheKeys.reportsViolations(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        FacultyLocalCacheKeys.VERSION,
+                        violations
+                );
 
                 Platform.runLater(() -> {
                     renderSummary(summary);
@@ -959,17 +1077,136 @@ public class FacultyReportsController {
             }
         };
 
-        task.setOnSucceeded(e -> showLoading(false));
+        task.setOnSucceeded(e -> {
+            reportsReloading = false;
+            showLoading(false);
+        });
 
         task.setOnFailed(e -> {
+            reportsReloading = false;
             showLoading(false);
-            task.getException().printStackTrace();
-            showAlert("Reports Error", "Failed to load reports.");
+
+            boolean stillHasCache = loadReportsFromCache(filter);
+
+            if (!stillHasCache) {
+                showAlert(
+                        "Reports Offline",
+                        "No cached report data found for the selected filters."
+                );
+            }
         });
 
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private boolean loadReportsFromCache(FacultyReportFilter filter) {
+
+        FacultyReportSummaryDTO summary =
+                localCacheService.loadData(
+                        FacultyLocalCacheKeys.reportsSummary(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        FacultyReportSummaryDTO.class
+                );
+
+        List<ExamParticipationDTO> participation =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys.reportsParticipation(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        ExamParticipationDTO.class
+                );
+
+        List<SubmissionStatusDTO> submissions =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys.reportsSubmissionStatus(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId(),
+                                parseSelectedExamId(submissionExamCombo.getValue())
+                        ),
+                        SubmissionStatusDTO.class
+                );
+
+        List<ExamSubmissionBreakdownDTO> submissionBreakdown =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys.reportsSubmissionBreakdown(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        ExamSubmissionBreakdownDTO.class
+                );
+
+        List<ViolationTypeDTO> violations =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys.reportsViolations(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        ViolationTypeDTO.class
+                );
+
+        if (summary == null) {
+            return false;
+        }
+
+        renderSummary(summary);
+
+        if (participation != null) {
+            renderParticipation(participation);
+        }
+
+        if (submissions != null) {
+            renderSubmissionStatus(submissions);
+        }
+
+        if (submissionBreakdown != null) {
+            renderExamSubmissionBreakdown(submissionBreakdown);
+        }
+
+        if (violations != null) {
+            renderViolations(violations);
+        }
+
+        return true;
+    }
+
+    private void loadSummaryFromCache(
+            FacultyReportFilter filter
+    ) {
+        FacultyReportSummaryDTO cached =
+                localCacheService.loadData(
+                        FacultyLocalCacheKeys.reportsSummary(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        FacultyReportSummaryDTO.class
+                );
+
+        if (cached != null) {
+            renderSummary(cached);
+        }
     }
 
     private void reloadSubmissionStatusAsync() {
@@ -988,13 +1225,44 @@ public class FacultyReportsController {
             }
         };
 
-        task.setOnSucceeded(e ->
-                renderSubmissionStatus(task.getValue())
-        );
+        task.setOnSucceeded(e -> {
+            List<SubmissionStatusDTO> submissions = task.getValue();
 
-        task.setOnFailed(e ->
-                task.getException().printStackTrace()
-        );
+            localCacheService.save(
+                    FacultyLocalCacheKeys.reportsSubmissionStatus(
+                            facultyId(),
+                            filter.academicYear(),
+                            filter.term(),
+                            filter.courseCode(),
+                            filter.classOfferingId(),
+                            filter.examId()
+                    ),
+                    FacultyLocalCacheKeys.VERSION,
+                    submissions
+            );
+
+            renderSubmissionStatus(submissions);
+        });
+
+        task.setOnFailed(e -> {
+
+            List<SubmissionStatusDTO> cached =
+                    localCacheService.loadList(
+                            FacultyLocalCacheKeys.reportsSubmissionStatus(
+                                    facultyId(),
+                                    filter.academicYear(),
+                                    filter.term(),
+                                    filter.courseCode(),
+                                    filter.classOfferingId(),
+                                    filter.examId()
+                            ),
+                            SubmissionStatusDTO.class
+                    );
+
+            if (cached != null) {
+                renderSubmissionStatus(cached);
+            }
+        });
 
         Thread thread = new Thread(task);
         thread.setDaemon(true);
@@ -1054,6 +1322,13 @@ public class FacultyReportsController {
             return;
         }
 
+        boolean hasCache =
+                loadExamOptionsFromCache(filter);
+
+        if (!hasCache) {
+            showLoading(true);
+        }
+
         Task<List<ReportExamOptionDTO>> task = new Task<>() {
             @Override
             protected List<ReportExamOptionDTO> call() throws Exception {
@@ -1062,25 +1337,46 @@ public class FacultyReportsController {
         };
 
         task.setOnSucceeded(e -> {
-            loadingDropdowns = true;
 
-            List<String> items = task.getValue()
-                    .stream()
-                    .map(exam -> exam.examId() + " - " + exam.title())
-                    .toList();
+            List<ReportExamOptionDTO> exams =
+                    task.getValue();
 
-            submissionExamCombo.getItems().setAll("All Exams");
-            submissionExamCombo.getItems().addAll(items);
-            submissionExamCombo.getSelectionModel().selectFirst();
+            localCacheService.save(
+                    FacultyLocalCacheKeys.reportsExamOptions(
+                            facultyId(),
+                            filter.academicYear(),
+                            filter.term(),
+                            filter.courseCode(),
+                            filter.classOfferingId()
+                    ),
+                    FacultyLocalCacheKeys.VERSION,
+                    exams
+            );
 
-            loadingDropdowns = false;
+            applyExamOptions(exams);
+
+            showLoading(false);
 
             reloadReportsAsync();
         });
 
         task.setOnFailed(e -> {
+
             loadingDropdowns = false;
-            task.getException().printStackTrace();
+            showLoading(false);
+            if (hasCache) {
+                loadExamOptionsFromCache(filter);
+                reloadReportsAsync();
+                return;
+            }
+
+            submissionExamCombo.getItems().setAll("All Exams");
+            submissionExamCombo.getSelectionModel().selectFirst();
+
+            showAlert(
+                    "Reports Offline",
+                    "No cached exam options found."
+            );
         });
 
         Thread thread = new Thread(task);
@@ -1088,7 +1384,57 @@ public class FacultyReportsController {
         thread.start();
     }
 
+    private boolean loadExamOptionsFromCache(
+            FacultyReportFilter filter
+    ) {
+
+        List<ReportExamOptionDTO> cached =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys.reportsExamOptions(
+                                facultyId(),
+                                filter.academicYear(),
+                                filter.term(),
+                                filter.courseCode(),
+                                filter.classOfferingId()
+                        ),
+                        ReportExamOptionDTO.class
+                );
+
+        if (cached == null) {
+            return false;
+        }
+
+        applyExamOptions(cached);
+
+        return true;
+    }
+
+    private void applyExamOptions(List<ReportExamOptionDTO> exams) {
+
+        if (exams == null || exams.isEmpty()) {
+            if (submissionExamCombo.getItems().isEmpty()) {
+                submissionExamCombo.getItems().setAll("All Exams");
+                submissionExamCombo.getSelectionModel().selectFirst();
+            }
+            return;
+        }
+
+        loadingDropdowns = true;
+
+        List<String> items = exams.stream()
+                .map(exam -> exam.examId() + " - " + exam.title())
+                .toList();
+
+        submissionExamCombo.getItems().setAll("All Exams");
+        submissionExamCombo.getItems().addAll(items);
+        submissionExamCombo.getSelectionModel().selectFirst();
+
+        loadingDropdowns = false;
+    }
+
     private void loadStudentsForSelectedPeriodAsync() {
+
+        boolean hasCache = loadStudentsFromCache();
 
         FacultyReportFilter filter = getPeriodOnlyFilter();
 
@@ -1107,6 +1453,14 @@ public class FacultyReportsController {
         };
 
         task.setOnSucceeded(e -> {
+            localCacheService.save(
+                    FacultyLocalCacheKeys.reportsStudentsByPeriod(
+                        facultyId(),filter.academicYear(),filter.term()
+                    ),
+                    FacultyLocalCacheKeys.VERSION,
+                    task.getValue()
+            );
+
             allPeriodStudents.setAll(
                     task.getValue()
                             .stream()
@@ -1132,11 +1486,92 @@ public class FacultyReportsController {
             populateSectionsFromLoadedStudents();
         });
 
-        task.setOnFailed(e -> task.getException().printStackTrace());
+        task.setOnFailed(e -> {
+
+            System.out.println("Reports students refresh skipped: "
+                    + task.getException().getMessage());
+
+            if (hasCache) {
+                loadStudentsFromCache();
+                return;
+            }
+
+            courseCombo.setItems(FXCollections.observableArrayList(
+                    new CourseOption("ALL", "All Courses", true)
+            ));
+            courseCombo.getSelectionModel().selectFirst();
+
+            sectionCombo.setItems(FXCollections.observableArrayList(
+                    new SectionOption(
+                            "ALL",
+                            "ALL",
+                            null,
+                            "ALL",
+                            "All Sections",
+                            true
+                    )
+            ));
+            sectionCombo.getSelectionModel().selectFirst();
+
+            showAlert(
+                    "Reports Offline",
+                    "No cached students found for this academic period."
+            );
+        });
 
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private boolean loadStudentsFromCache() {
+
+        FacultyReportFilter filter =
+                getPeriodOnlyFilter();
+
+        if (filter.academicYear() == null || filter.term() == null) {
+            return false;
+        }
+
+        List<FacultyStudentDTO> cached =
+                localCacheService.loadList(
+                        FacultyLocalCacheKeys
+                                .reportsStudentsByPeriod(
+                                        facultyId(),
+                                        filter.academicYear(),
+                                        filter.term()
+                                ),
+                        FacultyStudentDTO.class
+                );
+
+        if (cached == null) {
+            return false;
+        }
+
+        allPeriodStudents.setAll(
+                cached.stream()
+                        .map(student -> new StudentRow(
+                                student.studentId(),
+                                student.firstName(),
+                                student.lastName(),
+                                student.emailAddress(),
+                                student.collegeCode(),
+                                student.collegeName(),
+                                student.programCode(),
+                                student.programName(),
+                                student.yearLevel(),
+                                student.sectionName(),
+                                student.courseCode(),
+                                student.courseDescription(),
+                                student.classOfferingId()
+                        ))
+                        .toList()
+        );
+
+        populateCoursesFromLoadedStudents();
+        populateSectionsFromLoadedStudents();
+
+        return true;
     }
 
     private void populateCoursesFromLoadedStudents() {
@@ -1744,6 +2179,16 @@ public class FacultyReportsController {
         public String toString() {
             return label;
         }
+    }
+
+    private String facultyId() {
+        String id = Session.getSchoolId();
+
+        if (id == null || id.isBlank()) {
+            return "unknown-faculty";
+        }
+
+        return id;
     }
 
     public record StudentRow(

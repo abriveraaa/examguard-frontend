@@ -1,7 +1,11 @@
 package com.example.examguard.controller.student;
 
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.cache.LocalImageCacheService;
 import com.example.examguard.config.AppConfig;
 import com.example.examguard.model.profile.ProfileResponseDTO;
+import com.example.examguard.cache.StudentLocalCacheKeys;
+import com.example.examguard.utility.Session;
 import com.example.examguard.service.AuthApiService;
 import javafx.application.Platform;
 import com.example.examguard.controller.layout.DashboardShellController;
@@ -31,7 +35,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -42,6 +45,9 @@ public class StudentDashboardController implements ShellAwareController {
 
     private DashboardShellController shellController;
     private final AuthApiService authApiService = new AuthApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
+    private final LocalImageCacheService localImageCacheService = new LocalImageCacheService();
+    private boolean dashboardCacheShown = false;
 
     @FXML private ImageView studentAvatarImageView;
     @FXML private Label studentInitialsLabel;
@@ -82,8 +88,73 @@ public class StudentDashboardController implements ShellAwareController {
     public void initialize() {
         setupAvatarClip();
         setupViewAllRedirects();
-        showLoadingState();
+
+        dashboardCacheShown = loadCachedDashboardPartsFirst();
+
+        if (!dashboardCacheShown) {
+            showLoadingState();
+        }
+
         loadDashboardAsync();
+    }
+
+    private boolean loadCachedDashboardPartsFirst() {
+        String schoolId = Session.getSchoolId();
+
+        if (schoolId == null || schoolId.isBlank()) {
+            return false;
+        }
+
+        StudentProfile cachedDashboardProfile =
+                localCacheService.loadData(
+                        StudentLocalCacheKeys.dashboardProfile(schoolId),
+                        StudentProfile.class
+                );
+
+        ProfileResponseDTO cachedProfile =
+                localCacheService.loadData(
+                        StudentLocalCacheKeys.profile(schoolId),
+                        ProfileResponseDTO.class
+                );
+
+        List<StudentUpcomingExam> cachedUpcoming =
+                localCacheService.loadList(
+                        StudentLocalCacheKeys.dashboardUpcoming(schoolId),
+                        StudentUpcomingExam.class
+                );
+
+        List<StudentResultSummary> cachedResults =
+                localCacheService.loadList(
+                        StudentLocalCacheKeys.dashboardResults(schoolId),
+                        StudentResultSummary.class
+                );
+
+        StudentDashboardStats cachedStats =
+                localCacheService.loadData(
+                        StudentLocalCacheKeys.dashboardStats(schoolId),
+                        StudentDashboardStats.class
+                );
+
+        if (cachedDashboardProfile != null) {
+            loadProfile(cachedDashboardProfile);
+        }
+
+        if (cachedProfile != null && cachedProfile.getProfileImageUrl() != null) {
+            loadAvatarImage(cachedProfile.getProfileImageUrl());
+        }
+
+        if (cachedUpcoming != null) {
+            loadUpcomingExams(cachedUpcoming);
+        }
+
+        if (cachedResults != null) {
+            loadResultSummary(cachedResults, cachedStats);
+        }
+
+        return cachedProfile != null
+                || cachedUpcoming != null
+                || cachedResults != null
+                || cachedStats != null;
     }
 
     private void setupAvatarClip() {
@@ -138,15 +209,49 @@ public class StudentDashboardController implements ShellAwareController {
         };
 
         task.setOnSucceeded(event -> {
+            String schoolId = Session.getSchoolId();
+
+            if (schoolId == null || schoolId.isBlank()) {
+                return;
+            }
+
+            String version = String.valueOf(System.currentTimeMillis());
+
             StudentDashboardResponse dashboard = task.getValue();
 
             switch (part) {
-                case "profile" -> loadProfile(dashboard.getProfile());
-                case "upcoming" -> loadUpcomingExams(dashboard.getUpcomingExams());
-                case "results" -> loadResultSummary(
-                        dashboard.getResultSummary(),
-                        dashboard.getStats()
-                );
+                case "profile" -> {
+                    loadProfile(dashboard.getProfile());
+                }
+
+                case "upcoming" -> {
+                    loadUpcomingExams(dashboard.getUpcomingExams());
+
+                    localCacheService.save(
+                            StudentLocalCacheKeys.dashboardUpcoming(schoolId),
+                            version,
+                            dashboard.getUpcomingExams()
+                    );
+                }
+
+                case "results" -> {
+                    loadResultSummary(
+                            dashboard.getResultSummary(),
+                            dashboard.getStats()
+                    );
+
+                    localCacheService.save(
+                            StudentLocalCacheKeys.dashboardResults(schoolId),
+                            version,
+                            dashboard.getResultSummary()
+                    );
+
+                    localCacheService.save(
+                            StudentLocalCacheKeys.dashboardStats(schoolId),
+                            version,
+                            dashboard.getStats()
+                    );
+                }
             }
         });
 
@@ -178,9 +283,38 @@ public class StudentDashboardController implements ShellAwareController {
             StudentDashboardResponse dashboard = task.getValue();
 
             loadProfile(dashboard.getProfile());
-            loadProfilePhotoFromAuthProfile();
             loadUpcomingExams(dashboard.getUpcomingExams());
             loadResultSummary(dashboard.getResultSummary(), dashboard.getStats());
+
+            String schoolId = Session.getSchoolId();
+
+            if (schoolId != null && !schoolId.isBlank()) {
+                String version = String.valueOf(System.currentTimeMillis());
+
+                localCacheService.save(
+                        StudentLocalCacheKeys.dashboardProfile(schoolId),
+                        version,
+                        dashboard.getProfile()
+                );
+
+                localCacheService.save(
+                        StudentLocalCacheKeys.dashboardUpcoming(schoolId),
+                        version,
+                        dashboard.getUpcomingExams()
+                );
+
+                localCacheService.save(
+                        StudentLocalCacheKeys.dashboardResults(schoolId),
+                        version,
+                        dashboard.getResultSummary()
+                );
+
+                localCacheService.save(
+                        StudentLocalCacheKeys.dashboardStats(schoolId),
+                        version,
+                        dashboard.getStats()
+                );
+            }
 
             hideLoadingState();
         });
@@ -189,8 +323,10 @@ public class StudentDashboardController implements ShellAwareController {
             task.getException().printStackTrace();
             hideLoadingState();
 
-            upcomingExamList.getChildren().setAll(createEmptyRow("Unable to load upcoming exams."));
-            resultSummaryList.getChildren().setAll(createEmptyRow("Unable to load result summary."));
+            if (!dashboardCacheShown) {
+                upcomingExamList.getChildren().setAll(createEmptyRow("Unable to load upcoming exams."));
+                resultSummaryList.getChildren().setAll(createEmptyRow("Unable to load result summary."));
+            }
         });
 
         Thread thread = new Thread(task);
@@ -240,34 +376,17 @@ public class StudentDashboardController implements ShellAwareController {
 
     }
 
-    private void loadProfilePhotoFromAuthProfile() {
-        Task<ProfileResponseDTO> task = new Task<>() {
-            @Override
-            protected ProfileResponseDTO call() throws Exception {
-                return authApiService.getProfile();
-            }
-        };
-
-        task.setOnSucceeded(event -> {
-            ProfileResponseDTO profile = task.getValue();
-
-            if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
-                return;
-            }
-
-            loadAvatarImage(profile.getProfileImageUrl());
-        });
-
-        task.setOnFailed(event -> {
-            task.getException().printStackTrace();
-        });
-
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
-    }
-
     private void loadAvatarImage(String imageUrl) {
+        String schoolId = Session.getSchoolId();
+
+        if (schoolId != null && !schoolId.isBlank()
+                && localImageCacheService.hasAvatar(schoolId)) {
+
+            Image cachedImage = new Image(localImageCacheService.getAvatarUri(schoolId), true);
+            showImageAvatar(cachedImage);
+            return;
+        }
+
         String finalUrl = imageUrl.startsWith("http")
                 ? imageUrl
                 : AppConfig.BASE_URL + imageUrl;
@@ -283,12 +402,11 @@ public class StudentDashboardController implements ShellAwareController {
         image.progressProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue.doubleValue() >= 1.0 && !image.isError()) {
                 Platform.runLater(() -> {
-                    studentAvatarImageView.setImage(image);
-                    studentAvatarImageView.setVisible(true);
-                    studentAvatarImageView.setManaged(true);
+                    showImageAvatar(image);
 
-                    studentInitialsLabel.setVisible(false);
-                    studentInitialsLabel.setManaged(false);
+                    new Thread(() -> {
+                        localImageCacheService.saveAvatarFromUrl(schoolId, finalUrl);
+                    }).start();
                 });
             }
         });
@@ -572,7 +690,26 @@ public class StudentDashboardController implements ShellAwareController {
         return initials.isBlank() ? "ST" : initials;
     }
 
-    private void loadStudentAvatar(StudentProfile profile, String firstName, String lastName) {
+    private void loadStudentAvatar(
+            StudentProfile profile,
+            String firstName,
+            String lastName
+    ) {
+        String schoolId = Session.getSchoolId();
+
+        if (schoolId != null
+                && !schoolId.isBlank()
+                && localImageCacheService.hasAvatar(schoolId)) {
+
+            showImageAvatar(
+                    new Image(
+                            localImageCacheService.getAvatarUri(schoolId),
+                            true
+                    )
+            );
+            return;
+        }
+
         String imageUrl = safe(profile.getProfileImageUrl());
 
         if (imageUrl.isBlank()) {
@@ -592,7 +729,16 @@ public class StudentDashboardController implements ShellAwareController {
 
         image.progressProperty().addListener((obs, oldProgress, newProgress) -> {
             if (newProgress.doubleValue() >= 1.0 && !image.isError()) {
-                Platform.runLater(() -> showImageAvatar(image));
+                Platform.runLater(() -> {
+                    showImageAvatar(image);
+
+                    new Thread(() -> {
+                        localImageCacheService.saveAvatarFromUrl(
+                                schoolId,
+                                finalUrl
+                        );
+                    }).start();
+                });
             }
         });
     }

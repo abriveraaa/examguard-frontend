@@ -57,110 +57,64 @@ import static com.example.examguard.utility.LoadingSpinner.setLoading;
 
 public class CreateExamController implements ShellAwareController {
 
-    @FXML
-    private StackPane wizardRoot; // make sure you have this in FXML
+    @FXML private StackPane wizardRoot; // make sure you have this in FXML
 
-    @FXML
-    private VBox stepOnePane;
-    @FXML
-    private VBox stepTwoPane;
-    @FXML
-    private VBox stepThreePane;
-    @FXML
-    private VBox stepFourPane;
+    @FXML private VBox stepOnePane;
+    @FXML private VBox stepTwoPane;
+    @FXML private VBox stepThreePane;
+    @FXML private VBox stepFourPane;
 
-    @FXML
-    private Label stepChipLabel;
-    @FXML
-    private Label uploadStatusLabel;
+    @FXML private Label stepChipLabel;
+    @FXML private Label uploadStatusLabel;
 
-    @FXML
-    private TextField titleField;
-    @FXML
-    private TextArea descriptionArea;
-    @FXML
-    private Spinner<Integer> durationSpinner;
-    @FXML
-    private DatePicker startDatePicker;
-    @FXML
-    private ComboBox<String> startTimeCombo;
-    @FXML
-    private DatePicker endDatePicker;
-    @FXML
-    private ComboBox<String> endTimeCombo;
+    @FXML private TextField titleField;
+    @FXML private TextArea descriptionArea;
+    @FXML private Spinner<Integer> durationSpinner;
+    @FXML private DatePicker startDatePicker;
+    @FXML private ComboBox<String> startTimeCombo;
+    @FXML private DatePicker endDatePicker;
+    @FXML private ComboBox<String> endTimeCombo;
 
-    @FXML
-    private TextField classOfferingSearchField;
-    @FXML
-    private ListView<ClassOffering> classOfferingListView;
-    @FXML
-    private Label selectedClassOfferingLabel;
-    @FXML
-    private Label reviewClassOfferingLabel;
+    @FXML private TextField classOfferingSearchField;
+    @FXML private ListView<ClassOffering> classOfferingListView;
+    @FXML private Label selectedClassOfferingLabel;
+    @FXML private Label reviewClassOfferingLabel;
 
-    @FXML
-    private Label titleErrorLabel;
-    @FXML
-    private Label durationErrorLabel;
-    @FXML
-    private Label startErrorLabel;
-    @FXML
-    private Label endErrorLabel;
-    @FXML
-    private Label classErrorLabel;
-    @FXML
-    private Label modeErrorLabel;
-    @FXML
-    private Label sourceErrorLabel;
+    @FXML private Label titleErrorLabel;
+    @FXML private Label durationErrorLabel;
+    @FXML private Label startErrorLabel;
+    @FXML private Label endErrorLabel;
+    @FXML private Label classErrorLabel;
+    @FXML private Label modeErrorLabel;
+    @FXML private Label sourceErrorLabel;
 
-    @FXML
-    private CheckBox shuffleQuestionsCheck;
-    @FXML
-    private CheckBox shuffleChoicesCheck;
+    @FXML private CheckBox shuffleQuestionsCheck;
+    @FXML private CheckBox shuffleChoicesCheck;
 
-    @FXML
-    private Button uploadButton;
+    @FXML private Button uploadButton;
 
-    @FXML
-    private RadioButton asyncModeRadio;
-    @FXML
-    private RadioButton syncModeRadio;
-    @FXML
-    private RadioButton manualSourceRadio;
-    @FXML
-    private RadioButton uploadSourceRadio;
+    @FXML private RadioButton asyncModeRadio;
+    @FXML private RadioButton syncModeRadio;
+    @FXML private RadioButton manualSourceRadio;
+    @FXML private RadioButton uploadSourceRadio;
 
-    @FXML
-    private Label stepOneMessageLabel;
-    @FXML
-    private Label downloadTemplateLabel;
+    @FXML private Label stepOneMessageLabel;
+    @FXML private Label downloadTemplateLabel;
 
     // Step 2: Inline Question Builder
 
-    @FXML
-    private ListView<QuestionDraftRow> questionListView;
-    @FXML
-    private Label questionCountLabel;
-    @FXML
-    private Label editorTitleLabel;
-    @FXML
-    private Label editorSubtitleLabel;
-    @FXML
-    private Label questionStatusBadge;
-    @FXML
-    private ComboBox<String> questionTypeComboBox;
-    @FXML
-    private TextField pointsField;
-    @FXML
-    private TextArea questionTextArea;
-    @FXML
-    private VBox dynamicAnswerContainer;
-    @FXML
-    private Label validationLabel;
-    @FXML
-    private CheckBox useImagesCheckBox;
-    @FXML
-    private VBox questionImageContainer;
+    @FXML private ListView<QuestionDraftRow> questionListView;
+    @FXML private Label questionCountLabel;
+    @FXML private Label editorTitleLabel;
+    @FXML private Label editorSubtitleLabel;
+    @FXML private Label questionStatusBadge;
+    @FXML private ComboBox<String> questionTypeComboBox;
+    @FXML private TextField pointsField;
+    @FXML private TextArea questionTextArea;
+    @FXML private VBox dynamicAnswerContainer;
+    @FXML private Label validationLabel;
+    @FXML private CheckBox useImagesCheckBox;
+    @FXML private VBox questionImageContainer;
 
     private VBox choiceAImageBox;
     private VBox choiceBImageBox;
@@ -169,77 +123,44 @@ public class CreateExamController implements ShellAwareController {
 
     // Step 3: Violations
 
-    @FXML
-    private ComboBox<String> focusLostSeverityCombo;
-    @FXML
-    private ComboBox<String> fullscreenExitSeverityCombo;
-    @FXML
-    private ComboBox<String> windowMinimizeSeverityCombo;
-    @FXML
-    private ComboBox<String> restrictedKeysSeverityCombo;
-    @FXML
-    private ComboBox<String> rightClickSeverityCombo;
-    @FXML
-    private ComboBox<String> multipleMonitorsSeverityCombo;
+    @FXML private ComboBox<String> focusLostSeverityCombo;
+    @FXML private ComboBox<String> fullscreenExitSeverityCombo;
+    @FXML private ComboBox<String> windowMinimizeSeverityCombo;
+    @FXML private ComboBox<String> restrictedKeysSeverityCombo;
+    @FXML private ComboBox<String> rightClickSeverityCombo;
+    @FXML private ComboBox<String> multipleMonitorsSeverityCombo;
 
-    @FXML
-    private Spinner<Integer> focusLostLimitSpinner;
-    @FXML
-    private Spinner<Integer> fullscreenExitLimitSpinner;
-    @FXML
-    private Spinner<Integer> windowMinimizeLimitSpinner;
-    @FXML
-    private Spinner<Integer> restrictedKeysLimitSpinner;
-    @FXML
-    private Spinner<Integer> rightClickLimitSpinner;
-    @FXML
-    private Spinner<Integer> multipleMonitorsLimitSpinner;
+    @FXML private Spinner<Integer> focusLostLimitSpinner;
+    @FXML private Spinner<Integer> fullscreenExitLimitSpinner;
+    @FXML private Spinner<Integer> windowMinimizeLimitSpinner;
+    @FXML private Spinner<Integer> restrictedKeysLimitSpinner;
+    @FXML private Spinner<Integer> rightClickLimitSpinner;
+    @FXML private Spinner<Integer> multipleMonitorsLimitSpinner;
 
-    @FXML
-    private CheckBox focusLostViolationCheck;
-    @FXML
-    private CheckBox fullscreenExitViolationCheck;
-    @FXML
-    private CheckBox windowMinimizeViolationCheck;
-    @FXML
-    private CheckBox restrictedKeysViolationCheck;
-    @FXML
-    private CheckBox rightClickViolationCheck;
-    @FXML
-    private CheckBox multipleMonitorsViolationCheck;
-    @FXML
-    private Spinner<Integer> warningThresholdSpinner;
-    @FXML
-    private Spinner<Integer> majorThresholdSpinner;
-    @FXML
-    private Spinner<Integer> autoSubmitThresholdSpinner;
+    @FXML private CheckBox focusLostViolationCheck;
+    @FXML private CheckBox fullscreenExitViolationCheck;
+    @FXML private CheckBox windowMinimizeViolationCheck;
+    @FXML private CheckBox restrictedKeysViolationCheck;
+    @FXML private CheckBox rightClickViolationCheck;
+    @FXML private CheckBox multipleMonitorsViolationCheck;
+    @FXML private Spinner<Integer> warningThresholdSpinner;
+    @FXML private Spinner<Integer> majorThresholdSpinner;
+    @FXML private Spinner<Integer> autoSubmitThresholdSpinner;
 
     // STEP4:
-    @FXML
-    private Label reviewTitleLabel;
-    @FXML
-    private Label reviewDurationLabel;
-    @FXML
-    private Label reviewScheduleLabel;
-    @FXML
-    private Label reviewQuestionCountLabel;
-    @FXML
-    private Label reviewShuffleQuestionsLabel;
-    @FXML
-    private Label reviewShuffleChoicesLabel;
-    @FXML
-    private VBox reviewQuestionContainer;
-    @FXML
-    private Label reviewValidationBadge;
+    @FXML private Label reviewTitleLabel;
+    @FXML private Label reviewDurationLabel;
+    @FXML private Label reviewScheduleLabel;
+    @FXML private Label reviewQuestionCountLabel;
+    @FXML private Label reviewShuffleQuestionsLabel;
+    @FXML private Label reviewShuffleChoicesLabel;
+    @FXML private VBox reviewQuestionContainer;
+    @FXML private Label reviewValidationBadge;
 
-    @FXML
-    private Button backButton;
-    @FXML
-    private Button nextButton;
-    @FXML
-    private Button draftButton;
-    @FXML
-    private Button publishButton;
+    @FXML private Button backButton;
+    @FXML private Button nextButton;
+    @FXML private Button draftButton;
+    @FXML private Button publishButton;
 
     private final ToggleGroup examModeGroup = new ToggleGroup();
     private final ToggleGroup questionSourceGroup = new ToggleGroup();

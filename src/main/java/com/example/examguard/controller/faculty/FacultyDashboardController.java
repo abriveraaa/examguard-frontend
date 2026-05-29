@@ -1,5 +1,15 @@
 package com.example.examguard.controller.faculty;
 
+
+import com.example.examguard.cache.FacultyLocalCacheKeys;
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.utility.Session;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.example.examguard.utility.OffsetDateTimeAdapter;
+import java.lang.reflect.Type;
+import java.time.OffsetDateTime;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ShellAwareController;
 import com.example.examguard.model.faculty.dto.*;
@@ -17,20 +27,17 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 
-import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class FacultyDashboardController implements ShellAwareController {
 
-    @FXML
-    private VBox activeExamList;
-    @FXML
-    private VBox needsReviewList;
-    @FXML
-    private VBox handledClassList;
+    @FXML private VBox activeExamList;
+    @FXML private VBox needsReviewList;
+    @FXML private VBox handledClassList;
 
     private final FacultyApiService facultyApiService = new FacultyApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
 
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("MMM dd, yyyy • hh:mm a");
@@ -70,113 +77,244 @@ public class FacultyDashboardController implements ShellAwareController {
     }
 
     private void loadProfile() {
+        boolean hasCache = loadProfileFromCache();
+
         runAsync(() -> {
             FacultyProfileDTO profile = facultyApiService.getDashboardProfile();
 
-            Platform.runLater(() -> {
-                if (profile == null || shellController == null) {
-                    return;
-                }
+            localCacheService.save(
+                    FacultyLocalCacheKeys.dashboardProfile(facultyId()),
+                    FacultyLocalCacheKeys.VERSION,
+                    profile
+            );
 
-                String name = profile.getFullName();
-
-                if (name == null || name.isBlank()) {
-                    name = "Faculty";
-                }
-
-                shellController.setGreeting(
-                        "Good day, Prof. " + name,
-                        "Manage active exams, submissions, and integrity reviews."
-                );
-            });
+            Platform.runLater(() -> renderProfile(profile));
 
         }, () -> {
-            if (shellController != null) {
-                shellController.setGreeting(
-                        "Good day, Faculty",
-                        "Manage active exams, submissions, and integrity reviews."
-                );
+            if (!hasCache) {
+                Platform.runLater(() -> {
+                    if (shellController != null) {
+                        shellController.setGreeting(
+                                "Good day, Faculty",
+                                "Manage active exams, submissions, and integrity reviews."
+                        );
+                    }
+                });
             }
         });
     }
 
+    private boolean loadProfileFromCache() {
+        FacultyProfileDTO cached = localCacheService.loadData(
+                FacultyLocalCacheKeys.dashboardProfile(facultyId()),
+                FacultyProfileDTO.class
+        );
+
+        if (cached == null) {
+            return false;
+        }
+
+        renderProfile(cached);
+        return true;
+    }
+
+    private void renderProfile(FacultyProfileDTO profile) {
+        if (profile == null || shellController == null) {
+            return;
+        }
+
+        String name = profile.getFullName();
+
+        if (name == null || name.isBlank()) {
+            name = "Faculty";
+        }
+
+        shellController.setGreeting(
+                "Good day, Prof. " + name,
+                "Manage active exams, submissions, and integrity reviews."
+        );
+    }
+
     private void loadStats() {
+        boolean hasCache = loadStatsFromCache();
+
         runAsync(() -> {
             FacultyDashboardStatsDTO stats = facultyApiService.getDashboardStats();
+
+            localCacheService.save(
+                    FacultyLocalCacheKeys.dashboardStats(facultyId()),
+                    FacultyLocalCacheKeys.VERSION,
+                    stats
+            );
+
             Platform.runLater(() -> renderStats(stats));
+
         }, () -> {
-            Platform.runLater(() -> {
-                if (shellController != null) {
-                    shellController.updateHeroCards(
-                            new DashboardShellController.HeroCardData("Active Exams", "—"),
-                            new DashboardShellController.HeroCardData("Class Offerings", "—"),
-                            new DashboardShellController.HeroCardData("Students Covered", "—"),
-                            new DashboardShellController.HeroCardData("For Review", "—")
-                    );
-                }
-            });
+            if (!hasCache) {
+                Platform.runLater(() -> {
+                    if (shellController != null) {
+                        shellController.updateHeroCards(
+                                new DashboardShellController.HeroCardData("Active Exams", "—"),
+                                new DashboardShellController.HeroCardData("Class Offerings", "—"),
+                                new DashboardShellController.HeroCardData("Students Covered", "—"),
+                                new DashboardShellController.HeroCardData("For Review", "—")
+                        );
+                    }
+                });
+            }
         });
     }
 
+    private boolean loadStatsFromCache() {
+        FacultyDashboardStatsDTO cached = localCacheService.loadData(
+                FacultyLocalCacheKeys.dashboardStats(facultyId()),
+                FacultyDashboardStatsDTO.class
+        );
+
+        if (cached == null) {
+            return false;
+        }
+
+        renderStats(cached);
+        return true;
+    }
+
     private void loadActiveExams() {
-        activeExamList.getChildren().setAll(createEmptyRow("Loading active exams..."));
+        boolean hasCache = loadActiveExamsFromCache();
+
+        if (!hasCache) {
+            activeExamList.getChildren().setAll(
+                    createEmptyRow("Loading active exams...")
+            );
+        }
 
         runAsync(() -> {
             List<FacultyExamSummaryDTO> exams =
                     facultyApiService.getDashboardActiveExams();
 
+            localCacheService.save(
+                    FacultyLocalCacheKeys.dashboardActiveExams(facultyId()),
+                    FacultyLocalCacheKeys.VERSION,
+                    exams
+            );
+
             Platform.runLater(() -> renderActiveExams(exams));
+
         }, () -> {
-            Platform.runLater(() ->
+            if (!hasCache) {
+                Platform.runLater(() -> {
                     activeExamList.getChildren().setAll(
                             createEmptyRow("Unable to load active exams. Click reload.")
-                    )
-            );
+                    );
+                });
+            }
         });
     }
 
+    private boolean loadActiveExamsFromCache() {
+        List<FacultyExamSummaryDTO> cached = localCacheService.loadList(
+                FacultyLocalCacheKeys.dashboardActiveExams(facultyId()),
+                FacultyExamSummaryDTO.class
+        );
+
+        if (cached == null) {
+            return false;
+        }
+
+        renderActiveExams(cached);
+        return true;
+    }
+
     private void loadNeedsReview() {
-        needsReviewList.getChildren().setAll(createEmptyRow("Loading review items..."));
+        boolean hasCache = loadNeedsReviewFromCache();
+
+        if (!hasCache) {
+            needsReviewList.getChildren().setAll(
+                    createEmptyRow("Loading review items...")
+            );
+        }
 
         runAsync(() -> {
             List<FacultyViolationReviewDTO> reviews =
                     facultyApiService.getDashboardNeedsReview();
 
-            Platform.runLater(() -> renderNeedsReview(reviews));
-        }, () -> {
-            Platform.runLater(() ->
-                    needsReviewList.getChildren().setAll(
-                            createEmptyRow("Unable to load review items. Click reload.")
-                    )
+            localCacheService.save(
+                    FacultyLocalCacheKeys.dashboardNeedsReview(facultyId()),
+                    FacultyLocalCacheKeys.VERSION,
+                    reviews
             );
+
+            Platform.runLater(() -> renderNeedsReview(reviews));
+
+        }, () -> {
+            if (!hasCache) {
+                Platform.runLater(() -> {
+                    activeExamList.getChildren().setAll(
+                            createEmptyRow("Unable to load data. Click reload.")
+                    );
+                });
+            }
         });
     }
 
-    private void loadHandledClasses() {
-
-        handledClassList.getChildren().setAll(
-                createEmptyRow("Loading handled classes...")
+    private boolean loadNeedsReviewFromCache() {
+        List<FacultyViolationReviewDTO> cached = localCacheService.loadList(
+                FacultyLocalCacheKeys.dashboardNeedsReview(facultyId()),
+                FacultyViolationReviewDTO.class
         );
 
-        runAsync(() -> {
+        if (cached == null) {
+            return false;
+        }
 
+        renderNeedsReview(cached);
+        return true;
+    }
+
+    private void loadHandledClasses() {
+        boolean hasCache = loadHandledClassesFromCache();
+
+        if (!hasCache) {
+            handledClassList.getChildren().setAll(
+                    createEmptyRow("Loading handled classes...")
+            );
+        }
+
+        runAsync(() -> {
             List<FacultyClassDTO> classes =
                     facultyApiService.getDashboardClasses();
 
-            Platform.runLater(() ->
-                    renderHandledClasses(classes)
+            localCacheService.save(
+                    FacultyLocalCacheKeys.dashboardClasses(facultyId()),
+                    FacultyLocalCacheKeys.VERSION,
+                    classes
             );
+
+            Platform.runLater(() -> renderHandledClasses(classes));
 
         }, () -> {
-
-            Platform.runLater(() ->
-                    handledClassList.getChildren().setAll(
-                            createEmptyRow(
-                                    "Unable to load handled classes."
-                            )
-                    )
-            );
+            if (!hasCache) {
+                Platform.runLater(() -> {
+                    activeExamList.getChildren().setAll(
+                            createEmptyRow("Unable to load data. Click reload.")
+                    );
+                });
+            }
         });
+    }
+
+    private boolean loadHandledClassesFromCache() {
+        List<FacultyClassDTO> cached = localCacheService.loadList(
+                FacultyLocalCacheKeys.dashboardClasses(facultyId()),
+                FacultyClassDTO.class
+        );
+
+        if (cached == null) {
+            return false;
+        }
+
+        renderHandledClasses(cached);
+        return true;
     }
 
     private void renderHandledClasses(
@@ -555,6 +693,16 @@ public class FacultyDashboardController implements ShellAwareController {
         }
 
         return "ONGOING";
+    }
+
+    private String facultyId() {
+        String id = Session.getSchoolId();
+
+        if (id == null || id.isBlank()) {
+            return "unknown-faculty";
+        }
+
+        return id;
     }
 
     private String statusPillClass(String status) {

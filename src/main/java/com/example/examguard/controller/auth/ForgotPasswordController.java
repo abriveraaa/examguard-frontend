@@ -2,6 +2,7 @@ package com.example.examguard.controller.auth;
 
 import com.example.examguard.model.core.response.LoginApiResponse;
 import com.example.examguard.service.AuthApiService;
+import com.example.examguard.utility.ApiErrorUtil;
 import com.example.examguard.utility.LoadingSpinner;
 import com.example.examguard.utility.SceneManager;
 import com.google.gson.Gson;
@@ -16,18 +17,12 @@ import java.time.format.DateTimeFormatter;
 
 public class ForgotPasswordController {
 
-    @FXML
-    private TextField userIdField;
-    @FXML
-    private TextField emailField;
-    @FXML
-    private DatePicker birthdayField;
-    @FXML
-    private Button forgotPasswordButton;
-    @FXML
-    private ProgressIndicator loadingSpinner;
-    @FXML
-    private Label errorLabel;
+    @FXML private TextField userIdField;
+    @FXML private TextField emailField;
+    @FXML private DatePicker birthdayField;
+    @FXML private Button forgotPasswordButton;
+    @FXML private ProgressIndicator loadingSpinner;
+    @FXML private Label errorLabel;
 
     private final AuthApiService authApiService = new AuthApiService();
     private final Gson gson = new Gson();
@@ -125,9 +120,10 @@ public class ForgotPasswordController {
         forgotTask.setOnFailed(event -> {
             setLoadingState(false);
             errorLabel.setStyle("-fx-text-fill: red;");
-            errorLabel.setText("Cannot connect to backend.");
+
 
             Throwable ex = forgotTask.getException();
+            errorLabel.setText(ApiErrorUtil.extractMessage(ex));
             if (ex != null) {
                 ex.printStackTrace();
             }

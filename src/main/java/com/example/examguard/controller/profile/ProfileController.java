@@ -1,5 +1,8 @@
 package com.example.examguard.controller.profile;
 
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.cache.LocalImageCacheService;
+import com.example.examguard.cache.StudentLocalCacheKeys;
 import com.example.examguard.config.AppConfig;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.model.profile.ProfileActivityDTO;
@@ -52,8 +55,35 @@ public class ProfileController {
     @FXML private Button refreshButton;
     @FXML private Button uploadPhotoButton;
 
-    @FXML private void initialize() {
+    private final LocalCacheService localCacheService = new LocalCacheService();
+    private final LocalImageCacheService localImageCacheService = new LocalImageCacheService();
+    private boolean profileCacheShown = false;
+
+    @FXML
+    private void initialize() {
+        profileCacheShown = loadCachedProfileFirst();
         loadProfile();
+    }
+
+    private boolean loadCachedProfileFirst() {
+        String schoolId = Session.getSchoolId();
+
+        if (schoolId == null || schoolId.isBlank()) {
+            return false;
+        }
+
+        ProfileResponseDTO cachedProfile =
+                localCacheService.loadData(
+                        StudentLocalCacheKeys.profile(schoolId),
+                        ProfileResponseDTO.class
+                );
+
+        if (cachedProfile == null) {
+            return false;
+        }
+
+        bindProfile(cachedProfile);
+        return true;
     }
 
     private void loadProfile() {
@@ -67,14 +97,30 @@ public class ProfileController {
         };
 
         task.setOnSucceeded(event -> {
-            bindProfile(task.getValue());
+            ProfileResponseDTO profile = task.getValue();
+
+            bindProfile(profile);
+
+            String schoolId = Session.getSchoolId();
+
+            if (schoolId != null && !schoolId.isBlank()) {
+                localCacheService.save(
+                        StudentLocalCacheKeys.profile(schoolId),
+                        String.valueOf(System.currentTimeMillis()),
+                        profile
+                );
+            }
+
             setLoading(false);
         });
 
         task.setOnFailed(event -> {
             task.getException().printStackTrace();
             setLoading(false);
-            showAlert("Profile Error", "Unable to load profile: " + task.getException().getMessage());
+
+            if (!profileCacheShown) {
+                showAlert("Profile Error", "Unable to load profile: " + task.getException().getMessage());
+            }
         });
 
         Thread thread = new Thread(task);
@@ -117,7 +163,17 @@ public class ProfileController {
     }
 
     private void loadProfileImage(ProfileResponseDTO profile) {
+        String schoolId = Session.getSchoolId();
         String imageUrl = profile.getProfileImageUrl();
+
+        if (schoolId != null && !schoolId.isBlank()
+                && localImageCacheService.hasAvatar(schoolId)) {
+
+            profileImageView.setImage(
+                    new Image(localImageCacheService.getAvatarUri(schoolId), true)
+            );
+            return;
+        }
 
         if (imageUrl == null || imageUrl.isBlank()) {
             profileImageView.setImage(null);
@@ -128,9 +184,28 @@ public class ProfileController {
                 ? imageUrl
                 : AppConfig.BASE_URL + imageUrl;
 
-        profileImageView.setImage(
-                new Image(finalUrl, true)
-        );
+        Image image = new Image(finalUrl, true);
+
+        image.errorProperty().addListener((obs, oldValue, hasError) -> {
+            if (hasError) {
+                System.out.println("Profile avatar failed to load: " + finalUrl);
+            }
+        });
+
+        image.progressProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue.doubleValue() >= 1.0 && !image.isError()) {
+                Platform.runLater(() -> {
+                    profileImageView.setImage(image);
+
+                    new Thread(() ->
+                            localImageCacheService.saveAvatarFromUrl(
+                                    schoolId,
+                                    finalUrl
+                            )
+                    ).start();
+                });
+            }
+        });
     }
 
     private void renderClasses(ProfileResponseDTO profile) {
@@ -241,6 +316,7 @@ public class ProfileController {
         };
 
         task.setOnSucceeded(event -> {
+            localImageCacheService.deleteAvatar(Session.getSchoolId());
             loadProfile();
             showAlert("Upload Successful", "Profile photo updated successfully.");
         });

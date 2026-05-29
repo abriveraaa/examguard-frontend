@@ -1,8 +1,10 @@
 package com.example.examguard.controller.auth;
 
+import com.example.examguard.cache.StudentLocalCachePreloadService;
 import com.example.examguard.model.core.response.LoginApiResponse;
 import com.example.examguard.model.enums.UserType;
 import com.example.examguard.service.AuthApiService;
+import com.example.examguard.utility.ApiErrorUtil;
 import com.example.examguard.utility.LoadingSpinner;
 import com.example.examguard.utility.SceneManager;
 import com.example.examguard.utility.Session;
@@ -21,16 +23,11 @@ import java.util.ResourceBundle;
 public class LoginController implements Initializable {
 
     // UI
-    @FXML
-    private TextField usernameField;
-    @FXML
-    private PasswordField passwordField;
-    @FXML
-    private Label errorLabel;
-    @FXML
-    private Button loginButton;
-    @FXML
-    private ProgressIndicator loginSpinner;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Label errorLabel;
+    @FXML private Button loginButton;
+    @FXML private ProgressIndicator loginSpinner;
 
     // DATA
     private final AuthApiService authApiService = new AuthApiService();
@@ -98,7 +95,13 @@ public class LoginController implements Initializable {
                     UserType userType = UserType.fromString(roleFromApi);
 
                     if (userType != null) {
+
+                        if (userType == UserType.STUDENT) {
+                            new StudentLocalCachePreloadService().preloadAfterLogin();
+                        }
+
                         SceneManager.homePagebyRole(userType.name());
+
                     } else {
                         errorLabel.setStyle("-fx-text-fill: red;");
                         errorLabel.setText("Invalid role.");
@@ -120,9 +123,10 @@ public class LoginController implements Initializable {
             setLoadingState(false);
             errorLabel.setStyle("-fx-text-fill: red;");
             errorLabel.setMinHeight(40);
-            errorLabel.setText("Cannot connect to backend.");
 
             Throwable ex = loginTask.getException();
+            errorLabel.setText(ApiErrorUtil.extractMessage(ex));
+
             if (ex != null) {
                 ex.printStackTrace();
             }
@@ -159,5 +163,34 @@ public class LoginController implements Initializable {
                 "Logging in...",
                 "LOGIN"
         );
+    }
+
+    private String extractLoginErrorMessage(Throwable ex) {
+        if (ex == null || ex.getMessage() == null) {
+            return "Login failed. Please try again.";
+        }
+
+        String error = ex.getMessage();
+
+        try {
+            int jsonStart = error.indexOf("{");
+
+            if (jsonStart >= 0) {
+                String json = error.substring(jsonStart);
+
+                LoginApiResponse apiResponse = gson.fromJson(json, LoginApiResponse.class);
+
+                if (apiResponse != null &&
+                        apiResponse.getMessage() != null &&
+                        !apiResponse.getMessage().isBlank()) {
+                    return apiResponse.getMessage();
+                }
+            }
+
+        } catch (Exception ignored) {
+            // fallback below
+        }
+
+        return "Login failed. Please check your username and password.";
     }
 }

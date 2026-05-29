@@ -2,6 +2,7 @@ package com.example.examguard.controller.auth;
 
 import com.example.examguard.model.core.response.LoginApiResponse;
 import com.example.examguard.service.AuthApiService;
+import com.example.examguard.utility.ApiErrorUtil;
 import com.example.examguard.utility.LoadingSpinner;
 import com.example.examguard.utility.SceneManager;
 import com.google.gson.Gson;
@@ -101,9 +102,10 @@ public class ActivateAccountController {
         activateTask.setOnFailed(event -> {
             setLoadingState(false);
             errorLabel.setStyle("-fx-text-fill: red;");
-            errorLabel.setText("Cannot connect to backend.");
 
             Throwable ex = activateTask.getException();
+            errorLabel.setText(ApiErrorUtil.extractMessage(ex));
+
             if (ex != null) {
                 ex.printStackTrace();
             }
@@ -123,6 +125,38 @@ public class ActivateAccountController {
                 "Activating...",
                 "ACTIVATE MY ACCOUNT"
         );
+    }
+
+    private String extractApiErrorMessage(Throwable ex) {
+
+        if (ex == null || ex.getMessage() == null) {
+            return "Request failed.";
+        }
+
+        try {
+            String error = ex.getMessage();
+
+            int jsonStart = error.indexOf("{");
+
+            if (jsonStart >= 0) {
+
+                String json = error.substring(jsonStart);
+
+                LoginApiResponse response =
+                        gson.fromJson(json, LoginApiResponse.class);
+
+                if (response != null
+                        && response.getMessage() != null
+                        && !response.getMessage().isBlank()) {
+
+                    return response.getMessage();
+                }
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return "Request failed.";
     }
 
     private void configureBirthdayPicker() {

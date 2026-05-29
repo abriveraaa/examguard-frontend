@@ -581,9 +581,17 @@ public class ExamApiService {
     public ExamTakingResponse getExamForTaking(Long examId) throws Exception {
         String endpoint = AppConfig.BASE_URL + "/exams/" + examId + "/taking";
 
+        if (Session.getSchoolId() == null || Session.getSchoolId().isBlank()) {
+            throw new RuntimeException("Session school ID is missing. Please login again.");
+        }
+
         HttpURLConnection conn = null;
 
         try {
+            System.out.println("[TAKING] Requesting: " + endpoint);
+            System.out.println("[TAKING] School ID: " + Session.getSchoolId());
+            System.out.println("[TAKING] Role: " + Session.getRole());
+
             URL url = new URL(endpoint);
             conn = (HttpURLConnection) url.openConnection();
 
@@ -592,25 +600,34 @@ public class ExamApiService {
 
             applyAuthHeaders(conn);
 
-            if (Session.getSchoolId() == null || Session.getSchoolId().isBlank()) {
-                throw new RuntimeException("Session school ID is missing. Please login again.");
-            }
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
 
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
+            int status = conn.getResponseCode();
 
             String responseBody = getResponseBody(conn);
 
-            if (isSuccess(conn.getResponseCode())) {
-                return gson.fromJson(responseBody, ExamTakingResponse.class);
+            if (isSuccess(status)) {
+                ExamTakingResponse response = gson.fromJson(responseBody, ExamTakingResponse.class);
+
+                if (response == null) {
+                    throw new RuntimeException("Backend returned empty/invalid exam taking response.");
+                }
+
+                return response;
             }
 
             throw new RuntimeException(
                     "Failed to fetch exam for taking. Status: "
-                            + conn.getResponseCode()
+                            + status
                             + ". Response: "
                             + responseBody
             );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("[TAKING] Exception: " + e.getMessage());
+            throw e;
 
         } finally {
             if (conn != null) conn.disconnect();

@@ -18,11 +18,7 @@ public class AiAssetSyncService {
 
     private static final String BASE_URL = AppConfig.BASE_URL;
 
-    private static final Path AI_ROOT = Paths.get(
-            System.getProperty("user.home"),
-            "ExamGuard",
-            "ai"
-    );
+    private static final Path AI_ROOT = Paths.get(System.getProperty("user.home"), "ExamGuard", "ai");
 
     private static final Path LOCAL_MANIFEST = AI_ROOT.resolve("manifest.json");
 
@@ -66,6 +62,10 @@ public class AiAssetSyncService {
                 : conn.getErrorStream();
 
         String body = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+
+        System.out.println("===== AI MANIFEST =====");
+        System.out.println(body);
+        System.out.println("=======================");
 
         if (status < 200 || status >= 300) {
             throw new RuntimeException("Failed to fetch AI manifest. HTTP " + status + ": " + body);

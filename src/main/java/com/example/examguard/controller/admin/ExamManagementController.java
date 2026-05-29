@@ -1,5 +1,8 @@
 package com.example.examguard.controller.admin;
 
+import com.example.examguard.cache.ExamLocalCacheKeys;
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.utility.Session;
 import com.example.examguard.config.AppConfig;
 import com.example.examguard.controller.exam.CreateExamController;
 import com.example.examguard.controller.layout.DashboardShellController;
@@ -66,67 +69,42 @@ public class ExamManagementController implements ShellAwareController {
 
     private final ExamApiService examApiService = new ExamApiService();
     private final FacultyApiService facultyApiService = new FacultyApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
+
     private final PauseTransition searchDebounce = new PauseTransition(Duration.millis(250));
     private final ObservableList<ExamRow> examRows = FXCollections.observableArrayList();
-    @FXML
-    private TableView<ExamRow> examTable;
-    @FXML
-    private TableColumn<ExamRow, String> dateCreatedColumn;
-    @FXML
-    private TableColumn<ExamRow, String> validityColumn;
-    @FXML
-    private TableColumn<ExamRow, String> titleColumn;
-    @FXML
-    private TableColumn<ExamRow, String> statusColumn;
-    @FXML
-    private TableColumn<ExamRow, String> durationColumn;
-    @FXML
-    private TableColumn<ExamRow, String> assignedColumn;
-    @FXML
-    private TableColumn<ExamRow, String> takersColumn;
-    @FXML
-    private TableColumn<ExamRow, String> createdByColumn;
-    @FXML
-    private TableColumn<ExamRow, String> updatedByColumn;
-    @FXML
-    private TableColumn<ExamRow, Void> actionsColumn;
-    @FXML
-    private ComboBox<String> termFilterComboBox;
-    @FXML
-    private BorderPane listModeContainer;
-    @FXML
-    private BorderPane workspaceModeContainer;
-    @FXML
-    private StackPane workspaceContent;
-    @FXML
-    private Label workspaceTitleLabel;
-    @FXML
-    private Label workspaceSubtitleLabel;
-    @FXML
-    private Button releaseResultsButton;
-    @FXML
-    private Button reportsTabButton;
-    @FXML
-    private Label itemCountLabel;
-    @FXML
-    private TextField searchField;
-    @FXML
-    private Button reloadButton;
-    @FXML
-    private StackPane loadingOverlay;
-    @FXML
-    private Button overviewTabButton;
-    @FXML
-    private Button studentsTabButton;
-    @FXML
-    private Button activityLogTabButton;
-    @FXML
-    private Button leaderboardTabButton;
+    @FXML private TableView<ExamRow> examTable;
+    @FXML private TableColumn<ExamRow, String> dateCreatedColumn;
+    @FXML private TableColumn<ExamRow, String> validityColumn;
+    @FXML private TableColumn<ExamRow, String> titleColumn;
+    @FXML private TableColumn<ExamRow, String> statusColumn;
+    @FXML private TableColumn<ExamRow, String> durationColumn;
+    @FXML private TableColumn<ExamRow, String> assignedColumn;
+    @FXML private TableColumn<ExamRow, String> takersColumn;
+    @FXML private TableColumn<ExamRow, String> createdByColumn;
+    @FXML private TableColumn<ExamRow, String> updatedByColumn;
+    @FXML private TableColumn<ExamRow, Void> actionsColumn;
+    @FXML private ComboBox<String> termFilterComboBox;
+    @FXML private BorderPane listModeContainer;
+    @FXML private BorderPane workspaceModeContainer;
+    @FXML private StackPane workspaceContent;
+    @FXML private Label workspaceTitleLabel;
+    @FXML private Label workspaceSubtitleLabel;
+    @FXML private Button releaseResultsButton;
+    @FXML private Button reportsTabButton;
+    @FXML private Label itemCountLabel;
+    @FXML private TextField searchField;
+    @FXML private Button reloadButton;
+    @FXML private StackPane loadingOverlay;
+    @FXML private Button overviewTabButton;
+    @FXML private Button studentsTabButton;
+    @FXML private Button activityLogTabButton;
+    @FXML private Button leaderboardTabButton;
     private FacultyExamStudentDTO currentReviewStudent;
     private FacultyAttemptReviewResponse currentAttemptReview;
     private FilteredList<ExamRow> filteredRows;
     private DashboardShellController shellController;
-    private Task<List<ExamRow>> currentLoadTask;
+    private Task<List<ExamResponse>> currentLoadTask;
     private FacultyExamDetailResponse currentWorkspaceDetail;
 
     private boolean loading = false;
@@ -162,13 +140,19 @@ public class ExamManagementController implements ShellAwareController {
     @FXML
     private void showWorkspaceOverview() {
         setActiveWorkspaceTab(overviewTabButton);
+
         if (selectedWorkspaceExamId == null) {
             return;
         }
 
-        workspaceContent.getChildren().setAll(
-                createLoadingBox("Loading exam overview...")
-        );
+        boolean hasCache =
+                loadWorkspaceOverviewFromCache(selectedWorkspaceExamId);
+
+        if (!hasCache) {
+            workspaceContent.getChildren().setAll(
+                    createLoadingBox("Loading exam overview...")
+            );
+        }
 
         Task<FacultyExamDetailResponse> task = new Task<>() {
             @Override
@@ -179,21 +163,54 @@ public class ExamManagementController implements ShellAwareController {
 
         task.setOnSucceeded(event -> {
             FacultyExamDetailResponse detail = task.getValue();
+
+            localCacheService.save(
+                    workspaceOverviewCacheKey(selectedWorkspaceExamId),
+                    ExamLocalCacheKeys.VERSION,
+                    detail
+            );
+
             renderWorkspaceOverview(detail);
         });
 
         task.setOnFailed(event -> {
             Throwable ex = task.getException();
-            if (ex != null) ex.printStackTrace();
 
-            workspaceContent.getChildren().setAll(
-                    createLoadingBox("Unable to load exam overview.")
-            );
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+
+            if (!hasCache) {
+                workspaceContent.getChildren().setAll(
+                        createLoadingBox("Unable to load exam overview.")
+                );
+            }
         });
 
         Thread thread = new Thread(task, "load-exam-overview-thread");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private boolean loadWorkspaceOverviewFromCache(Long examId) {
+        try {
+            FacultyExamDetailResponse cached =
+                    localCacheService.loadData(
+                            workspaceOverviewCacheKey(examId),
+                            FacultyExamDetailResponse.class
+                    );
+
+            if (cached == null) {
+                return false;
+            }
+
+            renderWorkspaceOverview(cached);
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     private void renderWorkspaceOverview(FacultyExamDetailResponse detail) {
@@ -476,9 +493,14 @@ public class ExamManagementController implements ShellAwareController {
             return;
         }
 
-        workspaceContent.getChildren().setAll(
-                createLoadingBox("Loading students...")
-        );
+        boolean hasCache =
+                loadWorkspaceStudentsFromCache(selectedWorkspaceExamId);
+
+        if (!hasCache) {
+            workspaceContent.getChildren().setAll(
+                    createLoadingBox("Loading students...")
+            );
+        }
 
         Task<List<FacultyExamStudentDTO>> task = new Task<>() {
             @Override
@@ -488,21 +510,68 @@ public class ExamManagementController implements ShellAwareController {
         };
 
         task.setOnSucceeded(event -> {
-            renderWorkspaceStudents(task.getValue());
+            List<FacultyExamStudentDTO> students = task.getValue();
+
+            if (students == null) {
+                students = List.of();
+            }
+
+            localCacheService.save(
+                    workspaceStudentsCacheKey(selectedWorkspaceExamId),
+                    ExamLocalCacheKeys.VERSION,
+                    students
+            );
+
+            renderWorkspaceStudents(students);
         });
 
         task.setOnFailed(event -> {
             Throwable ex = task.getException();
-            if (ex != null) ex.printStackTrace();
 
-            workspaceContent.getChildren().setAll(
-                    createLoadingBox("Unable to load students.")
-            );
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+
+            if (!hasCache) {
+                workspaceContent.getChildren().setAll(
+                        createLoadingBox("Unable to load students.")
+                );
+            }
         });
 
         Thread thread = new Thread(task, "load-exam-students-thread");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private boolean loadWorkspaceStudentsFromCache(Long examId) {
+        try {
+            List<FacultyExamStudentDTO> cached =
+                    localCacheService.loadList(
+                            workspaceStudentsCacheKey(examId),
+                            FacultyExamStudentDTO.class
+                    );
+
+            if (cached == null) {
+                return false;
+            }
+
+            renderWorkspaceStudents(cached);
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void deleteExamManagementCache(Long examId) {
+        localCacheService.delete(examsCacheKey());
+
+        if (examId != null) {
+            localCacheService.delete(workspaceOverviewCacheKey(examId));
+            localCacheService.delete(workspaceStudentsCacheKey(examId));
+        }
     }
 
     private void makeTableFillWorkspace(
@@ -925,6 +994,8 @@ public class ExamManagementController implements ShellAwareController {
             };
 
             task.setOnSucceeded(event -> {
+                deleteExamManagementCache(selectedWorkspaceExamId);
+
                 markReviewedButton.setText("✔ Reviewed");
                 markReviewedButton.setDisable(true);
                 showWorkspaceStudents();
@@ -1297,6 +1368,7 @@ public class ExamManagementController implements ShellAwareController {
                 };
 
                 saveTask.setOnSucceeded(e -> {
+                    deleteExamManagementCache(selectedWorkspaceExamId);
 
                     answer.setEarnedPoints(BigDecimal.valueOf(finalEnteredScore));
                     questionHeader.setText(
@@ -1904,6 +1976,8 @@ public class ExamManagementController implements ShellAwareController {
                 answer.setNeedsChecking(false);
                 answer.setReviewStatus("REVIEWED");
 
+                deleteExamManagementCache(selectedWorkspaceExamId);
+
                 stage.close();
 
                 if (currentAttemptReview != null) {
@@ -1972,6 +2046,8 @@ public class ExamManagementController implements ShellAwareController {
                     violation.setReviewStatus(decision);
                     violation.setReviewedAt(OffsetDateTime.now());
                 }
+
+                deleteExamManagementCache(selectedWorkspaceExamId);
 
                 stage.close();
 
@@ -3215,6 +3291,7 @@ public class ExamManagementController implements ShellAwareController {
                 releaseResultsButton.setText("Results Released");
                 releaseResultsButton.setDisable(true);
                 showSuccess(response.getMessage());
+                deleteExamManagementCache(selectedWorkspaceExamId);
                 showWorkspaceOverview();
             } else {
                 releaseResultsButton.setText("Release Results");
@@ -3481,7 +3558,7 @@ public class ExamManagementController implements ShellAwareController {
                     }
 
                     try {
-                        runExamActionAsync("publish-exam-thread", () -> {
+                        runExamActionAsync("publish-exam-thread", row.getExamId(), () -> {
                             try {
                                 examApiService.publishExamById(row.getExamId());
                             } catch (Exception e) {
@@ -3522,7 +3599,7 @@ public class ExamManagementController implements ShellAwareController {
                     }
 
                     try {
-                        runExamActionAsync("cancel-exam-thread", () -> {
+                        runExamActionAsync("cancel-exam-thread", row.getExamId(), () -> {
                             try {
                                 examApiService.cancelExam(row.getExamId());
                             } catch (Exception e) {
@@ -3554,9 +3631,9 @@ public class ExamManagementController implements ShellAwareController {
                     }
 
                     try {
-                        runExamActionAsync("restore-exam-thread", () -> {
+                        runExamActionAsync("cancel-exam-thread", row.getExamId(), () -> {
                             try {
-                                examApiService.restoreExam(row.getExamId());
+                                examApiService.cancelExam(row.getExamId());
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
@@ -3703,7 +3780,9 @@ public class ExamManagementController implements ShellAwareController {
 
             modal.showAndWait();
 
+            deleteExamManagementCache(examId);
             loadExamsFromBackend();
+
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -3715,44 +3794,164 @@ public class ExamManagementController implements ShellAwareController {
 
         if (loading) return;
 
+        boolean hasCache = loadExamsFromCache();
+
         if (currentLoadTask != null && currentLoadTask.isRunning()) {
             currentLoadTask.cancel();
         }
 
-        setLoading(true);
+        if (!hasCache) {
+            setLoading(true);
+        } else {
+            setRefreshingInBackground(true);
+        }
 
         currentLoadTask = new Task<>() {
             @Override
-            protected List<ExamRow> call() throws Exception {
-                List<ExamResponse> responses = examApiService.fetchExams();
-                Platform.runLater(() -> populateFilterDropdowns(responses));
-
-                return responses.stream()
-                        .map(ExamManagementController.this::mapToExamRow)
-                        .toList();
+            protected List<ExamResponse> call() throws Exception {
+                return examApiService.fetchExams();
             }
         };
 
         currentLoadTask.setOnSucceeded(event -> {
-            examRows.setAll(currentLoadTask.getValue());
+            List<ExamResponse> responses = currentLoadTask.getValue();
+
+            if (responses == null) {
+                responses = List.of();
+            }
+
+            localCacheService.save(
+                    examsCacheKey(),
+                    ExamLocalCacheKeys.VERSION,
+                    responses
+            );
+
+            populateFilterDropdowns(responses);
+
+            List<ExamRow> rows =
+                    responses.stream()
+                            .map(ExamManagementController.this::mapToExamRow)
+                            .toList();
+
+            examRows.setAll(rows);
             applyFilters();
             updateItemCount();
             updateShellExamCards();
+
             setLoading(false);
+            setRefreshingInBackground(false);
         });
 
         currentLoadTask.setOnFailed(event -> {
             Throwable ex = currentLoadTask.getException();
-            if (ex != null) ex.printStackTrace();
+
+            if (ex != null) {
+                ex.printStackTrace();
+            }
 
             updateItemCount();
+
             setLoading(false);
-            showError("Unable to load exams. Please check your backend connection.");
+            setRefreshingInBackground(false);
+
+            if (!hasCache) {
+                showError("Unable to load exams. Please check your backend connection.");
+            }
         });
 
         Thread thread = new Thread(currentLoadTask, "load-exams-thread");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void setRefreshingInBackground(boolean refreshing) {
+        if (reloadButton != null) {
+            reloadButton.setDisable(refreshing);
+        }
+
+        if (itemCountLabel != null && refreshing) {
+            itemCountLabel.setText(
+                    filteredRows == null
+                            ? examRows.size() + " Items • Refreshing..."
+                            : filteredRows.size() + " Items • Refreshing..."
+            );
+        }
+    }
+
+    private boolean loadExamsFromCache() {
+        try {
+            List<ExamResponse> cachedResponses =
+                    localCacheService.loadList(
+                            examsCacheKey(),
+                            ExamResponse.class
+                    );
+
+            if (cachedResponses == null) {
+                return false;
+            }
+
+            populateFilterDropdowns(cachedResponses);
+
+            List<ExamRow> rows =
+                    cachedResponses.stream()
+                            .map(this::mapToExamRow)
+                            .toList();
+
+            examRows.setAll(rows);
+            applyFilters();
+            updateItemCount();
+            updateShellExamCards();
+
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    private String currentRole() {
+        String role = Session.getRole();
+
+        if (role == null || role.isBlank()) {
+            return "UNKNOWN_ROLE";
+        }
+
+        return role;
+    }
+
+    private String currentUserId() {
+        String id = Session.getSchoolId();
+
+        if (id == null || id.isBlank()) {
+            return "UNKNOWN_USER";
+        }
+
+        return id;
+    }
+
+    private String examsCacheKey() {
+        return ExamLocalCacheKeys.exams(
+                currentRole(),
+                currentUserId()
+        );
+    }
+
+    private String workspaceOverviewCacheKey(Long examId) {
+        return ExamLocalCacheKeys.workspaceOverview(
+                currentRole(),
+                currentUserId(),
+                examId
+        );
+    }
+
+    private String workspaceStudentsCacheKey(Long examId) {
+        return ExamLocalCacheKeys.workspaceStudents(
+                currentRole(),
+                currentUserId(),
+                examId
+        );
     }
 
     private void populateFilterDropdowns(List<ExamResponse> exams) {
@@ -4714,9 +4913,18 @@ public class ExamManagementController implements ShellAwareController {
         return box;
     }
 
-    private void runExamActionAsync(String loadingText, Runnable action) {
-        setLoading(true);
+    private void runExamActionAsync(
+            String threadName,
+            Runnable action
+    ) {
+        runExamActionAsync(threadName, null, action);
+    }
 
+    private void runExamActionAsync(
+            String threadName,
+            Long affectedExamId,
+            Runnable action
+    ) {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
@@ -4725,19 +4933,22 @@ public class ExamManagementController implements ShellAwareController {
             }
         };
 
-        task.setOnSucceeded(e -> {
-            setLoading(false);
+        task.setOnSucceeded(event -> {
+            deleteExamManagementCache(affectedExamId);
             loadExamsFromBackend();
         });
 
-        task.setOnFailed(e -> {
-            setLoading(false);
+        task.setOnFailed(event -> {
             Throwable ex = task.getException();
-            if (ex != null) ex.printStackTrace();
-            showError(ex == null ? "Action failed." : ex.getMessage());
+
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+
+            showError("Unable to complete action.");
         });
 
-        Thread thread = new Thread(task, loadingText);
+        Thread thread = new Thread(task, threadName);
         thread.setDaemon(true);
         thread.start();
     }

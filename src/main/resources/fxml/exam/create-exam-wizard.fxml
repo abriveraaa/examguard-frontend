@@ -433,44 +433,6 @@
 
                     </VBox>
 
-                    <VBox spacing="14" prefWidth="340" styleClass="violation-card">
-
-                        <VBox spacing="4">
-                            <Label text="Global Actions" styleClass="card-title" />
-                            <Label text="These settings decide what happens when violations accumulate."
-                                   styleClass="card-subtitle" />
-                        </VBox>
-
-                        <VBox spacing="8" styleClass="violation-threshold-box">
-                            <Label text="Warning Threshold" styleClass="field-label" />
-                            <Spinner fx:id="warningThresholdSpinner" editable="true" prefWidth="130" styleClass="modern-spinner" />
-                            <Label text="0 means show warning immediately after the first recorded violation."
-                                   wrapText="true" styleClass="helper-text" />
-                        </VBox>
-
-                        <VBox spacing="8" styleClass="violation-threshold-box">
-                            <Label text="Major Threshold" styleClass="field-label" />
-                            <Spinner fx:id="majorThresholdSpinner" editable="true" prefWidth="130" styleClass="modern-spinner" />
-                            <Label text="0 means mark the attempt high-risk after the first recorded violation."
-                                   wrapText="true" styleClass="helper-text" />
-                        </VBox>
-
-                        <VBox spacing="8" styleClass="violation-threshold-box">
-                            <Label text="Auto-submit Threshold" styleClass="field-label" />
-                            <Spinner fx:id="autoSubmitThresholdSpinner" editable="true" prefWidth="130" styleClass="modern-spinner" />
-                            <Label text="0 means auto-submit is disabled."
-                                   wrapText="true" styleClass="helper-text" />
-                        </VBox>
-
-                        <VBox spacing="6" styleClass="violation-info-card">
-                            <Label text="Severity Guide" styleClass="violation-info-title" />
-                            <Label text="Minor: recorded only&#10;Major: warning + flagged attempt&#10;Critical: high-risk and may trigger auto-submit"
-                                   wrapText="true"
-                                   styleClass="violation-info-text" />
-                        </VBox>
-
-                    </VBox>
-
                 </HBox>
 
             </VBox>
