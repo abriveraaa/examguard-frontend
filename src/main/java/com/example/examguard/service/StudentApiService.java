@@ -83,7 +83,7 @@ public class StudentApiService {
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(AppConfig.BASE_URL + endpoint))
-                .timeout(Duration.ofSeconds(8))
+                .timeout(Duration.ofSeconds(20))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + Session.getSessionToken())
                 .GET()
