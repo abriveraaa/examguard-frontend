@@ -286,13 +286,11 @@ public class ExamApiService {
                 ? conn.getInputStream()
                 : conn.getErrorStream();
 
-        System.out.println("Preview template response code: " + responseCode);
 
         try (Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             UploadExamTemplateResponse response =
                     gson.fromJson(reader, UploadExamTemplateResponse.class);
 
-            System.out.println("Preview template response code: " + responseCode);
 
             if (responseCode < 200 || responseCode >= 300) {
                 String message = response != null && response.getMessage() != null
@@ -506,7 +504,6 @@ public class ExamApiService {
             int statusCode = conn.getResponseCode();
 
             if (statusCode == 400 || statusCode == 404 || statusCode == 409) {
-                System.out.println("Phone camera session already ended or unavailable. HTTP " + statusCode);
                 return;
             }
 
@@ -588,9 +585,6 @@ public class ExamApiService {
         HttpURLConnection conn = null;
 
         try {
-            System.out.println("[TAKING] Requesting: " + endpoint);
-            System.out.println("[TAKING] School ID: " + Session.getSchoolId());
-            System.out.println("[TAKING] Role: " + Session.getRole());
 
             URL url = new URL(endpoint);
             conn = (HttpURLConnection) url.openConnection();
@@ -626,7 +620,6 @@ public class ExamApiService {
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("[TAKING] Exception: " + e.getMessage());
             throw e;
 
         } finally {

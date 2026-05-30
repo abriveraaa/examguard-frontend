@@ -72,7 +72,6 @@ public class DashboardShellController {
             var resource = getClass().getResource(fxmlPath);
 
             if (resource == null) {
-                System.out.println("FXML not found: " + fxmlPath);
                 return null;
             }
 
@@ -118,7 +117,6 @@ public class DashboardShellController {
             return controller;
 
         } catch (Exception e) {
-            System.out.println("Failed to load: " + fxmlPath);
             e.printStackTrace();
             return null;
         }

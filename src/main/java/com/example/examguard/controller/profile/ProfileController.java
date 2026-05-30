@@ -187,9 +187,7 @@ public class ProfileController {
         Image image = new Image(finalUrl, true);
 
         image.errorProperty().addListener((obs, oldValue, hasError) -> {
-            if (hasError) {
-                System.out.println("Profile avatar failed to load: " + finalUrl);
-            }
+
         });
 
         image.progressProperty().addListener((obs, oldValue, newValue) -> {

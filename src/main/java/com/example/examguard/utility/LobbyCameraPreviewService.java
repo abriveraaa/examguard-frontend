@@ -468,15 +468,6 @@ public class LobbyCameraPreviewService {
                             + " mouth="
                             + String.format("%.4f", result.getMouthOpening());
 
-            System.out.println(
-                    "MEDIAPIPE OVERLAY: "
-                            + overlayMessage
-                            + " | "
-                            + metricsMessage
-                            + " | "
-                            + qualityMessage
-            );
-
             Imgproc.rectangle(
                     frame,
                     topLeft,

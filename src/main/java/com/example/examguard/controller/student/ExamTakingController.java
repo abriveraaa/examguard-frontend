@@ -1664,16 +1664,12 @@ public class ExamTakingController {
 
         if (shouldUsePhoneCamera()) {
 
-            System.out.println("Exam monitoring source: PHONE CAMERA");
-
             stopLobbyCameraPreview();
 
             startPhonePreviewPolling(currentPhoneCameraToken);
 
             return;
         }
-
-        System.out.println("Exam monitoring source: LOCAL WEBCAM");
 
         stopPhonePreviewPolling();
 
@@ -2340,12 +2336,6 @@ public class ExamTakingController {
         boolean shouldRecord = currentAttempts > allowedAttempts;
 
         if (!shouldRecord) {
-            System.out.println(
-                    "[VIOLATION ALLOWED] " +
-                            violationType +
-                            " | Attempt: " + currentAttempts +
-                            " / Allowed: " + allowedAttempts
-            );
             return;
         }
 
@@ -3191,22 +3181,18 @@ public class ExamTakingController {
         try {
 
             if (examClosing) {
-                System.out.println("Skipping screen evidence capture because exam is closing.");
                 return null;
             }
 
             if (examRoot == null) {
-                System.out.println("Skipping screen evidence capture because examRoot is null.");
                 return null;
             }
 
             if (examRoot.getScene() == null || examRoot.getScene().getWindow() == null) {
-                System.out.println("Skipping screen evidence capture because scene/window is unavailable.");
                 return null;
             }
 
             if (!examRoot.getScene().getWindow().isShowing()) {
-                System.out.println("Skipping screen evidence capture because exam window is not showing.");
                 return null;
             }
 

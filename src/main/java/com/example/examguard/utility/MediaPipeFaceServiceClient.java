@@ -79,8 +79,6 @@ public class MediaPipeFaceServiceClient {
 
             String json = new String(stream.readAllBytes());
 
-            System.out.println("MEDIAPIPE RESPONSE: " + json);
-
             temp.delete();
 
             if (status < 200 || status >= 300) {

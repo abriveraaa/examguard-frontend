@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSCameraUsageDescription</key>
+    <string>ExamGuard requires camera access for exam proctoring and identity verification.</string>
+
+    <key>NSMicrophoneUsageDescription</key>
+    <string>ExamGuard requires microphone access for exam monitoring during examinations.</string>
+
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>ExamGuard requires screen capture access during examinations.</string>
+</dict>
+</plist>

@@ -42,7 +42,6 @@ public class FacultyLocalCachePreloadService {
             );
 
         } catch (Exception e) {
-            System.out.println("Faculty dashboard profile preload skipped: " + e.getMessage());
         }
     }
 
@@ -57,7 +56,6 @@ public class FacultyLocalCachePreloadService {
             );
 
         } catch (Exception e) {
-            System.out.println("Faculty dashboard stats preload skipped: " + e.getMessage());
         }
     }
 
@@ -73,7 +71,6 @@ public class FacultyLocalCachePreloadService {
             );
 
         } catch (Exception e) {
-            System.out.println("Faculty active exams preload skipped: " + e.getMessage());
         }
     }
 
@@ -89,7 +86,6 @@ public class FacultyLocalCachePreloadService {
             );
 
         } catch (Exception e) {
-            System.out.println("Faculty needs review preload skipped: " + e.getMessage());
         }
     }
 
@@ -105,7 +101,6 @@ public class FacultyLocalCachePreloadService {
             );
 
         } catch (Exception e) {
-            System.out.println("Faculty classes preload skipped: " + e.getMessage());
         }
     }
 
@@ -121,7 +116,6 @@ public class FacultyLocalCachePreloadService {
             );
 
         } catch (Exception e) {
-            System.out.println("Faculty exams preload skipped: " + e.getMessage());
         }
     }
 }

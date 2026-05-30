@@ -395,7 +395,6 @@ public class StudentDashboardController implements ShellAwareController {
 
         image.errorProperty().addListener((obs, oldValue, hasError) -> {
             if (hasError) {
-                System.out.println("Dashboard avatar failed to load: " + finalUrl);
             }
         });
 

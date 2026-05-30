@@ -92,7 +92,6 @@ public class ForgotPasswordController {
 
             try {
                 String response = forgotTask.getValue();
-                System.out.println("RAW FORGOT PASSWORD RESPONSE: " + response);
 
                 LoginApiResponse apiResponse = gson.fromJson(response, LoginApiResponse.class);
 

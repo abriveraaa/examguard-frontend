@@ -404,13 +404,6 @@ public class FacultyStudentsController {
         task.setOnFailed(event -> {
             Throwable ex = task.getException();
 
-            if (ex != null) {
-                System.out.println(
-                        "Faculty students academic periods refresh skipped: "
-                                + ex.getMessage()
-                );
-            }
-
             if (!hasCache) {
                 showLoading(false);
                 renderEmptyState("Failed to load academic periods.");
@@ -531,13 +524,6 @@ public class FacultyStudentsController {
 
         task.setOnFailed(event -> {
             Throwable ex = task.getException();
-
-            if (ex != null) {
-                System.out.println(
-                        "Faculty students refresh skipped: "
-                                + ex.getMessage()
-                );
-            }
 
             if (!hasCache) {
                 renderEmptyState("Failed to load students.");
@@ -715,14 +701,7 @@ public class FacultyStudentsController {
                         )
                 );
 
-            } catch (Exception e) {
-                System.out.println(
-                        "Student avatar skipped for " +
-                                studentId +
-                                ": " +
-                                e.getMessage()
-                );
-            }
+            } catch (Exception e) { }
         }, "faculty-student-avatar-loader");
 
         thread.setDaemon(true);

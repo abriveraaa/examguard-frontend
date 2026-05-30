@@ -93,8 +93,6 @@ public class FacultyReportsController {
 
         task.setOnFailed(event -> {
 
-            System.out.println("Reports academic periods refresh skipped: " + task.getException().getMessage());
-
             if (!hasCache) {
                 showAlert(
                         "Reports Offline",
@@ -1487,9 +1485,6 @@ public class FacultyReportsController {
         });
 
         task.setOnFailed(e -> {
-
-            System.out.println("Reports students refresh skipped: "
-                    + task.getException().getMessage());
 
             if (hasCache) {
                 loadStudentsFromCache();

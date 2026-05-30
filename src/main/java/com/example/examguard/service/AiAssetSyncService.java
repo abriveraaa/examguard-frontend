@@ -63,10 +63,6 @@ public class AiAssetSyncService {
 
         String body = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
 
-        System.out.println("===== AI MANIFEST =====");
-        System.out.println(body);
-        System.out.println("=======================");
-
         if (status < 200 || status >= 300) {
             throw new RuntimeException("Failed to fetch AI manifest. HTTP " + status + ": " + body);
         }
@@ -80,7 +76,6 @@ public class AiAssetSyncService {
         }
 
         if (asset.getSha256() == null || asset.getSha256().isBlank()) {
-            System.out.println("[AI SYNC] Skipping missing server asset: " + asset.getKey());
             return;
         }
 

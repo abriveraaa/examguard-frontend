@@ -60,7 +60,6 @@ public class UserDetailsResponse {
     private String formatDateTime(String isoDate) {
         try {
 
-            System.out.println(isoDate);
             if (isoDate == null || isoDate.isBlank()) {
                 return "Never logged in";
             }

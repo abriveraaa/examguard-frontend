@@ -3053,17 +3053,6 @@ public class ExamManagementController implements ShellAwareController {
                 return;
             }
 
-            System.out.println("RESULT SUMMARY CLASS COUNT = " + classes.size());
-
-            for (FacultyClassDTO c : classes) {
-                System.out.println(
-                        c.getClassOfferingId() + " | " +
-                                c.getCourseCode() + " | " +
-                                c.getProgramCode() + " " +
-                                c.getYearLevel() + "-" + c.getSectionName()
-                );
-            }
-
             if (classes.size() == 1) {
 
                 exportWorkspaceExamResultSummary(

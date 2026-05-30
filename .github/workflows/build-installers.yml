@@ -92,6 +92,7 @@ jobs:
             --main-jar ExamGuard-1.0-SNAPSHOT.jar \
             --main-class com.example.examguard.Launcher \
             --icon src/main/resources/images/examguard.icns \
+            --resource-dir packaging/macos \
             --dest installer \
             --java-options "-Dfile.encoding=UTF-8"
 

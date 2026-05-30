@@ -86,7 +86,6 @@ public class LobbyObjectDetector {
 
     private void debug(String message) {
         if (DEBUG_LOBBY_AI) {
-            System.out.println("[LOBBY-AI] " + message);
         }
     }
 
