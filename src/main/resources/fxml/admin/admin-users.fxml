@@ -14,20 +14,6 @@
             <Insets bottom="8" left="8" right="8" top="8"/>
         </padding>
 
-        <!-- TOP ACTION -->
-        <VBox alignment="CENTER_RIGHT" spacing="5">
-            <children>
-
-                <Button onAction="#handleRefreshAndSyncAccess" prefHeight="42.0" prefWidth="191.0"
-                        style=" -fx-background-color: #800000; -fx-text-fill: white; -fx-background-radius: 10; -fx-padding: 8 16; -fx-cursor: hand;   "
-                        text="Refresh &amp; Sync Registrar API"/>
-
-                <Label fx:id="lastSyncLabel" prefHeight="15.0" prefWidth="190.0"
-                       style="-fx-text-fill: #6b7280; -fx-font-size: 12px;" text="Last Sync: Never"/>
-
-            </children>
-        </VBox>
-
         <!-- MAIN SECTION -->
 
         <TabPane fx:id="userTabPane" style="-fx-background-color: transparent;" tabClosingPolicy="UNAVAILABLE"
@@ -56,7 +42,15 @@
                                         style="-fx-background-color: #C9A227; -fx-text-fill: #302C29; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 0 16;"
                                         text="+ Add Admin"/>
 
+                                <Button onAction="#handleRefreshAndSyncAccess" prefHeight="42.0" prefWidth="191.0"
+                                        style=" -fx-background-color: #800000; -fx-text-fill: white; -fx-background-radius: 10; -fx-padding: 0 16; -fx-cursor: hand;   "
+                                        text="Refresh &amp; Sync Registrar API"/>
+
+                                <Label fx:id="lastSyncLabel" prefHeight="15.0" prefWidth="190.0"
+                                       style="-fx-text-fill: #6b7280; -fx-font-size: 12px;" text="Last Sync: Never"/>
+
                                 <Region HBox.hgrow="ALWAYS"/>
+
 
                                 <TextField fx:id="adminSearchField" prefHeight="40" prefWidth="350.0"
                                            promptText="Search admin by school ID, username, name, or email"

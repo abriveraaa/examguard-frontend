@@ -11,26 +11,13 @@
         <!-- LEFT PROFILE -->
         <VBox spacing="14" styleClass="student-profile-panel">
 
-            <StackPane
-                    alignment="CENTER"
-                    maxWidth="Infinity">
+            <StackPane alignment="CENTER" maxWidth="Infinity">
 
-                <StackPane
-                        fx:id="studentAvatarContainer"
-                        alignment="CENTER"
-                        styleClass="student-profile-avatar">
+                <StackPane fx:id="studentAvatarContainer" alignment="CENTER" styleClass="student-profile-avatar">
 
-                    <ImageView
-                            fx:id="studentAvatarImageView"
-                            fitWidth="124"
-                            fitHeight="124"
-                            managed="false"
-                            pickOnBounds="true"
-                            visible="false" />
+                    <ImageView fx:id="studentAvatarImageView" fitHeight="124" fitWidth="124" managed="false" pickOnBounds="true" visible="false" />
 
-                    <Label
-                            fx:id="studentInitialsLabel"
-                            styleClass="student-profile-avatar-text" />
+                    <Label fx:id="studentInitialsLabel" styleClass="student-profile-avatar-text" />
                 </StackPane>
             </StackPane>
 
@@ -73,7 +60,7 @@
             <HBox spacing="18" styleClass="student-content-row" VBox.vgrow="ALWAYS">
 
                 <!-- CENTER: UPCOMING EXAMS -->
-                <VBox spacing="14" styleClass="student-main-section" HBox.hgrow="ALWAYS">
+                <VBox minHeight="200.0" spacing="14" styleClass="student-main-section" HBox.hgrow="ALWAYS">
 
                     <HBox alignment="CENTER_LEFT" spacing="10">
                         <VBox spacing="2">
@@ -90,7 +77,7 @@
 
                     <Pane styleClass="student-gold-line" />
 
-                    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="student-card-scroll" VBox.vgrow="ALWAYS">
+                    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="student-card-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
                         <VBox fx:id="upcomingExamList" spacing="0" styleClass="oracle-list" />
                     </ScrollPane>
 
@@ -99,7 +86,7 @@
                 <!-- RIGHT COLUMN -->
                 <VBox spacing="18" styleClass="student-side-section">
 
-                    <VBox spacing="12" styleClass="student-clean-box" VBox.vgrow="ALWAYS">
+                    <VBox minHeight="200.0" spacing="12" styleClass="student-clean-box" VBox.vgrow="ALWAYS">
                         <HBox alignment="CENTER_LEFT">
                             <VBox spacing="2">
                                 <Label styleClass="student-section-title-small" text="Results" />
@@ -115,7 +102,7 @@
 
                         <Pane styleClass="student-gold-line" />
 
-                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="student-card-scroll" VBox.vgrow="ALWAYS">
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="student-card-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
                             <VBox fx:id="resultSummaryList" spacing="6" styleClass="oracle-list" />
                         </ScrollPane>
                     </VBox>

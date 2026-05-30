@@ -3,10 +3,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<ScrollPane xmlns:fx="http://javafx.com/fxml"
+<StackPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.example.examguard.controller.faculty.FacultyDashboardController"
-            fitToWidth="true"
-            hbarPolicy="NEVER"
             stylesheets="/styles/faculty-home.css"
             styleClass="faculty-dashboard-root">
 
@@ -33,13 +31,11 @@
 
                 <ScrollPane fitToWidth="true"
                             hbarPolicy="NEVER"
-                            vbarPolicy="AS_NEEDED"
                             prefHeight="520"
+                            VBox.vgrow="ALWAYS"
                             styleClass="faculty-inner-scroll">
 
-                    <VBox fx:id="activeExamList"
-                          spacing="0"
-                          styleClass="faculty-list"/>
+                    <VBox fx:id="activeExamList" styleClass="faculty-list"/>
                 </ScrollPane>
             </VBox>
 
@@ -103,4 +99,4 @@
         </HBox>
 
     </VBox>
-</ScrollPane>
+</StackPane>

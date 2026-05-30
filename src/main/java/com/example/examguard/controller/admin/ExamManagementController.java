@@ -1056,9 +1056,7 @@ public class ExamManagementController implements ShellAwareController {
                     .toList();
 
             if (filtered.isEmpty()) {
-                answerList.getChildren().add(
-                        createLoadingBox("No answers found for this filter.")
-                );
+                answerList.getChildren().add(createLoadingBox("No answers found for this filter."));
                 return;
             }
 

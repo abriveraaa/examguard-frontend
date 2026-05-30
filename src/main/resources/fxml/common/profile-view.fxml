@@ -14,7 +14,7 @@
                 <Insets bottom="28" left="30" right="30" top="24" />
             </padding>
 
-            <VBox spacing="16" styleClass="profile-card">
+            <VBox minHeight="500.0" spacing="16" styleClass="profile-card">
 
                 <!-- LinkedIn-style top profile block -->
                 <HBox alignment="CENTER_LEFT" spacing="20" styleClass="profile-top-section">
@@ -23,17 +23,12 @@
 
                         <ImageView fx:id="profileImageView" fitHeight="112" fitWidth="112" styleClass="profile-photo-image" />
 
-                        <Button
-                                fx:id="uploadPhotoButton"
-                                onAction="#handleUploadPhoto"
-                                styleClass="profile-upload-button">
+                        <Button fx:id="uploadPhotoButton" onAction="#handleUploadPhoto" styleClass="profile-upload-button">
 
                             <graphic>
-                                <ImageView fitWidth="16"
-                                           fitHeight="16"
-                                           preserveRatio="true">
+                                <ImageView fitHeight="16" fitWidth="16" preserveRatio="true">
 
-                                    <Image url="@/icons/upload.png"/>
+                                    <Image url="@/icons/upload.png" />
                                 </ImageView>
                             </graphic>
 
@@ -54,7 +49,7 @@
 
                         <Label fx:id="schoolIdLabel" styleClass="profile-data" />
 
-                        <Label fx:id="collegeOrOfficeLabel" styleClass="profile-data"/>
+                        <Label fx:id="collegeOrOfficeLabel" styleClass="profile-data" />
 
                         <Label fx:id="programOrPositionLabel" styleClass="profile-data" />
 
@@ -76,22 +71,21 @@
                         <Label fx:id="usernameLabel" styleClass="profile-field-value" />
 
                         <Label styleClass="profile-field-label" text="Password" />
-                        <Label fx:id="passwordStatusLabel" styleClass="profile-field-value"/>
+                        <Label fx:id="passwordStatusLabel" styleClass="profile-field-value" />
 
                         <Label styleClass="profile-field-label" text="Last Changed" />
-                        <Label fx:id="passwordLastChangedLabel" styleClass="profile-field-value"/>
+                        <Label fx:id="passwordLastChangedLabel" styleClass="profile-field-value" />
 
-                        <Button onAction="#handleChangePassword" styleClass="profile-secondary-button" text="Change Password" />
                     </VBox>
 
                     <VBox spacing="10" styleClass="profile-mini-card" HBox.hgrow="ALWAYS">
                         <Label styleClass="profile-section-title" text="Tenure" />
 
                         <Label styleClass="profile-field-label" text="Member Since" />
-                        <Label fx:id="tenureStartLabel" styleClass="profile-field-value"/>
+                        <Label fx:id="tenureStartLabel" styleClass="profile-field-value" />
 
                         <Label styleClass="profile-field-label" text="Duration" />
-                        <Label fx:id="tenureDurationLabel" styleClass="profile-field-value"/>
+                        <Label fx:id="tenureDurationLabel" styleClass="profile-field-value" />
 
                         <Label styleClass="profile-field-label" text="Account Status" />
                         <Label fx:id="accountStatusLabel" styleClass="profile-field-value" />
@@ -103,28 +97,18 @@
 
                 <HBox spacing="14">
 
-                    <VBox spacing="10"
-                          styleClass="profile-bottom-card"
-                          HBox.hgrow="ALWAYS">
+                    <VBox spacing="10" styleClass="profile-bottom-card" HBox.hgrow="ALWAYS">
 
                         <HBox alignment="CENTER_LEFT">
-                            <Label fx:id="classesSectionTitleLabel"
-                                   styleClass="profile-section-title"
-                                   text="Enrolled Classes"/>
+                            <Label fx:id="classesSectionTitleLabel" styleClass="profile-section-title" text="Enrolled Classes" />
 
-                            <Region HBox.hgrow="ALWAYS"/>
+                            <Region HBox.hgrow="ALWAYS" />
                         </HBox>
 
-                        <ScrollPane fitToWidth="true"
-                                    hbarPolicy="NEVER"
-                                    vbarPolicy="AS_NEEDED"
-                                    prefHeight="220"
-                                    styleClass="profile-list-scroll">
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="300" styleClass="profile-list-scroll" vbarPolicy="AS_NEEDED">
 
                             <content>
-                                <VBox fx:id="classesList"
-                                      spacing="8"
-                                      styleClass="profile-compact-list"/>
+                                <VBox fx:id="classesList" spacing="8" styleClass="profile-compact-list" />
                             </content>
 
                         </ScrollPane>
@@ -137,7 +121,12 @@
                             <Region HBox.hgrow="ALWAYS" />
                         </HBox>
 
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="300" styleClass="profile-list-scroll" vbarPolicy="AS_NEEDED">
+
+                        <content>
                         <VBox fx:id="recentActivityList" spacing="8" styleClass="profile-compact-list" />
+                        </content>
+                        </ScrollPane>
                     </VBox>
 
                 </HBox>

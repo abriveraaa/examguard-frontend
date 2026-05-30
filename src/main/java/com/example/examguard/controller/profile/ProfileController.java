@@ -330,35 +330,6 @@ public class ProfileController {
         thread.start();
     }
 
-    @FXML
-    private void handleChangePassword() {
-
-        try {
-
-            DashboardShellController shell = DashboardShellController.getInstance();
-
-            shell.setGreeting("Change Password", "Update your account password securely.");
-
-            shell.hideHeroCards();
-
-            shell.loadContent("/fxml/common/change-password.fxml"
-            );
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @FXML
-    private void handleViewAllActivity() {
-        showAlert("Recent Activity", "You can connect this later to a full activity log page.");
-    }
-
-    @FXML
-    private void handleViewAllClasses() {
-        showAlert("Classes", "You can connect this later to the full classes page.");
-    }
-
     private void setLoading(boolean loading) {
         Platform.runLater(() -> {
             refreshButton.setDisable(loading);
