@@ -1,5 +1,8 @@
 package com.example.examguard.controller.admin;
 
+import com.example.examguard.cache.AdminLocalCacheKeys;
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.utility.Session;
 import com.example.examguard.model.admin.monitoring.*;
 import com.example.examguard.service.AdminApiService;
 import javafx.beans.property.SimpleStringProperty;
@@ -30,6 +33,9 @@ public class AdminMonitoringController {
     private static final DateTimeFormatter LOG_DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final AdminApiService adminApiService = new AdminApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
+
+    private static final String ADMIN_MONITORING_CACHE_VERSION = "v1";
 
     @FXML private ComboBox<String> rangeComboBox;
     @FXML private ComboBox<String> violationSeverityFilterComboBox;
@@ -214,12 +220,34 @@ public class AdminMonitoringController {
         updateCustomRangeVisibility();
 
         setupLogTables();
+        setupTablePlaceholders();
         setupTableResizePolicies();
         setupBadgeColumns();
         setupSearchListeners();
         initializePaginationLabels();
 
         showAllLogsPane();
+    }
+
+    private void setTablePlaceholder(TableView<AdminLogRowDto> table, String message) {
+        if (table == null) {
+            return;
+        }
+
+        Label label = new Label(message);
+        label.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 13px;");
+        table.setPlaceholder(label);
+    }
+
+    private void setupTablePlaceholders() {
+        setTablePlaceholder(allLogsTable, "No logs loaded yet.");
+        setTablePlaceholder(violationLogsTable, "No violation logs loaded yet.");
+        setTablePlaceholder(systemLogsTable, "No system logs loaded yet.");
+        setTablePlaceholder(sessionLogsTable, "No session logs loaded yet.");
+        setTablePlaceholder(accessLogsTable, "No access logs loaded yet.");
+        setTablePlaceholder(accountLogsTable, "No account logs loaded yet.");
+        setTablePlaceholder(registrarLogsTable, "No registrar logs loaded yet.");
+        setTablePlaceholder(cameraSessionsTable, "No camera session logs loaded yet.");
     }
 
     private void setupLogTables() {
@@ -357,12 +385,32 @@ public class AdminMonitoringController {
             TextField searchField,
             int page
     ) {
+        Map<String, Object> request = buildLogsRequest(source, page, searchField);
+
+        String cacheKey = AdminLocalCacheKeys.monitoringLogs(
+                Session.getSchoolId(),
+                source
+        );
+
+        setTablePlaceholder(table, "Loading " + source.toLowerCase() + " logs...");
+
+        final AdminMonitoringLogsResponse cached =
+                page == 0
+                        ? localCacheService.loadData(
+                        cacheKey,
+                        AdminMonitoringLogsResponse.class
+                )
+                        : null;
+
+        if (cached != null && cached.getContent() != null) {
+            applyLogsResponse(source, table, cached);
+            setTablePlaceholder(table, "Offline: showing cached " + source.toLowerCase() + " logs.");
+        }
+
         Task<AdminMonitoringLogsResponse> task = new Task<>() {
             @Override
             protected AdminMonitoringLogsResponse call() throws Exception {
-                return adminApiService.getLogs(
-                        buildLogsRequest(source, page, searchField)
-                );
+                return adminApiService.getLogs(request);
             }
         };
 
@@ -371,30 +419,69 @@ public class AdminMonitoringController {
 
             if (response == null || response.getContent() == null) {
                 table.setItems(FXCollections.observableArrayList());
+                setTablePlaceholder(table, "No " + source.toLowerCase() + " logs found.");
                 updatePaginationState(source, page, 1, 0, false);
                 return;
             }
 
-            table.setItems(FXCollections.observableArrayList(response.getContent()));
+            if (page == 0) {
+                localCacheService.save(
+                        cacheKey,
+                        ADMIN_MONITORING_CACHE_VERSION,
+                        response
+                );
+            }
 
-            populateFiltersFromOptions(source, response.getFilterOptions());
+            applyLogsResponse(source, table, response);
 
-            updatePaginationState(
-                    source,
-                    response.getCurrentPage(),
-                    response.getTotalPages(),
-                    response.getTotalElements(),
-                    response.isHasNext()
-            );
+            if (response.getContent().isEmpty()) {
+                setTablePlaceholder(table, "No " + source.toLowerCase() + " logs found.");
+            }
         });
 
         task.setOnFailed(e -> {
             Throwable ex = task.getException();
-            ex.printStackTrace();
-            showInfo("Failed to load " + source + " logs: " + ex.getMessage());
+
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+
+            if (cached == null || cached.getContent() == null || cached.getContent().isEmpty()) {
+                table.setItems(FXCollections.observableArrayList());
+                setTablePlaceholder(table, "Backend offline. No cached " + source.toLowerCase() + " logs available.");
+                updatePaginationState(source, page, 1, 0, false);
+            } else {
+                setTablePlaceholder(table, "Backend offline. Showing cached " + source.toLowerCase() + " logs.");
+            }
         });
 
-        new Thread(task).start();
+        Thread thread = new Thread(task, "admin-monitoring-" + source.toLowerCase() + "-logs-thread");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void applyLogsResponse(
+            String source,
+            TableView<AdminLogRowDto> table,
+            AdminMonitoringLogsResponse response
+    ) {
+        if (response == null || response.getContent() == null) {
+            table.setItems(FXCollections.observableArrayList());
+            updatePaginationState(source, 0, 1, 0, false);
+            return;
+        }
+
+        table.setItems(FXCollections.observableArrayList(response.getContent()));
+
+        populateFiltersFromOptions(source, response.getFilterOptions());
+
+        updatePaginationState(
+                source,
+                response.getCurrentPage(),
+                response.getTotalPages(),
+                response.getTotalElements(),
+                response.isHasNext()
+        );
     }
 
     private void populateFiltersFromOptions(

@@ -37,8 +37,8 @@ jobs:
           jpackage ^
             --type exe ^
             --name ExamGuard ^
-            --app-version 1.0.0 ^
-            --vendor "BSITOUMN22 PUP" ^
+            --app-version 1.0.3 ^
+            --vendor "BSITOUMN22" ^
             --description "ExamGuard Secure Examination System" ^
             --input target\installer-input ^
             --main-jar ExamGuard-1.0-SNAPSHOT.jar ^
@@ -85,14 +85,14 @@ jobs:
           jpackage \
             --type dmg \
             --name ExamGuard \
-            --app-version 1.0.0 \
-            --vendor "BSITOUMN22 PUP" \
+            --app-version 1.0.3 \
+            --vendor "BSITOUMN22" \
             --description "ExamGuard Secure Examination System" \
             --input target/installer-input \
             --main-jar ExamGuard-1.0-SNAPSHOT.jar \
+            --resource-dir packaging/macos \
             --main-class com.example.examguard.Launcher \
             --icon src/main/resources/images/examguard.icns \
-            --resource-dir packaging/macos \
             --dest installer \
             --java-options "-Dfile.encoding=UTF-8"
 

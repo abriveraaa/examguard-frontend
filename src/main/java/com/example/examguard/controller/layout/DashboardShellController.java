@@ -132,7 +132,8 @@ public class DashboardShellController {
                         fxmlPath.contains("faculty-students") ||
                         fxmlPath.contains("faculty-reports") ||
                         fxmlPath.contains("profile-view") ||
-                        fxmlPath.contains("workspace");
+                        fxmlPath.contains("workspace") ||
+                        fxmlPath.contains("change-password");
 
         heroPane.setVisible(!hideHero);
         heroPane.setManaged(!hideHero);

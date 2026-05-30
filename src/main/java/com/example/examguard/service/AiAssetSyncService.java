@@ -52,6 +52,7 @@ public class AiAssetSyncService {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Accept", "application/json");
+        conn.setInstanceFollowRedirects(true);
         conn.setConnectTimeout(8000);
         conn.setReadTimeout(30000);
 
@@ -108,6 +109,7 @@ public class AiAssetSyncService {
 
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
+        conn.setInstanceFollowRedirects(true);
         conn.setConnectTimeout(8000);
         conn.setReadTimeout(120000);
 

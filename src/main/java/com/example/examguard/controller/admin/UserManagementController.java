@@ -1,5 +1,7 @@
 package com.example.examguard.controller.admin;
 
+import com.example.examguard.cache.AdminLocalCacheKeys;
+import com.example.examguard.cache.LocalCacheService;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.controller.layout.ReactivationJustificationDialogController;
 import com.example.examguard.controller.layout.ShellAwareController;
@@ -125,6 +127,10 @@ public class UserManagementController implements ShellAwareController {
 
     private final AuthApiService authApiService = new AuthApiService();
     private final AdminApiService adminApiService = new AdminApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
+
+    private static final String ADMIN_USERS_CACHE_VERSION = "v1";
+
     private final Gson gson = new Gson();
 
     private final ObservableList<UserManagementRow> adminData = FXCollections.observableArrayList();
@@ -209,11 +215,29 @@ public class UserManagementController implements ShellAwareController {
             Class<T> responseClass,
             ObservableList<UserManagementRow> target
     ) {
+        String cacheKey = AdminLocalCacheKeys.users(
+                Session.getSchoolId(),
+                type.name()
+        );
+
+        List<UserManagementRow> cachedRows =
+                localCacheService.loadList(cacheKey, UserManagementRow.class);
+
+        if (cachedRows != null) {
+            target.setAll(cachedRows);
+
+            updateCounts();
+            pushHeroCounts();
+            refreshStatusFilters();
+            filterByRole(type);
+        }
+
         runTask(
                 () -> authApiService.getUsersByType(type),
                 responseClass,
                 target,
-                type
+                type,
+                cacheKey
         );
     }
 
@@ -221,7 +245,8 @@ public class UserManagementController implements ShellAwareController {
             ApiCall call,
             Class<T> clazz,
             ObservableList<UserManagementRow> target,
-            UserType role
+            UserType role,
+            String cacheKey
     ) {
         Task<String> task = new Task<>() {
             @Override
@@ -235,17 +260,25 @@ public class UserManagementController implements ShellAwareController {
                 Type listType = TypeToken.getParameterized(List.class, clazz).getType();
                 List<T> list = gson.fromJson(task.getValue(), listType);
 
-                target.clear();
+                List<UserManagementRow> freshRows = new ArrayList<>();
 
                 if (list != null) {
                     for (T obj : list) {
                         UserManagementRow row = UserManagementRow.from(obj, role.name());
 
                         if (row != null) {
-                            target.add(row);
+                            freshRows.add(row);
                         }
                     }
                 }
+
+                target.setAll(freshRows);
+
+                localCacheService.save(
+                        cacheKey,
+                        ADMIN_USERS_CACHE_VERSION,
+                        freshRows
+                );
 
                 updateCounts();
                 pushHeroCounts();
@@ -263,7 +296,9 @@ public class UserManagementController implements ShellAwareController {
                 task.getException().printStackTrace();
             }
 
-            showAlert("Backend error");
+            if (target.isEmpty()) {
+                showAlert("Backend error. No cached " + role.name().toLowerCase() + " users found.");
+            }
         });
 
         startDaemonThread(task);
@@ -706,6 +741,17 @@ public class UserManagementController implements ShellAwareController {
     }
 
     private void loadEligibleReactivationUsers() {
+        String cacheKey = AdminLocalCacheKeys.eligibleReactivationUsers(
+                Session.getSchoolId()
+        );
+
+        List<ReactivationCandidateResponse> cached =
+                localCacheService.loadList(cacheKey, ReactivationCandidateResponse.class);
+
+        if (cached != null) {
+            eligibleReactivationData.setAll(cached);
+        }
+
         Task<String> task = new Task<>() {
             @Override
             protected String call() throws Exception {
@@ -715,19 +761,27 @@ public class UserManagementController implements ShellAwareController {
 
         task.setOnSucceeded(e -> {
             try {
-                Type listType = new TypeToken<List<ReactivationCandidateResponse>>() {
-                }.getType();
+                Type listType = new TypeToken<List<ReactivationCandidateResponse>>() {}.getType();
                 List<ReactivationCandidateResponse> list = gson.fromJson(task.getValue(), listType);
 
                 eligibleReactivationData.clear();
 
                 if (list != null) {
                     eligibleReactivationData.addAll(list);
+
+                    localCacheService.save(
+                            cacheKey,
+                            ADMIN_USERS_CACHE_VERSION,
+                            list
+                    );
                 }
 
             } catch (Exception ex) {
                 ex.printStackTrace();
-                showAlert("Failed to load eligible reactivation users.");
+
+                if (eligibleReactivationData.isEmpty()) {
+                    showAlert("Failed to load eligible reactivation users.");
+                }
             }
         });
 
@@ -736,7 +790,9 @@ public class UserManagementController implements ShellAwareController {
                 task.getException().printStackTrace();
             }
 
-            showAlert("Backend error while loading reactivation list.");
+            if (eligibleReactivationData.isEmpty()) {
+                showAlert("Backend error while loading reactivation list.");
+            }
         });
 
         startDaemonThread(task);
@@ -907,16 +963,37 @@ public class UserManagementController implements ShellAwareController {
     }
 
     private void loadLastSync() {
+        String cacheKey = AdminLocalCacheKeys.lastSuccessfulSync(
+                Session.getSchoolId()
+        );
+
+        String cached = localCacheService.loadData(cacheKey, String.class);
+
+        if (cached != null && !cached.isBlank()) {
+            lastSyncLabel.setText("Last Sync: " + formatDateTime(cached));
+        }
+
         runBackgroundAction(
                 () -> adminApiService.getLastSuccessfulSync(),
                 lastSync -> {
                     if (lastSync == null || lastSync.isBlank()) {
                         lastSyncLabel.setText("Last Sync: Never");
-                    } else {
-                        lastSyncLabel.setText("Last Sync: " + formatDateTime(lastSync));
+                        return;
                     }
+
+                    localCacheService.save(
+                            cacheKey,
+                            ADMIN_USERS_CACHE_VERSION,
+                            lastSync
+                    );
+
+                    lastSyncLabel.setText("Last Sync: " + formatDateTime(lastSync));
                 },
-                () -> lastSyncLabel.setText("Last Sync: Never")
+                () -> {
+                    if (cached == null || cached.isBlank()) {
+                        lastSyncLabel.setText("Last Sync: Never");
+                    }
+                }
         );
     }
 

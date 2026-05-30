@@ -1,5 +1,8 @@
 package com.example.examguard.controller.admin;
 
+import com.example.examguard.cache.AdminLocalCacheKeys;
+import com.example.examguard.cache.LocalCacheService;
+import com.example.examguard.utility.Session;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.model.admin.monitoring.AdminLogRowDto;
 import com.example.examguard.model.admin.monitoring.ChartPointDto;
@@ -35,6 +38,9 @@ public class AdminDashboardController {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final AdminApiService adminApiService = new AdminApiService();
+    private final LocalCacheService localCacheService = new LocalCacheService();
+
+    private static final String ADMIN_DASHBOARD_CACHE_VERSION = "v1";
 
     @FXML private ComboBox<String> concurrentTimeScaleComboBox;
     @FXML private ComboBox<String> rangeComboBox;
@@ -149,26 +155,64 @@ public class AdminDashboardController {
     }
 
     private void loadOverviewAsync() {
+        Map<String, Object> request = buildOverviewRequest();
+        String cacheKey = buildDashboardCacheKey();
+
+        MonitoringOverviewResponse cached =
+                localCacheService.loadData(
+                        cacheKey,
+                        MonitoringOverviewResponse.class
+                );
+
+        if (cached != null) {
+            applyOverviewResponse(cached);
+        }
+
         Task<MonitoringOverviewResponse> task = new Task<>() {
             @Override
             protected MonitoringOverviewResponse call() throws Exception {
-                return adminApiService.getOverview(buildOverviewRequest());
+                return adminApiService.getOverview(request);
             }
         };
 
-        task.setOnSucceeded(e -> applyOverviewResponse(task.getValue()));
+        task.setOnSucceeded(e -> {
+            MonitoringOverviewResponse fresh = task.getValue();
+
+            if (fresh != null) {
+                localCacheService.save(
+                        cacheKey,
+                        ADMIN_DASHBOARD_CACHE_VERSION,
+                        fresh
+                );
+
+                applyOverviewResponse(fresh);
+            }
+        });
 
         task.setOnFailed(e -> {
             task.getException().printStackTrace();
-            clearDashboard();
-            recentSystemEventsListView.setItems(
-                    FXCollections.observableArrayList("Failed to load dashboard overview.")
-            );
+
+            if (cached == null) {
+                clearDashboard();
+                recentSystemEventsListView.setItems(
+                        FXCollections.observableArrayList(
+                                "Failed to load dashboard overview."
+                        )
+                );
+            }
         });
 
-        Thread thread = new Thread(task);
+        Thread thread = new Thread(task, "admin-dashboard-load-thread");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private String buildDashboardCacheKey() {
+        return AdminLocalCacheKeys.dashboardOverview(
+                Session.getSchoolId(),
+                valueOf(rangeComboBox, "Today"),
+                valueOf(concurrentTimeScaleComboBox, "Auto")
+        );
     }
 
     private String formatDuration(Long durationMs) {

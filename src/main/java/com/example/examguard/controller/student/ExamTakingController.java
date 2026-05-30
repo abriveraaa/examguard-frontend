@@ -1,5 +1,8 @@
 package com.example.examguard.controller.student;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.example.examguard.config.AppConfig;
 import com.example.examguard.controller.layout.DashboardShellController;
 import com.example.examguard.model.ai.MediaPipeFaceResult;
@@ -141,7 +144,6 @@ public class ExamTakingController {
     private LobbyObjectDetector lobbyObjectDetector;
     private LobbyCameraPreviewService lobbyCameraPreviewService;
     private AiRuntimeManager aiRuntimeManager;
-//    private MediaPipeFaceServiceClient mediaPipeFaceServiceClient;
     private Timeline mediaPipePreviewTimeline;
     private Timeline phonePreviewTimeline;
     private Timeline evidenceBufferTimeline;
@@ -165,6 +167,17 @@ public class ExamTakingController {
     private Timeline lobbyAutoCheckTimeline;
     private int lobbyAutoCheckPassStreak = 0;
     private int lobbyAutoCheckFailStreak = 0;
+    private final ExecutorService lobbyAiExecutor =
+            Executors.newSingleThreadExecutor();
+
+    private final AtomicBoolean lobbyAiBusy =
+            new AtomicBoolean(false);
+
+    private LobbyObjectDetector.DeskBaselineResult latestDeskResult = null;
+    private long latestDeskResultAt = 0L;
+
+    private static final long LOBBY_AI_INTERVAL_MS = 900L;
+    private static final long LOBBY_AI_RESULT_TTL_MS = 2500L;
 
     private static final int REQUIRED_LOBBY_PASS_STREAK = 3;
     private static final int REQUIRED_LOBBY_FAIL_STREAK = 2;
@@ -559,13 +572,51 @@ public class ExamTakingController {
             return null;
         }
 
+        long now = System.currentTimeMillis();
+
+        if (latestDeskResult != null && now - latestDeskResultAt <= LOBBY_AI_RESULT_TTL_MS) {
+            scheduleLobbyAiCheckIfNeeded(now);
+            return latestDeskResult;
+        }
+
+        scheduleLobbyAiCheckIfNeeded(now);
+
+        return null;
+    }
+
+    private void scheduleLobbyAiCheckIfNeeded(long now) {
+        if (now - latestDeskResultAt < LOBBY_AI_INTERVAL_MS) {
+            return;
+        }
+
+        if (!lobbyAiBusy.compareAndSet(false, true)) {
+            return;
+        }
+
         Mat frame = lobbyCameraPreviewService.getActiveFrame();
 
         if (frame == null || frame.empty()) {
-            return null;
+            lobbyAiBusy.set(false);
+            return;
         }
 
-        return lobbyObjectDetector.analyzeDeskBaselineStable(frame);
+        Mat aiFrame = frame.clone();
+
+        lobbyAiExecutor.submit(() -> {
+            try {
+                LobbyObjectDetector.DeskBaselineResult result =
+                        lobbyObjectDetector.analyzeDeskBaselineStable(aiFrame);
+
+                latestDeskResult = result;
+                latestDeskResultAt = System.currentTimeMillis();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                aiFrame.release();
+                lobbyAiBusy.set(false);
+            }
+        });
     }
 
     private boolean checkBackendConnectionSilently() {
@@ -2270,6 +2321,7 @@ public class ExamTakingController {
         stopExamDeskMonitoring();
         stopMediaPipePreviewTracking();
         stopLobbyCameraPreview();
+        lobbyAiExecutor.shutdownNow();
         try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/fxml/layout/dashboard-shell.fxml")
@@ -2698,8 +2750,7 @@ public class ExamTakingController {
         examDeskMonitorRunning = true;
 
         try {
-            LobbyObjectDetector.DeskBaselineResult result =
-                    lobbyObjectDetector.analyzeDeskBaselineStable(frame);
+            LobbyObjectDetector.DeskBaselineResult result = lobbyObjectDetector.analyzeDeskBaselineStable(frame);
 
             if (result == null || result.passed()) {
                 return;

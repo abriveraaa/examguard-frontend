@@ -4,6 +4,7 @@ import com.example.examguard.model.ai.AiRulesConfig;
 import com.example.examguard.service.AiAssetSyncService;
 import com.example.examguard.service.AiRulesService;
 import nu.pattern.OpenCV;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.core.*;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
@@ -57,6 +58,10 @@ public class LobbyObjectDetector {
     private static final int REQUIRED_PERSON_HITS = 3;
     private static final int REQUIRED_OBJECT_HITS = 5;
     private static final int MAX_MISS_FRAMES = 8;
+    private static final long DETECTION_INTERVAL_MS = 800;
+
+    private long lastDetectionAt = 0;
+    private DeskBaselineResult lastResult = null;
 
     /*
      * PURPOSE:
@@ -179,24 +184,33 @@ public class LobbyObjectDetector {
      * 10. PASS
      */
     public DeskBaselineResult analyzeDeskBaseline(Mat frame) {
+
+        long now = System.currentTimeMillis();
+
+        if (lastResult != null && now - lastDetectionAt < DETECTION_INTERVAL_MS) {
+            return lastResult;
+        }
+
+        lastDetectionAt = now;
+
         if (!isAvailable()) {
-            return result(
+            return remember(result(
                     true,
                     "Object detection unavailable. Manual review mode enabled.",
                     0, 0, 0, 0, 0, 0,
                     List.of(),
                     "UNAVAILABLE"
-            );
+            ));
         }
 
         if (frame == null || frame.empty()) {
-            return result(
+            return remember(result(
                     false,
                     "No camera frame available for desk setup check.",
                     0, 0, 0, 0, 0, 0,
                     List.of(),
                     "NO_FRAME"
-            );
+            ));
         }
 
         List<DetectedObject> stableObjects = detect(frame);
@@ -253,43 +267,43 @@ public class LobbyObjectDetector {
 
         // ── Rule 1: No person ──────────────────────────────────────────────
         if (persons.isEmpty()) {
-            return result(
+            return remember(result(
                     false,
                     "No examinee detected. Adjust camera or lighting so your upper body, "
                             + "hands, desk, and screen are visible (45° angle).",
                     0, laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── Rule 2: Multiple persons ───────────────────────────────────────
         if (persons.size() > 1) {
-            return result(
+            return remember(result(
                     false,
                     "Multiple persons detected (" + persons.size() + "). "
                             + "Only the examinee should be visible.",
                     persons.size(), laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── Rule 3: Camera angle check ─────────────────────────────────────
         DetectedObject person = persons.get(0);
         CameraAngleCheck angleCheck = checkCameraAngle(person, frame.width(), frame.height());
         if (!angleCheck.ok()) {
-            return result(
+            return remember(result(
                     false,
                     angleCheck.message(),
                     1, laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── Rule 4: Phone detected ─────────────────────────────────────────
         if (phoneCount > 0) {
-            return result(
+            return remember(result(
                     false,
                     "Mobile phone / tablet detected. Remove all unauthorized "
                             + "electronic devices from the desk.",
                     1, laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── Rule 5: Device setup mode check ─────────────────────────────
@@ -297,91 +311,96 @@ public class LobbyObjectDetector {
         boolean desktopMode = laptopCount == 0 && monitorCount == 1 && keyboardCount == 1;
 
         if (laptopCount == 0 && monitorCount == 0) {
-            return result(
+            return remember(result(
                     false,
                     "No computer detected. Show either one laptop or one monitor with one keyboard.",
                     1, laptopCount, keyboardCount, monitorCount,
                     extraDevices, reviewerCount, visibleItems, signature
-            );
+            ));
         }
 
         if (laptopMode && monitorCount > 0) {
-            return result(
+            return remember(result(
                     false,
                     "External monitor / TV detected with laptop. For laptop mode, only one laptop is allowed.",
                     1, laptopCount, keyboardCount, monitorCount,
                     extraDevices, reviewerCount, visibleItems, signature
-            );
+            ));
         }
 
         if (!laptopMode && !desktopMode) {
-            return result(
+            return remember(result(
                     false,
                     "Invalid computer setup. Use either one laptop only, or one monitor/TV with one keyboard.",
                     1, laptopCount, keyboardCount, monitorCount,
                     extraDevices, reviewerCount, visibleItems, signature
-            );
+            ));
         }
 
         // ── Rule 5: Extra device while laptop present ─────────────────────
         if (laptopCount >= 1 && remoteCount > 0) {
-            return result(
+            return remember(result(
                     false,
                     "Extra electronic device detected alongside the laptop. "
                             + "Only a keyboard and mouse are allowed when using a laptop.",
                     1, laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── Rule 6: More than 1 laptop ────────────────────────────────────
         if (laptopCount > 1) {
-            return result(
+            return remember(result(
                     false,
                     "More than one laptop detected (" + laptopCount + "). "
                             + "Only a single laptop is allowed.",
                     1, laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── Rule 7: More than 1 monitor ───────────────────────────────────
         if (monitorCount > 1) {
-            return result(
+            return remember(result(
                     false,
                     "Multiple monitors detected (" + monitorCount + "). "
                             + "Only one monitor / display is allowed.",
                     1, laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── Rule 8: More than 1 keyboard ─────────────────────────────────
         if (keyboardCount > 1) {
-            return result(
+            return remember(result(
                     false,
                     "Multiple keyboards detected (" + keyboardCount + "). "
                             + "Only one keyboard is allowed.",
                     1, laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── Rule 9: Reviewer notes / book ─────────────────────────────────
         if (reviewerCount > 0) {
-            return result(
+            return remember(result(
                     false,
                     "Reviewer material detected (book / notes / paper). "
                             + "Clear the desk before starting.",
                     1, laptopCount, keyboardCount, monitorCount,
-                    extraDevices, reviewerCount, visibleItems, signature);
+                    extraDevices, reviewerCount, visibleItems, signature));
         }
 
         // ── PASS ──────────────────────────────────────────────────────────
         // PASS only if:
         // Laptop mode: 1 person + 1 laptop + no monitor + no keyboard
         // Desktop mode: 1 person + 1 monitor + 1 keyboard + no laptop
-        return result(
+        return remember(result(
                 true,
                 "Desk setup verified. Ready to start the exam.",
                 1, laptopCount, keyboardCount, monitorCount,
-                0, 0, visibleItems, signature);
+                0, 0, visibleItems, signature));
+    }
+
+    private DeskBaselineResult remember(DeskBaselineResult result) {
+        this.lastResult = result;
+        return result;
     }
 
     /**
@@ -449,8 +468,7 @@ public class LobbyObjectDetector {
 
         List<DetectedObject> cleaned = new ArrayList<>();
 
-        DetectedObject bestPerson = null;
-        double bestPersonArea = 0;
+        List<DetectedObject> persons = new ArrayList<>();
 
         for (DetectedObject object : objects) {
             String label = normalizeLabel(object.getClassName());
@@ -462,34 +480,29 @@ public class LobbyObjectDetector {
                     : 0;
 
             if (isPersonLabel(label)) {
-
-                // Ignore small/partial fake person boxes.
-                if (object.getConfidence() < 0.70f) {
+                if (object.getConfidence() < 0.55f) {
                     continue;
                 }
 
-                if (areaRatio < 0.20) {
+                if (areaRatio < 0.04) {
                     continue;
                 }
 
-                if (aspect < 0.45 || aspect > 1.45) {
+                if (aspect < 0.20 || aspect > 1.60) {
                     continue;
                 }
 
-                if (area > bestPersonArea) {
-                    bestPerson = object;
-                    bestPersonArea = area;
-                }
-
+                persons.add(object);
                 continue;
             }
 
             cleaned.add(object);
         }
 
-        if (bestPerson != null) {
-            cleaned.add(bestPerson);
-        }
+        persons.stream()
+                .sorted(Comparator.comparingDouble(o -> -(o.getWidth() * o.getHeight())))
+                .limit(3)
+                .forEach(cleaned::add);
 
         return cleaned;
     }
@@ -504,8 +517,48 @@ public class LobbyObjectDetector {
      * without changing the detection logic.
      */
     public void drawDebugDetections(Mat frame, List<DetectedObject> objects) {
-        // No visual overlay in production.
-        // Detection still runs through detect(...) and analyzeDeskBaseline(...).
+
+//        if (frame == null || frame.empty() || objects == null) {
+//            return;
+//        }
+//
+//        for (DetectedObject object : objects) {
+//
+//            int x = (int) object.getX();
+//            int y = (int) object.getY();
+//            int w = (int) object.getWidth();
+//            int h = (int) object.getHeight();
+//
+//            String label = normalizeLabel(object.getClassName());
+//
+//            Scalar color;
+//
+//            if (isPersonLabel(label)) {
+//                color = new Scalar(0, 255, 0); // green
+//            } else if (isPhoneLabel(label)) {
+//                color = new Scalar(0, 0, 255); // red
+//            } else {
+//                color = new Scalar(255, 255, 0); // cyan
+//            }
+//
+//            Imgproc.rectangle(
+//                    frame,
+//                    new Point(x, y),
+//                    new Point(x + w, y + h),
+//                    color,
+//                    2
+//            );
+//
+//            Imgproc.putText(
+//                    frame,
+//                    label + " " + String.format("%.2f", object.getConfidence()),
+//                    new Point(x, Math.max(20, y - 8)),
+//                    Imgproc.FONT_HERSHEY_SIMPLEX,
+//                    0.5,
+//                    color,
+//                    2
+//            );
+//        }
     }
 
     public boolean isAvailable() {
